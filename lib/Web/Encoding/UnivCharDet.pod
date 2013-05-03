@@ -45,6 +45,11 @@ universal detector.  If there are compelling use cases for more
 features, such as confidence, they could be exposed in future revision
 of this module.
 
+=head1 DEPENDENCY
+
+This module requires Perl 5.8 or later.  No additional module is
+required.
+
 =head1 SPECIFICATIONS
 
 [HTML] HTML Standard
