@@ -5,8 +5,8 @@ before_install: git submodule update --init
 script: "make test"
 notifications:
   email:
-    - wakaba.5081@gmail.com
+    - wakaba@suikawiki.org
   irc:
     channels:
-      - "suika.fam.cx#mechanize"
+      - "suika.suikawiki.org#mechanize"
     use_notice: true

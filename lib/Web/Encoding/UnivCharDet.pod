@@ -1,0 +1,96 @@
+=head1 NAME
+
+Web::Encoding::UnivCharDet - Universal Detector implementation in Perl
+
+=head1 SYNOPSIS
+
+  use Web::Encoding::UnivCharDet;
+  
+  $det = Web::Encoding::UnivCharDet->new;
+  $charset = $det->detect_byte_string;
+
+=head1 DESCRIPTION
+
+The C<Web::Encoding::UnivCharDet> module is a Perl port of Mozilla
+universalchardet (or universal detector) for autodetecting character
+encoding of byte strings.
+
+=head1 METHODS
+
+Following methods are available:
+
+=over 4
+
+=item $det = Web::Encoding::UnivCharDet->new
+
+Return a new instance of the universal detector.
+
+=item $charset = $det->detect_byte_string ($bytes)
+
+Return the detected encoding name of the given byte string.  If it
+can't detect the encoding, the method returns C<undef>.  Otherwise it
+returns a encoding name, which is one of followings:
+
+  utf-8 utf-16be utf-16le iso-2022-cn big5 x-euc-tw gb18030 hz-gb-2312
+  iso-2022-jp shift_jis euc-jp iso-2022-kr euc-kr iso-8859-5 koi8-r
+  windows-1251 x-mac-cyrillic ibm866 ibm855 iso-8859-7 windows-1253
+  iso-8859-8 windows-1255 windows-1252
+
+Returned encoding names are in lowercase.
+
+=back
+
+This module only exposes limited functionality of the original
+universal detector.  If there are compelling use cases for more
+features, such as confidence, they could be exposed in future revision
+of this module.
+
+=head1 SPECIFICATIONS
+
+[HTML] HTML Standard
+<http://www.whatwg.org/specs/web-apps/current-work/#encoding-sniffing-algorithm>.
+
+The detector is expected to be used as part of the HTML encoding
+sniffing algorithm, as defined by the HTML Standard.
+
+[ENCODING] Encoding Standard <http://encoding.spec.whatwg.org/>.
+
+The Encoding Standard defines how to decode the byte string using the
+detected encoding name.  (Note that C<ibm855> and C<x-euc-tw> is not
+defined in the Encoding Standard at the time of writing.)
+
+=head1 SEE ALSO
+
+[UNIVCHARDET] A composite approach to language/encoding detection,
+S. Li, K. Momoi. Netscape. In Proceedings of the 19th International
+Unicode Conference.
+<http://www.mozilla.org/projects/intl/UniversalCharsetDetection.html>.
+
+[MOZILLAUNIVDET] universalchardet in Mozilla repository
+<http://hg.mozilla.org/mozilla-central/file/tip/extensions/universalchardet/>.
+
+This implementation derives from Mozilla's C++ implementation as of
+May 1, 2013
+<http://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.tar.gz>.
+
+[SWUNIVERSALCHARDET] SuikaWiki:UniversalCharDet
+<http://suika.suikawiki.org/~wakaba/wiki/sw/n/UniversalCharDet> (In
+Japanese).
+
+=head1 AUTHOR
+
+Wakaba <wakaba@suikawiki.org>.
+
+=head1 ACKNOWLEDGEMENTS
+
+Thanks to the authors and contributors of Mozilla's original universal
+detector implementation [MOZILLAUNIVDET], from which the Perl port
+derives.
+
+=head1 LICENSE
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at <http://mozilla.org/MPL/2.0/>.
+
+=cut
