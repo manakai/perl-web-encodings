@@ -9,3 +9,4 @@ Term::ANSIColor~3.02
 Filter::cpp~1.43
 ExtUtils::ParseXS~3.15
 Carp~1.26
+Path::Class

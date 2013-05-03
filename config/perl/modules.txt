@@ -1,2 +1,3 @@
 Encode
 Exporter::Lite
+Path::Class
