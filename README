@@ -3,3 +3,7 @@ Web::Encodings
 
 This is a placeholder for future Encoding Standard (Web Encodings)
 implementation in Perl.
+
+Also, this repository contains a Perl port of universalchardet:
+Web::Encoding::UnivCharDet.  See lib/Web/Encoding/UnivCharDet.pod for
+more information.
