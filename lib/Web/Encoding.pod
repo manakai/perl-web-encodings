@@ -8,7 +8,39 @@ This module is a placeholder for Perl APIs for handling Web Encodings.
 This module is work in progress; its interface might or might not be
 changed later.
 
+=head1 FUNCTIONS
+
+Following functions are exported by C<use>ing the C<Web::Encoding>
+module:
+
+=over 4
+
+=item $name = encoding_label_to_name $label
+
+Find the encoding identified by the specified label.  As does Encoding
+Standard's "get an encoding" steps, this function ignores leading and
+trailing spaces, and compares labels case-insensitively.  The function
+returns the encoding name, if found, or C<undef>.
+
+=item $boolean = is_encoding_label $label
+
+Return whether the specified label identifies an encoding or not.  It
+compares labels case-insensitively.  Unlike the
+C<encoding_label_to_name> function, however, this function does not
+ignore spaces.
+
+=back
+
+Note that the encoding name in the Encoding Standard is not compatible
+with Perl L<Encode> module's encoding names.
+
+=head1 SPECIFICATION
+
+Encoding Standard <http://encoding.spec.whatwg.org/>.
+
 =head1 SEE ALSO
+
+XXX
 
 Web Applications 1.0:
 
@@ -26,11 +58,11 @@ Web Encodings <http://wiki.whatwg.org/wiki/Web_Encodings> or
 
 =head1 AUTHOR
 
-Wakaba <w@suika.fam.cx>.
+Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2011 Wakaba <w@suika.fam.cx>.
+Copyright 2011-2013 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

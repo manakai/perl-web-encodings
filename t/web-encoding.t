@@ -18,6 +18,31 @@ test {
     done $c;
 } n => 1;
 
+for my $test (
+  [undef, undef],
+  ['' => undef],
+  [0 => undef],
+  ['UTF-8' => 'utf-8'],
+  ['utf-8' => 'utf-8'],
+  ["\x0Cutf-8\x0D\x0A" => 'utf-8'],
+  ['utf 8' => undef],
+  ['utf8' => 'utf-8'],
+  ['utf8n' => undef],
+  [866 => 'ibm866'],
+  ['us-ascii' => 'windows-1252'],
+  ['iso-2022-CN' => 'replacement'],
+  ['x-user-Defined' => 'x-user-defined'],
+  ['replacement' => undef],
+  ['cesu-8' => undef],
+) {
+  test {
+    my $c = shift;
+    is encoding_label_to_name $test->[0], $test->[1];
+    is !!is_encoding_label $test->[0], (defined $test->[1] && $test->[0] !~ /\s/);
+    done $c;
+  } n => 2, name => [encoding_label_to_name => $test->[0]];
+}
+
 run_tests;
 
 =head1 LICENSE
