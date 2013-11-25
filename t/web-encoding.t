@@ -43,6 +43,22 @@ for my $test (
   } n => 2, name => [encoding_label_to_name => $test->[0]];
 }
 
+for my $name (qw(utf-8 iso-2022-jp windows-1252 koi8-r x-user-defined)) {
+  test {
+    my $c = shift;
+    ok is_ascii_compat_encoding_name $name;
+    done $c;
+  } n => 1, name => ['is_ascii_compat_encoding_name', $name];
+}
+
+for my $name (undef, qw(utf-16be utf-16le replacement)) {
+  test {
+    my $c = shift;
+    ok not is_ascii_compat_encoding_name $name;
+    done $c;
+  } n => 1, name => ['is_ascii_compat_encoding_name', $name];
+}
+
 run_tests;
 
 =head1 LICENSE

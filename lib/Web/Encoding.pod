@@ -22,6 +22,12 @@ Standard's "get an encoding" steps, this function ignores leading and
 trailing spaces, and compares labels case-insensitively.  The function
 returns the encoding name, if found, or C<undef>.
 
+=item $boolean = is_ascii_compat_encoding_name $name
+
+Return whether the specified encoding is an ASCII-compatible character
+encoding or not.  The argument must be an encoding name in the
+Encoding Standard, otherwise the result might be wrong.
+
 =item $boolean = is_encoding_label $label
 
 Return whether the specified label identifies an encoding or not.  It
@@ -34,27 +40,11 @@ ignore spaces.
 Note that the encoding name in the Encoding Standard is not compatible
 with Perl L<Encode> module's encoding names.
 
-=head1 SPECIFICATION
+=head1 SPECIFICATIONS
 
 Encoding Standard <http://encoding.spec.whatwg.org/>.
 
-=head1 SEE ALSO
-
-XXX
-
-Web Applications 1.0:
-
-Character encodings
-<http://www.whatwg.org/specs/web-apps/current-work/complete.html#character-encodings>.
-
-UTF-8 with error handling
-<http://www.whatwg.org/specs/web-apps/current-work/complete.html#utf-8>.
-
-The HTML syntax - Character encodings
-<http://www.whatwg.org/specs/web-apps/current-work/complete.html#character-encodings-0>.
-
-Web Encodings <http://wiki.whatwg.org/wiki/Web_Encodings> or
-<http://webencodings.org/>.
+HTML Standard <http://www.whatwg.org/specs/web-apps/current-work/>.
 
 =head1 AUTHOR
 

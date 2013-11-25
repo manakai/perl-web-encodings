@@ -48,7 +48,15 @@ sub is_encoding_label ($) {
   return !!$Web::Encoding::_Defs->{supported_labels}->{$label};
 } # is_encoding_label
 
-# XXX WA1 & Web Encodings
+push @EXPORT, qw(is_ascii_compat_encoding_name);
+sub is_ascii_compat_encoding_name ($) {
+  my $name = $_[0];
+  return 0 if not defined $name;
+  return 0 if $name eq 'utf-16be' or $name eq 'utf-16le' or $name eq 'replacement';
+  return 1;
+} # is_ascii_compat_encoding_name
+
+# XXX can this deleted?
 sub is_ascii_compat_charset_name ($) {
   my $name = $_[0] or return 0;
   if ($name =~ m{^
