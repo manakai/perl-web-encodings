@@ -59,6 +59,28 @@ for my $name (undef, qw(utf-16be utf-16le replacement)) {
   } n => 1, name => ['is_ascii_compat_encoding_name', $name];
 }
 
+for my $test (
+  [undef, undef],
+  ['' => undef],
+  [en => undef],
+  [EN => undef],
+  [ja => 'shift_jis'],
+  ['ja-JP' => undef],
+  [ru => 'windows-1251'],
+  ['en-gb' => undef],
+  ['zh-tw' => 'big5'],
+  ['zh-CN' => 'gb18030'],
+  [ko => 'euc-kr'],
+  [hoge => undef],
+  ['*' => 'windows-1252'],
+) {
+  test {
+    my $c = shift;
+    is locale_default_encoding_name $test->[0], $test->[1];
+    done $c;
+  } n => 1, name => ['locale_default_encoding_name', $test->[0]];
+}
+
 run_tests;
 
 =head1 LICENSE

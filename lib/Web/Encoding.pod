@@ -35,6 +35,17 @@ compares labels case-insensitively.  Unlike the
 C<encoding_label_to_name> function, however, this function does not
 ignore spaces.
 
+=item $name = locale_default_encoding_name $tag
+
+Return the default character encoding name for the specified locale
+language tag.  If no default is known for the specified locale,
+C<undef> is returned.  The input must be either BCP 47 language tag or
+C<*>.  The language tag must be the primary language tag only,
+C<zh-TW>, or C<zh-CN>, otherwise no data is available.  The tags are
+ASCII case-insensitive.  If C<*> is specified, the global default
+encoding name that can be used when locale is not known or the locale
+has no default is returned.
+
 =back
 
 Note that the encoding name in the Encoding Standard is not compatible

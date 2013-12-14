@@ -75,6 +75,13 @@ sub is_ascii_compat_charset_name ($) {
   }
 } # is_ascii_compat_charset_name
 
+push @EXPORT, qw(locale_default_encoding_name);
+sub locale_default_encoding_name ($) {
+  my $locale = $_[0] or return undef;
+  $locale =~ tr/A-Z/a-z/;
+  return $Web::Encoding::_Defs->{locale_default}->{$locale}; # or undef
+} # locale_default_encoding_name
+
 1;
 
 =head1 LICENSE
