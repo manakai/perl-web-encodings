@@ -1,7 +1,7 @@
 package Web::Encoding;
 use strict;
 use warnings;
-our $VERSION = '2.0';
+our $VERSION = '3.0';
 use Exporter::Lite;
 use Encode;
 use Web::Encoding::_Defs;
@@ -56,6 +56,11 @@ sub is_ascii_compat_encoding_name ($) {
   return 1;
 } # is_ascii_compat_encoding_name
 
+push @EXPORT, qw(fixup_html_meta_encoding_name);
+sub fixup_html_meta_encoding_name ($) {
+  return $Web::Encoding::_Defs->{html_decl_map}->{$_[0]} || $_[0];
+} # fixup_html_meta_encoding_name
+
 # XXX can this deleted?
 sub is_ascii_compat_charset_name ($) {
   my $name = $_[0] or return 0;
@@ -86,7 +91,7 @@ sub locale_default_encoding_name ($) {
 
 =head1 LICENSE
 
-Copyright 2011-2013 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2014 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
