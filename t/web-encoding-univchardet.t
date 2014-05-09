@@ -1,17 +1,17 @@
 use strict;
 use warnings;
-use Path::Class;
-use lib glob file (__FILE__)->dir->parent->subdir ('t_deps', 'modules', '*', 'lib');
+use Path::Tiny;
+use lib glob path (__FILE__)->parent->parent->child ('t_deps', 'modules', '*', 'lib');
 use Test::X1;
 use Test::More;
-use JSON::Functions::XS qw(file2perl);
+use JSON::PS;
 use Web::Encoding::UnivCharDet;
 
-my $data_d = file (__FILE__)->dir->parent
-    ->subdir ('t_deps/modules/tests-web/charset/univchardet/mozilla');
-my $json_f = $data_d->file ('tests.json');
+my $data_path = path (__FILE__)->parent->parent
+    ->child ('t_deps/modules/tests-web/charset/univchardet/mozilla');
+my $json_path = $data_path->child ('tests.json');
 
-my $tests = file2perl $json_f;
+my $tests = json_bytes2perl $json_path->slurp;
 
 my $Filters = {
   "" => {},
@@ -35,7 +35,7 @@ for my $test (@$tests) {
     for (@{$test->[2]}) {
       %{$det->filter} = %{$Filters->{$_} or die "Filter |$_| not defined"};
       my $charset = $det->detect_byte_string
-          (scalar $data_d->file ($test->[0])->slurp) || 'windows-1252';
+          ($data_path->child ($test->[0])->slurp) || 'windows-1252';
       my $expected = lc $test->[1];
       $expected = 'windows-1252' if $expected eq 'default';
       is $charset, $expected, $_;
@@ -49,7 +49,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2013 Wakaba <wakaba@suikawiki.org>.
+Copyright 2013-2014 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

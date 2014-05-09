@@ -22,6 +22,13 @@ Standard's "get an encoding" steps, this function ignores leading and
 trailing spaces, and compares labels case-insensitively.  The function
 returns the encoding name, if found, or C<undef>.
 
+=item $name = fixup_html_meta_encoding_name $name
+
+Replace encoding name for the purpose of HTML character encoding
+declaration, as in "prescan a byte stream to determine its encoding"
+and "change the encoding" algorithms.  The argument must be an
+encoding name (not a label).  The function returns an encoding name.
+
 =item $boolean = is_ascii_compat_encoding_name $name
 
 Return whether the specified encoding is an ASCII-compatible character
@@ -63,7 +70,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2011-2013 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2014 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

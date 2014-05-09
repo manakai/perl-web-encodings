@@ -1,21 +1,21 @@
 use strict;
 use warnings;
-use Path::Class;
-use lib glob file (__FILE__)->dir->parent->subdir ('t_deps', 'modules', '*', 'lib');
+use Path::Tiny;
+use lib glob path (__FILE__)->parent->parent->child ('t_deps', 'modules', '*', 'lib');
 use Test::X1;
 use Test::More;
 use Web::Encoding;
 
 test {
-    my $c = shift;
-    is encode_web_utf8 "\x{4e00}", "\xE4\xB8\x80";
-    done $c;
+  my $c = shift;
+  is encode_web_utf8 "\x{4e00}", "\xE4\xB8\x80";
+  done $c;
 } n => 1;
 
 test {
-    my $c = shift;
-    is decode_web_utf8 "\xE4\xB8\x80", "\x{4e00}";
-    done $c;
+  my $c = shift;
+  is decode_web_utf8 "\xE4\xB8\x80", "\x{4e00}";
+  done $c;
 } n => 1;
 
 for my $test (
@@ -60,6 +60,21 @@ for my $name (undef, qw(utf-16be utf-16le replacement)) {
 }
 
 for my $test (
+  ['utf-8' => 'utf-8'],
+  ['utf-16be' => 'utf-8'],
+  ['utf-16le' => 'utf-8'],
+  ['x-user-defined' => 'windows-1252'],
+  ['replacement' => 'replacement'],
+  ['windows-1252' => 'windows-1252'],
+) {
+  test {
+    my $c = shift;
+    is fixup_html_meta_encoding_name $test->[0], $test->[1];
+    done $c;
+  } n => 1, name => ['fixup_html_meta_encoding_name', $test->[0]];
+}
+
+for my $test (
   [undef, undef],
   ['' => undef],
   [en => undef],
@@ -85,7 +100,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2011-2013 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2014 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
