@@ -1,7 +1,7 @@
 all: lib/Web/Encoding/_Defs.pm
 
 clean: clean-json-ps
-	rm local/encodings.json
+	rm -fr local/encodings.json
 
 updatenightly: update-submodules dataautoupdate-commit
 
