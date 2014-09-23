@@ -8,4 +8,4 @@ Carp~1.3301
 Encode~2.62
 Test::More~1.001006
 Filter::Util::Call~1.49
-Path::Tiny~0.057
+Path::Tiny~0.058
