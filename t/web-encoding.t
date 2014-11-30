@@ -96,6 +96,26 @@ for my $test (
   } n => 1, name => ['locale_default_encoding_name', $test->[0]];
 }
 
+for my $test (
+  [undef, undef],
+  [0 => undef],
+  [foo => undef],
+  ['UTF-8' => undef],
+  ['utf8' => undef],
+  ['windows-1252' => 'windows-1252'],
+  ['shift_jis' => 'Shift_JIS'],
+  ['iso-8859-4' => 'ISO-8859-4'],
+  ['utf-8' => 'UTF-8'],
+  ['replacement' => 'replacement'],
+  ['x-user-defined' => 'x-user-defined'],
+) {
+  test {
+    my $c = shift;
+    is encoding_name_to_compat_name $test->[0], $test->[1];
+    done $c;
+  } n => 1, name => ['encoding_name_to_compat_name', $test->[1]];
+}
+
 run_tests;
 
 =head1 LICENSE

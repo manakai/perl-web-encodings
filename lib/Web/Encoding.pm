@@ -1,7 +1,7 @@
 package Web::Encoding;
 use strict;
 use warnings;
-our $VERSION = '3.0';
+our $VERSION = '4.0';
 use Exporter::Lite;
 use Encode;
 use Web::Encoding::_Defs;
@@ -47,6 +47,11 @@ sub is_encoding_label ($) {
   $label =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
   return !!$Web::Encoding::_Defs->{supported_labels}->{$label};
 } # is_encoding_label
+
+push @EXPORT, qw(encoding_name_to_compat_name);
+sub encoding_name_to_compat_name ($) {
+  return (($Web::Encoding::_Defs->{encodings}->{$_[0] || ''} || {})->{compat_name});
+} # encoding_name_to_compat_name
 
 push @EXPORT, qw(is_ascii_compat_encoding_name);
 sub is_ascii_compat_encoding_name ($) {

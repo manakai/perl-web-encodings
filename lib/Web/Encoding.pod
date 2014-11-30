@@ -29,6 +29,13 @@ declaration, as in "prescan a byte stream to determine its encoding"
 and "change the encoding" algorithms.  The argument must be an
 encoding name (not a label).  The function returns an encoding name.
 
+=item $label = encoding_name_to_compat_name $name
+
+Replace an encoding name to its compatibility name as used in
+C<characterSet> or C<inputEncoding> attributes of the C<Document>
+interface.  The argument must be an encoding name (not a label).  The
+function returns an encoding label or the string C<replacement>.
+
 =item $boolean = is_ascii_compat_encoding_name $name
 
 Return whether the specified encoding is an ASCII-compatible character
@@ -60,9 +67,11 @@ with Perl L<Encode> module's encoding names.
 
 =head1 SPECIFICATIONS
 
-Encoding Standard <http://encoding.spec.whatwg.org/>.
+Encoding Standard <https://encoding.spec.whatwg.org/>.
 
-HTML Standard <http://www.whatwg.org/specs/web-apps/current-work/>.
+HTML Standard <https://html.spec.whatwg.org/>.
+
+DOM Standard <https://dom.spec.whatwg.org/>.
 
 =head1 AUTHOR
 
