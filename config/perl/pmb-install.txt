@@ -1,5 +1,5 @@
 Scalar::Util~1.41
-AnyEvent~7.07
+AnyEvent~7.08
 Term::ANSIColor~4.03
 parent~0.228
 Exporter::Lite~0.06
