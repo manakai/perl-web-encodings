@@ -2,7 +2,7 @@ Scalar::Util~1.42
 AnyEvent~7.11
 Term::ANSIColor~4.03
 parent~0.234
-Exporter::Lite~0.06
+Exporter::Lite~0.07
 File::Spec~3.47
 Carp~1.38
 Encode~2.78
