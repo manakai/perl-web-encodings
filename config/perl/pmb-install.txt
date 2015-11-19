@@ -3,7 +3,7 @@ AnyEvent~7.11
 Term::ANSIColor~4.03
 parent~0.234
 Exporter::Lite~0.07
-File::Spec~3.59
+File::Spec~3.60
 Carp~1.38
 Encode~2.78
 Test::More~1.001014
