@@ -5,7 +5,7 @@ Term::ANSIColor~4.04
 Exporter::Lite~0.08
 File::Spec~3.62
 Time::HiRes~1.9728
-Encode~2.79
+Encode~2.80
 Carp~1.38
 Test::More~1.001014
 Filter::Util::Call~1.55
