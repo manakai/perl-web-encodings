@@ -1,4 +1,4 @@
-Scalar::Util~1.42
+Scalar::Util~1.43
 parent~0.234
 AnyEvent~7.12
 Term::ANSIColor~4.04
