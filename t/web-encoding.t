@@ -73,7 +73,7 @@ for my $test (
   test {
     my $c = shift;
     is fixup_html_meta_encoding_name $test->[0], $test->[1];
-    is get_output_encoding_key $test->[0], $test->[2] // $test->[1];
+    is get_output_encoding_key $test->[0], $test->[2] || $test->[1];
     done $c;
   } n => 2, name => ['fixup_html_meta_encoding_name', $test->[0]];
 }
