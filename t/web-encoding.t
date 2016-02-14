@@ -43,7 +43,8 @@ for my $test (
   } n => 2, name => [encoding_label_to_name => $test->[0]];
 }
 
-for my $name (qw(utf-8 iso-2022-jp windows-1252 koi8-r x-user-defined)) {
+for my $name (qw(utf-8 iso-2022-jp windows-1252 koi8-r x-user-defined
+                 replacement)) {
   test {
     my $c = shift;
     ok is_ascii_compat_encoding_name $name;
@@ -51,7 +52,7 @@ for my $name (qw(utf-8 iso-2022-jp windows-1252 koi8-r x-user-defined)) {
   } n => 1, name => ['is_ascii_compat_encoding_name', $name];
 }
 
-for my $name (undef, qw(utf-16be utf-16le replacement)) {
+for my $name (undef, qw(utf-16be utf-16le)) {
   test {
     my $c = shift;
     ok not is_ascii_compat_encoding_name $name;
@@ -63,15 +64,16 @@ for my $test (
   ['utf-8' => 'utf-8'],
   ['utf-16be' => 'utf-8'],
   ['utf-16le' => 'utf-8'],
-  ['x-user-defined' => 'windows-1252'],
-  ['replacement' => 'replacement'],
+  ['x-user-defined' => 'windows-1252', 'x-user-defined'],
+  ['replacement' => 'utf-8'],
   ['windows-1252' => 'windows-1252'],
 ) {
   test {
     my $c = shift;
     is fixup_html_meta_encoding_name $test->[0], $test->[1];
+    is get_output_encoding_key $test->[0], $test->[2] // $test->[1];
     done $c;
-  } n => 1, name => ['fixup_html_meta_encoding_name', $test->[0]];
+  } n => 2, name => ['fixup_html_meta_encoding_name', $test->[0]];
 }
 
 for my $test (
@@ -120,7 +122,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2011-2014 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2016 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

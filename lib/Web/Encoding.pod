@@ -15,52 +15,65 @@ module:
 
 =over 4
 
-=item $name = encoding_label_to_name $label
+=item $key = encoding_label_to_name $label
 
 Find the encoding identified by the specified label.  As does Encoding
 Standard's "get an encoding" steps, this function ignores leading and
-trailing spaces, and compares labels case-insensitively.  The function
-returns the encoding name, if found, or C<undef>.
+trailing spaces, and compares labels ASCII case-insensitively.  The
+function returns the encoding key (not a name), if found, or C<undef>.
 
-=item $name = fixup_html_meta_encoding_name $name
+=item $key = fixup_html_meta_encoding_name $key
 
-Replace encoding name for the purpose of HTML character encoding
+Replace a encoding key for the purpose of HTML character encoding
 declaration, as in "prescan a byte stream to determine its encoding"
 and "change the encoding" algorithms.  The argument must be an
-encoding name (not a label).  The function returns an encoding name.
+encoding key (not a name or label).  The function returns an encoding
+key.
 
-=item $label = encoding_name_to_compat_name $name
+=item $key = get_output_encoding_key $key
 
-Replace an encoding name to its compatibility name as used in
+Return the result of applying the steps to get an output encoding.
+The argument must be an encoding key (not a name or label).  The
+function returns an encoding key.
+
+=item $name = encoding_name_to_compat_name $key
+
+Replace an encoding key to its official name as used in e.g.
 C<characterSet> or C<inputEncoding> attributes of the C<Document>
-interface.  The argument must be an encoding name (not a label).  The
-function returns an encoding label or the string C<replacement>.
+interface.  The argument must be an encoding key (not a name or
+label).  The function returns an encoding name.
 
-=item $boolean = is_ascii_compat_encoding_name $name
+=item $boolean = is_ascii_compat_encoding_name $key
 
 Return whether the specified encoding is an ASCII-compatible character
-encoding or not.  The argument must be an encoding name in the
-Encoding Standard, otherwise the result might be wrong.
+encoding or not.  The argument must be an encoding key (not a name or
+label).
 
 =item $boolean = is_encoding_label $label
 
 Return whether the specified label identifies an encoding or not.  It
-compares labels case-insensitively.  Unlike the
+compares labels ASCII case-insensitively.  Unlike the
 C<encoding_label_to_name> function, however, this function does not
 ignore spaces.
 
-=item $name = locale_default_encoding_name $tag
+=item $key = locale_default_encoding_name $tag
 
-Return the default character encoding name for the specified locale
-language tag.  If no default is known for the specified locale,
-C<undef> is returned.  The input must be either BCP 47 language tag or
-C<*>.  The language tag must be the primary language tag only,
-C<zh-TW>, or C<zh-CN>, otherwise no data is available.  The tags are
-ASCII case-insensitive.  If C<*> is specified, the global default
-encoding name that can be used when locale is not known or the locale
-has no default is returned.
+Return the encoding key (not a name or label) of the default character
+encoding for a locale.  If no default is known for the specified
+locale, C<undef> is returned.
+
+The argument, which identifies the locale, must be either a BCP 47
+language tag or a string C<*>.  The language tag must be the primary
+language tag only, C<zh-TW>, or C<zh-CN>, otherwise no data is
+available.  The tags are ASCII case-insensitive.  If C<*> is
+specified, the global default encoding that can be used when the
+locale is not known or the locale has no default is returned.
 
 =back
+
+For the purpose of this module, the B<key> of the encoding is a short
+string uniquly identifying the encoding.  It is a lowercased variant
+of the encoding name defined in the Encoding Standard.
 
 Note that the encoding name in the Encoding Standard is not compatible
 with Perl L<Encode> module's encoding names.
@@ -79,7 +92,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2011-2014 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2016 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
