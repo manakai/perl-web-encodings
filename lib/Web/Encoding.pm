@@ -65,6 +65,11 @@ sub encoding_name_to_compat_name ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0] || ''} || {})->{compat_name});
 } # encoding_name_to_compat_name
 
+push @EXPORT, qw(is_utf16_encoding_key);
+sub is_utf16_encoding_key ($) {
+  return (($Web::Encoding::_Defs->{encodings}->{$_[0] || ''} || {})->{utf16});
+} # is_utf16_encoding_key
+
 push @EXPORT, qw(is_ascii_compat_encoding_name);
 sub is_ascii_compat_encoding_name ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0] || ''} || {})->{ascii_compat});

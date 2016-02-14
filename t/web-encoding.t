@@ -48,16 +48,18 @@ for my $name (qw(utf-8 iso-2022-jp windows-1252 koi8-r x-user-defined
   test {
     my $c = shift;
     ok is_ascii_compat_encoding_name $name;
+    ok !is_utf16_encoding_key $name;
     done $c;
-  } n => 1, name => ['is_ascii_compat_encoding_name', $name];
+  } n => 2, name => ['is_ascii_compat_encoding_name', $name];
 }
 
-for my $name (undef, qw(utf-16be utf-16le)) {
+for my $name (qw(utf-16be utf-16le)) {
   test {
     my $c = shift;
     ok not is_ascii_compat_encoding_name $name;
+    ok is_utf16_encoding_key $name;
     done $c;
-  } n => 1, name => ['is_ascii_compat_encoding_name', $name];
+  } n => 2, name => ['is_ascii_compat_encoding_name', $name];
 }
 
 for my $test (
