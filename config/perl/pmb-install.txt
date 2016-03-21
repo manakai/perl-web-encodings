@@ -1,5 +1,5 @@
 Scalar::Util~1.44
-Term::ANSIColor~4.04
+Term::ANSIColor~4.05
 AnyEvent~7.12
 parent~0.234
 Time::HiRes~1.9732
