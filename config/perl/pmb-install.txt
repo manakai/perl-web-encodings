@@ -4,7 +4,7 @@ AnyEvent~7.12
 parent~0.234
 Time::HiRes~1.9732
 Carp~1.38
-Encode~2.82
+Encode~2.83
 Test::More~1.001014
 Filter::Util::Call~1.55
 Digest::SHA~5.95
