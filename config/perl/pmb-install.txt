@@ -8,4 +8,4 @@ Encode~2.83
 Test::More~1.001014
 Filter::Util::Call~1.55
 Digest::SHA~5.95
-Path::Tiny~0.084
+Path::Tiny~0.086
