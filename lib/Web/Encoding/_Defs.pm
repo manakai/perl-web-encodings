@@ -337,7 +337,7 @@ $Web::Encoding::_Defs = {
                                            },
                            "iso-8859-8-i" => {
                                                "ascii_compat" => 1,
-                                               "compat_name" => "ISO-8859-8-i",
+                                               "compat_name" => "ISO-8859-8-I",
                                                "html_conformance" => "avoid",
                                                "html_decl_mapped" => "iso-8859-8-i",
                                                "key" => "iso-8859-8-i",
@@ -346,7 +346,7 @@ $Web::Encoding::_Defs = {
                                                              "iso-8859-8-i" => {},
                                                              "logical" => {}
                                                            },
-                                               "name" => "ISO-8859-8-i",
+                                               "name" => "ISO-8859-8-I",
                                                "output" => "iso-8859-8-i"
                                              },
                            "koi8-r" => {
