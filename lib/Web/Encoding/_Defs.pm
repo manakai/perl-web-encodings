@@ -397,7 +397,7 @@ $Web::Encoding::_Defs = {
                                               "ascii_compat" => 1,
                                               "compat_name" => "replacement",
                                               "html_conformance" => "broken",
-                                              "html_decl_mapped" => "utf-8",
+                                              "html_decl_mapped" => "replacement",
                                               "key" => "replacement",
                                               "labels" => {
                                                             "csiso2022kr" => {},
@@ -665,7 +665,6 @@ $Web::Encoding::_Defs = {
                                                }
                          },
           "html_decl_map" => {
-                               "replacement" => "utf-8",
                                "utf-16be" => "utf-8",
                                "utf-16le" => "utf-8",
                                "x-user-defined" => "windows-1252"
