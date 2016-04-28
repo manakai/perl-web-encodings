@@ -66,16 +66,30 @@ for my $test (
   ['utf-8' => 'utf-8'],
   ['utf-16be' => 'utf-8'],
   ['utf-16le' => 'utf-8'],
-  ['x-user-defined' => 'windows-1252', 'x-user-defined'],
-  ['replacement' => 'replacement', 'utf-8'],
+  ['x-user-defined' => 'windows-1252'],
+  ['replacement' => 'replacement'],
   ['windows-1252' => 'windows-1252'],
 ) {
   test {
     my $c = shift;
     is fixup_html_meta_encoding_name $test->[0], $test->[1];
-    is get_output_encoding_key $test->[0], $test->[2] || $test->[1];
     done $c;
-  } n => 2, name => ['fixup_html_meta_encoding_name', $test->[0]];
+  } n => 1, name => ['fixup_html_meta_encoding_name', $test->[0]];
+}
+
+for my $test (
+  ['utf-8' => 'utf-8'],
+  ['utf-16be' => 'utf-8'],
+  ['utf-16le' => 'utf-8'],
+  ['x-user-defined' => 'x-user-defined'],
+  ['replacement' => 'utf-8'],
+  ['windows-1252' => 'windows-1252'],
+) {
+  test {
+    my $c = shift;
+    is get_output_encoding_key $test->[0], $test->[1];
+    done $c;
+  } n => 1, name => ['get_output_encoding_key', $test->[0]];
 }
 
 for my $test (
