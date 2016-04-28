@@ -67,7 +67,7 @@ for my $test (
   ['utf-16be' => 'utf-8'],
   ['utf-16le' => 'utf-8'],
   ['x-user-defined' => 'windows-1252', 'x-user-defined'],
-  ['replacement' => 'utf-8'],
+  ['replacement' => 'replacement', 'utf-8'],
   ['windows-1252' => 'windows-1252'],
 ) {
   test {
