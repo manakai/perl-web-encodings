@@ -14,7 +14,19 @@ test {
 
 test {
   my $c = shift;
+  is encode_web_utf8 undef, '';
+  done $c;
+} n => 1;
+
+test {
+  my $c = shift;
   is decode_web_utf8 "\xE4\xB8\x80", "\x{4e00}";
+  done $c;
+} n => 1;
+
+test {
+  my $c = shift;
+  is encode_web_charset ('shift_jis', undef), '';
   done $c;
 } n => 1;
 

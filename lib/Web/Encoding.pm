@@ -26,7 +26,7 @@ sub import ($;@) {
 } # import
 
 sub encode_web_utf8 ($) {
-  return Encode::encode ('utf-8', $_[0]);
+  return Encode::encode ('utf-8', defined $_[0] ? $_[0] : '');
 } # encode_web_utf8
 
 sub decode_web_utf8 ($) {
@@ -34,7 +34,7 @@ sub decode_web_utf8 ($) {
 } # decode_web_utf8
 
 sub encode_web_charset ($$) {
-  return Encode::encode ($_[0], $_[1]); # XXX
+  return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
 } # encode_web_charset
 
 sub decode_web_charset ($$) {
