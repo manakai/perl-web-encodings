@@ -38,6 +38,17 @@ ok(1);
 
 sub answer { defined $_[0] ? $_[0] ? "YES" : "NO" : "MAYBE" }
 
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+*checkNFC = \&Web::Encoding::_UnicodeNormalize::checkNFC;
+*checkNFD = \&Web::Encoding::_UnicodeNormalize::checkNFD;
+*checkNFKC = \&Web::Encoding::_UnicodeNormalize::checkNFKC;
+*checkNFKD = \&Web::Encoding::_UnicodeNormalize::checkNFKD;
+*normalize = \&Web::Encoding::_UnicodeNormalize::normalize;
+*check = \&Web::Encoding::_UnicodeNormalize::check;
+
 #########################
 
 ok(NFD ("\x{304C}\x{FF76}"), "\x{304B}\x{3099}\x{FF76}");

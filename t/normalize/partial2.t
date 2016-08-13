@@ -40,7 +40,12 @@ sub ok ($;$) {
     print $p ? "ok" : "not ok", ' ', ++$count, "\n";
 }
 
-use Web::Encoding::_UnicodeNormalize qw(:all);
+use Web::Encoding::_UnicodeNormalize;
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+*normalize_partial = \&Web::Encoding::_UnicodeNormalize::normalize_partial;
 
 ok(1);
 

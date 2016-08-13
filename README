@@ -7,3 +7,5 @@ implementation in Perl.
 Also, this repository contains a Perl port of universalchardet:
 Web::Encoding::UnivCharDet.  See lib/Web/Encoding/UnivCharDet.pod for
 more information.
+
+This repository also contains Web::Encoding::Normalization.

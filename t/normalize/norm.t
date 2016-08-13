@@ -32,7 +32,8 @@ sub ok ($;$) {
     print $p ? "ok" : "not ok", ' ', ++$count, "\n";
 }
 
-use Web::Encoding::_UnicodeNormalize qw(normalize);
+use Web::Encoding::_UnicodeNormalize;
+BEGIN { *normalize = \&Web::Encoding::_UnicodeNormalize::normalize }
 
 ok(1);
 

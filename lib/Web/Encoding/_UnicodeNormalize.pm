@@ -19,23 +19,6 @@ no warnings 'utf8';
 our $VERSION = '1.18';
 our $PACKAGE = __PACKAGE__;
 
-our @EXPORT = qw( NFC NFD NFKC NFKD );
-our @EXPORT_OK = qw(
-    normalize decompose reorder compose
-    checkNFD checkNFKD checkNFC checkNFKC check
-    getCanon getCompat getComposite getCombinClass
-    isExclusion isSingleton isNonStDecomp isComp2nd isComp_Ex
-    isNFD_NO isNFC_NO isNFC_MAYBE isNFKD_NO isNFKC_NO isNFKC_MAYBE
-    FCD checkFCD FCC checkFCC composeContiguous splitOnLastStarter
-    normalize_partial NFC_partial NFD_partial NFKC_partial NFKD_partial
-);
-our %EXPORT_TAGS = (
-    all       => [ @EXPORT, @EXPORT_OK ],
-    normalize => [ @EXPORT, qw/normalize decompose reorder compose/ ],
-    check     => [ qw/checkNFD checkNFKD checkNFC checkNFKC check/ ],
-    fast      => [ qw/FCD checkFCD FCC checkFCC composeContiguous/ ],
-);
-
 ##
 ## utilities for tests
 ##
@@ -48,9 +31,6 @@ sub unpack_U {
     return unpack('U*', shift(@_).pack('U*'));
 }
 
-require Exporter;
-
-our @ISA = qw(Exporter);
 use File::Spec;
 
 our %Combin;	# $codepoint => $number    : combination class

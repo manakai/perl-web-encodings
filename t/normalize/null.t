@@ -22,7 +22,18 @@ BEGIN {
 use strict;
 use warnings;
 
-use Web::Encoding::_UnicodeNormalize qw(:all);
+use Web::Encoding::_UnicodeNormalize;
+*compose = \&Web::Encoding::_UnicodeNormalize::compose;
+*decompose = \&Web::Encoding::_UnicodeNormalize::decompose;
+*reorder = \&Web::Encoding::_UnicodeNormalize::reorder;
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+*FCC = \&Web::Encoding::_UnicodeNormalize::FCC;
+*getCanon = \&Web::Encoding::_UnicodeNormalize::getCanon;
+*getCompat = \&Web::Encoding::_UnicodeNormalize::getCompat;
+
 print "1..24\n";
 
 print "ok 1\n";

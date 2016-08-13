@@ -40,6 +40,15 @@ sub _pack_U { Web::Encoding::_UnicodeNormalize::pack_U(@_) }
 sub hexU { _pack_U map hex, split ' ', shift }
 sub answer { defined $_[0] ? $_[0] ? "YES" : "NO" : "MAYBE" }
 
+*FCC = \&Web::Encoding::_UnicodeNormalize::FCC;
+*FCD = \&Web::Encoding::_UnicodeNormalize::FCD;
+*normalize = \&Web::Encoding::_UnicodeNormalize::normalize;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*checkFCD = \&Web::Encoding::_UnicodeNormalize::checkFCD;
+*checkFCC = \&Web::Encoding::_UnicodeNormalize::checkFCC;
+*checkNFC = \&Web::Encoding::_UnicodeNormalize::checkNFC;
+*check = \&Web::Encoding::_UnicodeNormalize::check;
+
 #########################
 
 ok(FCD(''), "");

@@ -1,0 +1,72 @@
+=head1 NAME
+
+Web::Encoding::Normalization - Unicode normalization forms
+
+=head1 SYNOPSIS
+
+  use Web::Encoding::Normalization;
+  warn to_nfc $input;
+  warn to_nfd $input;
+  warn to_nfkc $input;
+  warn to_nfkd $input;
+
+=head1 DESCRIPTION
+
+The C<Web::Encoding::Normalization> module exports functions for
+applying Unicode normalization operations.
+
+=head1 FUNCTIONS
+
+The following functions are available.  They are exported by default:
+
+=over 4
+
+=item $string = to_nfc $string
+
+Apply the NFC (Normalization Form C) operation to the input and return
+the result.
+
+=item $string = to_nfd $string
+
+Apply the NFD (Normalization Form D) operation to the input and return
+the result.
+
+=item $string = to_nfkc $string
+
+Apply the NFKC (Normalization Form KC) operation to the input and
+return the result.
+
+=item $string = to_nfkd $string
+
+Apply the NFKD (Normalization Form KD) operation to the input and
+return the result.
+
+=back
+
+The module supports Unicode 6.0.0.
+
+=head1 SPECIFICATIONS
+
+The Unicode Standard.
+
+UAX #15: Unicode Normalization Forms
+<http://www.unicode.org/reports/tr15/>.
+
+=head1 DEPENDENCY
+
+The module requires Perl 5.8 or later.
+
+=head1 ACKNOWLEDGEMENTS
+
+The module derived from L<Unicode::Normalize>.
+
+=head1 LICENSE
+
+Copyright(C) 2001-2012, SADAHIRO Tomoyuki. Japan. All rights reserved.
+
+Copyright 2016 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

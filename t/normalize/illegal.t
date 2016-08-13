@@ -28,7 +28,7 @@ BEGIN {
 #########################
 
 BEGIN {
-    use Web::Encoding::_UnicodeNormalize qw(:all);
+    use Web::Encoding::_UnicodeNormalize;
 
     unless (exists &Web::Encoding::_UnicodeNormalize::bootstrap or 5.008 <= $]) {
 	print "1..0 # skipped: XSUB, or Perl 5.8.0 or later".
@@ -37,6 +37,17 @@ BEGIN {
 	exit;
     }
 }
+
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+*FCC = \&Web::Encoding::_UnicodeNormalize::FCC;
+*FCD = \&Web::Encoding::_UnicodeNormalize::FCD;
+*decompose = \&Web::Encoding::_UnicodeNormalize::decompose;
+*compose = \&Web::Encoding::_UnicodeNormalize::compose;
+*reorder = \&Web::Encoding::_UnicodeNormalize::reorder;
+*splitOnLastStarter = \&Web::Encoding::_UnicodeNormalize::splitOnLastStarter;
 
 use strict;
 use warnings;

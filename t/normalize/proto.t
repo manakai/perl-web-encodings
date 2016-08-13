@@ -32,7 +32,16 @@ sub ok ($;$) {
     print $p ? "ok" : "not ok", ' ', ++$count, "\n";
 }
 
-use Web::Encoding::_UnicodeNormalize qw(:all);
+use Web::Encoding::_UnicodeNormalize;
+BEGIN {
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+*FCC = \&Web::Encoding::_UnicodeNormalize::FCC;
+*FCD = \&Web::Encoding::_UnicodeNormalize::FCD;
+*reorder = \&Web::Encoding::_UnicodeNormalize::reorder;
+}
 
 ok(1);
 
@@ -50,50 +59,50 @@ ok(reorder "\x{30A}\x{327}" eq "\x{327}\x{30A}");
 
 # 9
 
-ok(prototype \&normalize,'$$');
-ok(prototype \&NFD,  '$');
-ok(prototype \&NFC,  '$');
-ok(prototype \&NFKD, '$');
-ok(prototype \&NFKC, '$');
-ok(prototype \&FCD,  '$');
-ok(prototype \&FCC,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::normalize,'$$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFD,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFC,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFKD, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFKC, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::FCD,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::FCC,  '$');
 
-ok(prototype \&check,    '$$');
-ok(prototype \&checkNFD, '$');
-ok(prototype \&checkNFC, '$');
-ok(prototype \&checkNFKD,'$');
-ok(prototype \&checkNFKC,'$');
-ok(prototype \&checkFCD, '$');
-ok(prototype \&checkFCC, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::check,    '$$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::checkNFD, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::checkNFC, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::checkNFKD,'$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::checkNFKC,'$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::checkFCD, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::checkFCC, '$');
 
-ok(prototype \&decompose, '$;$');
-ok(prototype \&reorder,   '$');
-ok(prototype \&compose,   '$');
-ok(prototype \&composeContiguous, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::decompose, '$;$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::reorder,   '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::compose,   '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::composeContiguous, '$');
 
 # 27
 
-ok(prototype \&getCanon,      '$');
-ok(prototype \&getCompat,     '$');
-ok(prototype \&getComposite,  '$$');
-ok(prototype \&getCombinClass,'$');
-ok(prototype \&isExclusion,   '$');
-ok(prototype \&isSingleton,   '$');
-ok(prototype \&isNonStDecomp, '$');
-ok(prototype \&isComp2nd,     '$');
-ok(prototype \&isComp_Ex,     '$');
-ok(prototype \&isNFD_NO,      '$');
-ok(prototype \&isNFC_NO,      '$');
-ok(prototype \&isNFC_MAYBE,   '$');
-ok(prototype \&isNFKD_NO,     '$');
-ok(prototype \&isNFKC_NO,     '$');
-ok(prototype \&isNFKC_MAYBE,  '$');
-ok(prototype \&splitOnLastStarter, undef);
-ok(prototype \&normalize_partial, '$$');
-ok(prototype \&NFD_partial,  '$');
-ok(prototype \&NFC_partial,  '$');
-ok(prototype \&NFKD_partial, '$');
-ok(prototype \&NFKC_partial, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::getCanon,      '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::getCompat,     '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::getComposite,  '$$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::getCombinClass,'$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isExclusion,   '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isSingleton,   '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNonStDecomp, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isComp2nd,     '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isComp_Ex,     '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNFD_NO,      '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNFC_NO,      '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNFC_MAYBE,   '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNFKD_NO,     '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNFKC_NO,     '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::isNFKC_MAYBE,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::splitOnLastStarter, undef);
+ok(prototype \&Web::Encoding::_UnicodeNormalize::normalize_partial, '$$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFD_partial,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFC_partial,  '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFKD_partial, '$');
+ok(prototype \&Web::Encoding::_UnicodeNormalize::NFKC_partial, '$');
 
 # 48
 

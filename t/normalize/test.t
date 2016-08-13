@@ -33,6 +33,12 @@ sub ok ($;$) {
 }
 
 use Web::Encoding::_UnicodeNormalize;
+BEGIN {
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+}
 
 ok(1);
 

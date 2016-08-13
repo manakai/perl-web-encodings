@@ -32,12 +32,44 @@ sub ok ($;$) {
     print $p ? "ok" : "not ok", ' ', ++$count, "\n";
 }
 
-use Web::Encoding::_UnicodeNormalize qw(:all);
+use Web::Encoding::_UnicodeNormalize;
 
 ok(1);
 
 sub _pack_U { Web::Encoding::_UnicodeNormalize::pack_U(@_) }
 sub hexU { _pack_U map hex, split ' ', shift }
+
+*getCombinClass = \&Web::Encoding::_UnicodeNormalize::getCombinClass;
+*getCanon = \&Web::Encoding::_UnicodeNormalize::getCanon;
+*getCompat = \&Web::Encoding::_UnicodeNormalize::getCompat;
+*getComposite = \&Web::Encoding::_UnicodeNormalize::getComposite;
+*isExclusion = \&Web::Encoding::_UnicodeNormalize::isExclusion;
+*isSingleton = \&Web::Encoding::_UnicodeNormalize::isSingleton;
+*isNonStDecomp = \&Web::Encoding::_UnicodeNormalize::isNonStDecomp;
+*isComp_Ex = \&Web::Encoding::_UnicodeNormalize::isComp_Ex;
+*isComp2nd = \&Web::Encoding::_UnicodeNormalize::isComp2nd;
+*isNFC_NO = \&Web::Encoding::_UnicodeNormalize::isNFC_NO;
+*isNFD_NO = \&Web::Encoding::_UnicodeNormalize::isNFD_NO;
+*isNFKC_NO = \&Web::Encoding::_UnicodeNormalize::isNFKC_NO;
+*isNFKD_NO = \&Web::Encoding::_UnicodeNormalize::isNFKD_NO;
+*isNFC_MAYBE = \&Web::Encoding::_UnicodeNormalize::isNFC_MAYBE;
+*isNFKC_MAYBE = \&Web::Encoding::_UnicodeNormalize::isNFKC_MAYBE;
+*decompose = \&Web::Encoding::_UnicodeNormalize::decompose;
+*compose = \&Web::Encoding::_UnicodeNormalize::compose;
+*composeContiguous = \&Web::Encoding::_UnicodeNormalize::composeContiguous;
+*reorder = \&Web::Encoding::_UnicodeNormalize::reorder;
+*checkNFC = \&Web::Encoding::_UnicodeNormalize::checkNFC;
+*checkNFD = \&Web::Encoding::_UnicodeNormalize::checkNFD;
+*checkNFKC = \&Web::Encoding::_UnicodeNormalize::checkNFKC;
+*checkNFKD = \&Web::Encoding::_UnicodeNormalize::checkNFKD;
+*check = \&Web::Encoding::_UnicodeNormalize::check;
+*FCD = \&Web::Encoding::_UnicodeNormalize::FCD;
+*FCC = \&Web::Encoding::_UnicodeNormalize::FCC;
+*NFC = \&Web::Encoding::_UnicodeNormalize::NFC;
+*NFD = \&Web::Encoding::_UnicodeNormalize::NFD;
+*NFKC = \&Web::Encoding::_UnicodeNormalize::NFKC;
+*NFKD = \&Web::Encoding::_UnicodeNormalize::NFKD;
+*normalize = \&Web::Encoding::_UnicodeNormalize::normalize;
 
 #########################
 
@@ -252,7 +284,7 @@ ok(answer(check("NFKC", hexU("20 C1 212B 300"))), "NO");
 # 145
 
 "012ABC" =~ /(\d+)(\w+)/;
-ok("012" eq NFC $1 && "ABC" eq NFC $2);
+ok("012" eq NFC ($1) && "ABC" eq NFC ($2));
 
 ok(normalize('C', $1), "012");
 ok(normalize('C', $2), "ABC");
