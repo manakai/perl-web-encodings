@@ -6,17 +6,49 @@ use Test::X1;
 use Test::More;
 use Web::Encoding;
 
-test {
-  my $c = shift;
-  is encode_web_utf8 "\x{4e00}", "\xE4\xB8\x80";
-  done $c;
-} n => 1;
+sub u ($) {
+  my $x = $_[0];
+  utf8::upgrade $x;
+  return $x;
+} # u
 
-test {
-  my $c = shift;
-  is encode_web_utf8 undef, '';
-  done $c;
-} n => 1;
+for (
+  [undef, ''],
+  ['', ''],
+  ["\x00", "\x00"],
+  ['abc', 'abc'],
+  [u 'abc', 'abc'],
+  ["\x80\xC0", "\xC2\x80\xC3\x80"],
+  ["\x{4e00}", "\xE4\xB8\x80"],
+  ["\x{D7FF}", "\xED\x9F\xBF"],
+  ["\x{D800}", "\xEF\xBF\xBD"],
+  ["\x{DFFF}", "\xEF\xBF\xBD"],
+  ["\x{FEFF}", "\xEF\xBB\xBF"],
+  ["\x{FFFD}", "\xEF\xBF\xBD"],
+  ["\x{FFFE}", "\xEF\xBF\xBE"],
+  ["\x{FFFF}", "\xEF\xBF\xBF"],
+  ["\x{10FFFD}", "\xF4\x8F\xBF\xBD"],
+  ["\x{10FFFE}", "\xF4\x8F\xBF\xBE"],
+  ["\x{10FFFF}", "\xF4\x8F\xBF\xBF"],
+  ["\x{110000}", "\xEF\xBF\xBD"],
+) {
+  my ($input, $output) = @$_;
+  test {
+    my $c = shift;
+    my $result = encode_web_utf8 $input;
+    is $result, $output;
+    ok ! utf8::is_utf8 $result;
+    done $c;
+  } n => 2, name => 'encode_web_utf8';
+
+  test {
+    my $c = shift;
+    my $result = encode_web_charset "utf-8", $input;
+    is $result, $output;
+    ok ! utf8::is_utf8 $result;
+    done $c;
+  } n => 2, name => 'encode_web_charset utf-8';
+}
 
 for (
   [undef, '', ''],
@@ -56,8 +88,9 @@ for (
     my $c = shift;
     is decode_web_utf8 $input, $output, 'with BOM';
     is decode_web_utf8_no_bom $input, $output2, 'w/o BOM';
+    is decode_web_charset ("utf-8", $input), $output, 'charset';
     done $c;
-  } n => 2, name => ['decode_web_utf8', $input];
+  } n => 3, name => ['decode_web_utf8', $input];
 }
 
 test {
