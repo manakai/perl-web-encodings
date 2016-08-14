@@ -9,6 +9,7 @@ use Web::Encoding::_Defs;
 our @EXPORT = qw(
   encode_web_utf8
   decode_web_utf8
+  decode_web_utf8_no_bom
   encode_web_charset
   decode_web_charset
   is_ascii_compat_charset_name
@@ -27,11 +28,23 @@ sub import ($;@) {
 
 sub encode_web_utf8 ($) {
   return Encode::encode ('utf-8', defined $_[0] ? $_[0] : '');
+  # XXX surrogates, > U+10FFFF
 } # encode_web_utf8
 
 sub decode_web_utf8 ($) {
-  return Encode::decode ('utf-8', $_[0]); # XXX error-handling
+  if (not defined $_[0]) {
+    # XXX warn
+    return '';
+  } elsif ($_[0] =~ /\A\xEF\xBB\xBF/) {
+    return Encode::decode ('utf-8', substr $_[0], 3); # XXX error-handling
+  } else {
+    return Encode::decode ('utf-8', $_[0]); # XXX error-handling
+  }
 } # decode_web_utf8
+
+sub decode_web_utf8_no_bom ($) {
+  return Encode::decode ('utf-8', defined $_[0] ? $_[0] : ''); # XXX error-handling
+} # decode_web_utf8_no_bom
 
 sub encode_web_charset ($$) {
   return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
