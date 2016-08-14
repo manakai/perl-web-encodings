@@ -18,11 +18,32 @@ test {
   done $c;
 } n => 1;
 
-test {
-  my $c = shift;
-  is decode_web_utf8 "\xE4\xB8\x80", "\x{4e00}";
-  done $c;
-} n => 1;
+for (
+  [undef, '', ''],
+  ['', ''],
+  ['0', '0'],
+  ["\x00", "\x00"],
+  ["\x7F", "\x7F"],
+  ["\x80", "\x{FFFD}"],
+  ["\xA0", "\x{FFFD}"],
+  ["\x80ab", "\x{FFFD}ab"],
+  ["\xE4\xB8\x80", "\x{4e00}"],
+  ["\xED\x9F\xBF", "\x{D7FF}"],
+  ["\xED\x9F\xC0", "\x{FFFD}\x{FFFD}\x{FFFD}"],
+  ["a\xc1\x80b", "a\x{FFFD}\x{FFFD}b"],
+  ["\xEF\xBB\xBF", '', "\x{FEFF}"],
+  ["\xEF\xBB\xBFabc", 'abc', "\x{FEFF}abc"],
+  ["\xEF\xBB\xBF\xEF\xBB\xBF", "\x{FEFF}", "\x{FEFF}\x{FEFF}"],
+) {
+  my ($input, $output, $output2) = @$_;
+  $output2 = $output if not defined $output2;
+  test {
+    my $c = shift;
+    is decode_web_utf8 $input, $output;
+    is decode_web_utf8_no_bom $input, $output2;
+    done $c;
+  } n => 2, name => 'decode_web_utf8';
+}
 
 test {
   my $c = shift;

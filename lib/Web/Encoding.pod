@@ -78,6 +78,36 @@ of the encoding name defined in the Encoding Standard.
 Note that the encoding name in the Encoding Standard is not compatible
 with Perl L<Encode> module's encoding names.
 
+There are following functions for encoding and decoding:
+
+=over 4
+
+=item $bytes = encode_web_utf8 $chars
+
+Encode the character string in UTF-8 and return the encoded bytes.
+
+This function corresponds to the "UTF-8 encode" operation of the
+Encoding Standard.
+
+=item $chars = decode_web_utf8 $bytes
+
+Decode the bytes as UTF-8 and return the decoded character string.
+Any bad byte is replaced by U+FFFD characters without failure.
+
+This function corresponds to the "UTF-8 decode" operation of the
+Encoding Standard.
+
+=item $chars = decode_web_utf8_no_bom $bytes
+
+Decode the bytes as UTF-8, not recognizing BOM, and returns the
+decoded character string.  Any bad byte is replaced by U+FFFD
+characters without failure.
+
+This function corresponds to the "UTF-8 decode without BOM" operation
+of the Encoding Standard.
+
+=back
+
 =head1 SPECIFICATIONS
 
 Encoding Standard <https://encoding.spec.whatwg.org/>.
