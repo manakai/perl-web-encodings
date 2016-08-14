@@ -1,6 +1,7 @@
 package Web::Encoding;
 use strict;
 use warnings;
+no warnings 'utf8';
 our $VERSION = '6.0';
 use Carp;
 use Encode;

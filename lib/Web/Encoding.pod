@@ -2,16 +2,42 @@
 
 Web::Encoding - Web Encodings APIs
 
+=head1 SYNOPSIS
+
+  use Web::Encoding;
+  $bytes = encode_web_utf8 $chars;
+  $chars = decode_web_utf8 $bytes;
+
 =head1 DESCRIPTION
 
-This module is a placeholder for Perl APIs for handling Web Encodings.
-This module is work in progress; its interface might or might not be
-changed later.
+The C<Web::Encoding> module provides a set of functions to handle
+Web-compatible character encodings.
+
+Also, there are following modules in the C<perl-web-encodings>
+repository:
+
+=over 4
+
+=item Web::Encoding::UnivCharDet
+
+The universalchardet (or universal detector) implementation in Perl,
+which can be used to implement HTML parsers.
+
+=item Web::Encoding::Normalization
+
+Implementation of Unicode's string normalization algorithms, i.e. NFC,
+NFD, NFKC, and NFKD.
+
+=back
 
 =head1 FUNCTIONS
 
-Following functions are exported by C<use>ing the C<Web::Encoding>
-module:
+Functions described in these subsections are exported by default.
+
+=head2 Encoding labels and properties of encodings
+
+There are following functions to handle encoding labels and to obtain
+properties of encodings:
 
 =over 4
 
@@ -75,8 +101,10 @@ For the purpose of this module, the B<key> of the encoding is a short
 string uniquly identifying the encoding.  It is a lowercased variant
 of the encoding name defined in the Encoding Standard.
 
-Note that the encoding name in the Encoding Standard is not compatible
-with Perl L<Encode> module's encoding names.
+Note that the encoding names in the Encoding Standard are not
+compatible with Perl L<Encode> module's encoding names.
+
+=head2 Encoders and decoders
 
 There are following functions for encoding and decoding:
 
@@ -108,6 +136,9 @@ of the Encoding Standard.
 
 =back
 
+Unfortunately, no encoding other than UTF-8 from the Encoding Standard
+is supported for now.
+
 =head1 SPECIFICATIONS
 
 Encoding Standard <https://encoding.spec.whatwg.org/>.
@@ -115,6 +146,10 @@ Encoding Standard <https://encoding.spec.whatwg.org/>.
 HTML Standard <https://html.spec.whatwg.org/>.
 
 DOM Standard <https://dom.spec.whatwg.org/>.
+
+=head1 DEPENDENCY
+
+The module requires Perl 5.8 or later.
 
 =head1 AUTHOR
 
