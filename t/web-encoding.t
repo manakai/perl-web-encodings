@@ -95,6 +95,22 @@ for (
 
 test {
   my $c = shift;
+  "\x91" =~ /(.)/;
+  my $result = decode_web_utf8 $1;
+  is $result, "\x{FFFD}";
+  done $c;
+} n => 1, name => 'decode_web_utf8 regexp';
+
+test {
+  my $c = shift;
+  "\x91" =~ /(.)/;
+  my $result = decode_web_utf8_no_bom $1;
+  is $result, "\x{FFFD}";
+  done $c;
+} n => 1, name => 'decode_web_utf8_no_bom regexp';
+
+test {
+  my $c = shift;
   is encode_web_charset ('shift_jis', undef), '';
   done $c;
 } n => 1;

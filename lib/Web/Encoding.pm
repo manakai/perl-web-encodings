@@ -28,34 +28,26 @@ sub import ($;@) {
 
 sub encode_web_utf8 ($) {
   if (not defined $_[0]) {
-    carp "Use of uninitialized value an argument";
+    carp "Use of uninitialized value in subroutine entry";
     return '';
-  } elsif ($_[0] =~ /[^\x00-\x7F]/) {
+  } else {
     my $x = $_[0];
-    if (utf8::is_utf8 $_[0]) {
+    if (utf8::is_utf8 $x) {
       $x =~ s/[^\x00-\x{D7FF}\x{E000}-\x{10FFFF}]/\x{FFFD}/g;
     } else {
       utf8::upgrade $x;
     }
     utf8::encode $x;
     return $x;
-  } else {
-    if (utf8::is_utf8 $_[0]) {
-      my $x = $_[0];
-      utf8::encode $x;
-      return $x;
-    } else {
-      return $_[0];
-    }
   }
 } # encode_web_utf8
 
 sub decode_web_utf8 ($) {
   if (not defined $_[0]) {
-    carp "Use of uninitialized value an argument";
+    carp "Use of uninitialized value in subroutine entry";
     return '';
-  } elsif ($_[0] =~ /[^\x00-\x7F]/) {
-    my $x = $_[0] =~ /\A\xEF\xBB\xBF/ ? substr $_[0], 3 : $_[0];
+  } else {
+    my $x = substr ($_[0], 0, 3) eq "\xEF\xBB\xBF" ? substr $_[0], 3 : $_[0];
     $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
        \xE0               [\xA0-\xBF][\x80-\xBF]|
@@ -74,8 +66,6 @@ sub decode_web_utf8 ($) {
     }gex;
     utf8::decode ($x);
     return $x;
-  } else {
-    return $_[0];
   }
 } # decode_web_utf8
 
@@ -83,7 +73,7 @@ sub decode_web_utf8_no_bom ($) {
   if (not defined $_[0]) {
     carp "Use of uninitialized value an argument";
     return '';
-  } elsif ($_[0] =~ /[^\x00-\x7F]/) {
+  } else {
     my $x = $_[0];
     $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
@@ -103,8 +93,6 @@ sub decode_web_utf8_no_bom ($) {
     }gex;
     utf8::decode ($x);
     return $x;
-  } else {
-    return $_[0];
   }
 } # decode_web_utf8_no_bom
 
