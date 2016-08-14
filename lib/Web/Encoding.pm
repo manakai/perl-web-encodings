@@ -4,7 +4,6 @@ use warnings;
 no warnings 'utf8';
 our $VERSION = '6.0';
 use Carp;
-use Encode;
 use Web::Encoding::_Defs;
 
 our @EXPORT = qw(
@@ -113,6 +112,7 @@ sub encode_web_charset ($$) {
   if ($_[0] eq 'utf-8') {
     return encode_web_utf8 $_[1];
   } else {
+    require Encode;
     return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
   }
 } # encode_web_charset
@@ -121,6 +121,7 @@ sub decode_web_charset ($$) {
   if ($_[0] eq 'utf-8') {
     return decode_web_utf8 $_[1];
   } else {
+    require Encode;
     return Encode::decode ($_[0], $_[1]); # XXX
   }
 } # decode_web_charset
