@@ -27,22 +27,37 @@ for (
   ["\x80", "\x{FFFD}"],
   ["\xA0", "\x{FFFD}"],
   ["\x80ab", "\x{FFFD}ab"],
-  ["\xE4\xB8\x80", "\x{4e00}"],
+  ["\xC0\x80", "\x{FFFD}\x{FFFD}"],
+  ["\xE0\x9F", "\x{FFFD}\x{FFFD}"],
+  ["\xE0\x9F\xA0", "\x{FFFD}\x{FFFD}\x{FFFD}"],
+  ["\xED\x9F", "\x{FFFD}\x{FFFD}"],
+  ["\xED\xA0", "\x{FFFD}\x{FFFD}"],
+  ["\xED\x9F\x9F", "\x{D7DF}"],
   ["\xED\x9F\xBF", "\x{D7FF}"],
   ["\xED\x9F\xC0", "\x{FFFD}\x{FFFD}\x{FFFD}"],
+  ["\xED\xA0\x80", "\x{FFFD}\x{FFFD}\x{FFFD}"],
+  ["\xEF\xBB\xBF\xED\xA0\x80", "\x{FFFD}\x{FFFD}\x{FFFD}", "\x{FEFF}\x{FFFD}\x{FFFD}\x{FFFD}"],
+  ["\xED\xA0\x9F", "\x{FFFD}\x{FFFD}\x{FFFD}"],
+  ["\xE4\xB8\x80", "\x{4e00}"],
   ["a\xc1\x80b", "a\x{FFFD}\x{FFFD}b"],
+  ["\xEF", "\x{FFFD}"],
+  ["\xEF\xBB", "\x{FFFD}\x{FFFD}"],
   ["\xEF\xBB\xBF", '', "\x{FEFF}"],
   ["\xEF\xBB\xBFabc", 'abc', "\x{FEFF}abc"],
   ["\xEF\xBB\xBF\xEF\xBB\xBF", "\x{FEFF}", "\x{FEFF}\x{FEFF}"],
+  ["\xF4\x8F\xBF\xBD", "\x{10FFFD}"],
+  ["\xF4\x8F\xBF\xBE", "\x{10FFFE}"],
+  ["\xF4\x8F\xBF\xBF", "\x{10FFFF}"],
+  ["\xF4\x90\x80\x80", "\x{FFFD}\x{FFFD}\x{FFFD}\x{FFFD}"],
 ) {
   my ($input, $output, $output2) = @$_;
   $output2 = $output if not defined $output2;
   test {
     my $c = shift;
-    is decode_web_utf8 $input, $output;
-    is decode_web_utf8_no_bom $input, $output2;
+    is decode_web_utf8 $input, $output, 'with BOM';
+    is decode_web_utf8_no_bom $input, $output2, 'w/o BOM';
     done $c;
-  } n => 2, name => 'decode_web_utf8';
+  } n => 2, name => ['decode_web_utf8', $input];
 }
 
 test {

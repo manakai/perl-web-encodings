@@ -33,17 +33,60 @@ sub encode_web_utf8 ($) {
 
 sub decode_web_utf8 ($) {
   if (not defined $_[0]) {
-    # XXX warn
+    carp "Use of uninitialized value an argument";
     return '';
-  } elsif ($_[0] =~ /\A\xEF\xBB\xBF/) {
-    return Encode::decode ('utf-8', substr $_[0], 3); # XXX error-handling
+  } elsif ($_[0] =~ /[^\x00-\x7F]/) {
+    my $x = $_[0] =~ /\A\xEF\xBB\xBF/ ? substr $_[0], 3 : $_[0];
+    $x =~ s{
+      ([\xC2-\xDF]        [\x80-\xBF]|
+       \xE0               [\xA0-\xBF][\x80-\xBF]|
+       [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
+       \xED               [\x80-\x9F][\x80-\xBF]|
+       \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
+       [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
+       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
+      [^\x00-\x7F]
+    }{
+      if (defined $1) {
+        $1;
+      } else {
+        qq{\xEF\xBF\xBD};
+      }
+    }gex;
+    utf8::decode ($x);
+    return $x;
   } else {
-    return Encode::decode ('utf-8', $_[0]); # XXX error-handling
+    return $_[0];
   }
 } # decode_web_utf8
 
 sub decode_web_utf8_no_bom ($) {
-  return Encode::decode ('utf-8', defined $_[0] ? $_[0] : ''); # XXX error-handling
+  if (not defined $_[0]) {
+    carp "Use of uninitialized value an argument";
+    return '';
+  } elsif ($_[0] =~ /[^\x00-\x7F]/) {
+    my $x = $_[0];
+    $x =~ s{
+      ([\xC2-\xDF]        [\x80-\xBF]|
+       \xE0               [\xA0-\xBF][\x80-\xBF]|
+       [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
+       \xED               [\x80-\x9F][\x80-\xBF]|
+       \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
+       [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
+       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
+      [^\x00-\x7F]
+    }{
+      if (defined $1) {
+        $1;
+      } else {
+        qq{\xEF\xBF\xBD};
+      }
+    }gex;
+    utf8::decode ($x);
+    return $x;
+  } else {
+    return $_[0];
+  }
 } # decode_web_utf8_no_bom
 
 sub encode_web_charset ($$) {
