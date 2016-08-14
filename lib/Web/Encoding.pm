@@ -1,7 +1,7 @@
 package Web::Encoding;
 use strict;
 use warnings;
-our $VERSION = '5.0';
+our $VERSION = '6.0';
 use Carp;
 use Encode;
 use Web::Encoding::_Defs;
@@ -27,8 +27,27 @@ sub import ($;@) {
 } # import
 
 sub encode_web_utf8 ($) {
-  return Encode::encode ('utf-8', defined $_[0] ? $_[0] : '');
-  # XXX surrogates, > U+10FFFF
+  if (not defined $_[0]) {
+    carp "Use of uninitialized value an argument";
+    return '';
+  } elsif ($_[0] =~ /[^\x00-\x7F]/) {
+    my $x = $_[0];
+    if (utf8::is_utf8 $_[0]) {
+      $x =~ s/[^\x00-\x{D7FF}\x{E000}-\x{10FFFF}]/\x{FFFD}/g;
+    } else {
+      utf8::upgrade $x;
+    }
+    utf8::encode $x;
+    return $x;
+  } else {
+    if (utf8::is_utf8 $_[0]) {
+      my $x = $_[0];
+      utf8::encode $x;
+      return $x;
+    } else {
+      return $_[0];
+    }
+  }
 } # encode_web_utf8
 
 sub decode_web_utf8 ($) {
@@ -90,17 +109,25 @@ sub decode_web_utf8_no_bom ($) {
 } # decode_web_utf8_no_bom
 
 sub encode_web_charset ($$) {
-  return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
+  if ($_[0] eq 'utf-8') {
+    return encode_web_utf8 $_[1];
+  } else {
+    return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
+  }
 } # encode_web_charset
 
 sub decode_web_charset ($$) {
-  return Encode::decode ($_[0], $_[1]); # XXX
+  if ($_[0] eq 'utf-8') {
+    return decode_web_utf8 $_[1];
+  } else {
+    return Encode::decode ($_[0], $_[1]); # XXX
+  }
 } # decode_web_charset
 
 push @EXPORT, qw(encoding_label_to_name);
 sub encoding_label_to_name ($) {
   ## Get an encoding
-  ## <http://encoding.spec.whatwg.org/#concept-encoding-get>.
+  ## <https://encoding.spec.whatwg.org/#concept-encoding-get>.
   my $label = $_[0] || '';
   $label =~ s/\A[\x09\x0A\x0C\x0D\x20]+//; ## ASCII whitespace
   $label =~ s/[\x09\x0A\x0C\x0D\x20]+\z//; ## ASCII whitespace
