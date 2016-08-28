@@ -1,7 +1,8 @@
-all: lib/Web/Encoding/_Defs.pm
+all: build
 
 clean: clean-json-ps
-	rm -fr local/encodings.json
+	rm -fr local/encodings.json lib/Web/Encoding/unicore/*.pl
+	rm -fr local/CompositionExclusions.txt
 
 updatenightly: update-submodules dataautoupdate-commit
 
@@ -11,7 +12,7 @@ update-submodules: local/bin/pmbp.pl
 	perl local/bin/pmbp.pl --update
 	git add config
 
-dataautoupdate-commit: clean all
+dataautoupdate-commit: clean build
 	git add lib
 
 ## ------ Setup ------
@@ -44,6 +45,11 @@ local/perl-latest/pm/lib/perl5/JSON/PS.pm:
 
 ## ------ Build ------
 
+build: lib/Web/Encoding/_Defs.pm \
+    lib/Web/Encoding/unicore/CombiningClass.pl \
+    lib/Web/Encoding/unicore/Decomposition.pl \
+    lib/Web/Encoding/unicore/CompositionExclusions.pl
+
 local/encodings.json:
 	mkdir -p local
 	$(WGET) -O $@ https://raw.github.com/manakai/data-web-defs/master/data/encodings.json
@@ -57,6 +63,20 @@ lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 	  $$pm =~ s/VAR1/Web::Encoding::_Defs/; #\
 	  print "$$pm\n"; #\
 	' < local/encodings.json > $@
+	perl -c $@
+
+lib/Web/Encoding/unicore/CombiningClass.pl:
+	$(WGET) -O $@ https://raw.githubusercontent.com/manakai/data-chars/master/data/perl/unicore-CombiningClass.pl
+lib/Web/Encoding/unicore/Decomposition.pl:
+	$(WGET) -O $@ https://raw.githubusercontent.com/manakai/data-chars/master/data/perl/unicore-Decomposition.pl
+local/CompositionExclusions.txt:
+	mkdir -p local
+	$(WGET) -O $@ "https://chars.suikawiki.org/set/textlist?item=%24unicode%3ACompositionExclusions"
+lib/Web/Encoding/unicore/CompositionExclusions.pl: \
+    local/CompositionExclusions.txt
+	echo '[qw(' > $@
+	cat local/CompositionExclusions.txt >> $@
+	echo ')]' >> $@
 	perl -c $@
 
 ## ------ Tests ------

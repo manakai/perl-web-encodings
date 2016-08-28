@@ -42,22 +42,12 @@ our %Single;	# $codepoint => 1          : singletons
 our %NonStD;	# $codepoint => 1          : non-starter decompositions
 our %Comp2nd;	# $codepoint => 1          : may be composed with a prev char.
 
-# from core Unicode database
 our $Combin = do "Web/Encoding/unicore/CombiningClass.pl"
     || croak "$PACKAGE: Web/Encoding/unicore/CombiningClass.pl not found (@INC)";
 our $Decomp = do "Web/Encoding/unicore/Decomposition.pl"
     || croak "$PACKAGE: Web/Encoding/unicore/Decomposition.pl not found (@INC)";
-
-# CompositionExclusions.txt since Unicode 3.2.0
-our @CompEx = qw(
-    0958 0959 095A 095B 095C 095D 095E 095F 09DC 09DD 09DF 0A33 0A36
-    0A59 0A5A 0A5B 0A5E 0B5C 0B5D 0F43 0F4D 0F52 0F57 0F5C 0F69 0F76
-    0F78 0F93 0F9D 0FA2 0FA7 0FAC 0FB9 FB1D FB1F FB2A FB2B FB2C FB2D
-    FB2E FB2F FB30 FB31 FB32 FB33 FB34 FB35 FB36 FB38 FB39 FB3A FB3B
-    FB3C FB3E FB40 FB41 FB43 FB44 FB46 FB47 FB48 FB49 FB4A FB4B FB4C
-    FB4D FB4E 2ADC 1D15E 1D15F 1D160 1D161 1D162 1D163 1D164 1D1BB
-    1D1BC 1D1BD 1D1BE 1D1BF 1D1C0
-);
+our $CompEx = do "Web/Encoding/unicore/CompositionExclusions.pl"
+    || croak "$PACKAGE: Web/Encoding/unicore/CompositionExclusions.pl not found (@INC)";
 
 # definition of Hangul constants
 use constant SBase  => 0xAC00;
@@ -117,7 +107,7 @@ while ($Decomp =~ /(.+)/g) {
     }
 }
 
-for my $s (@CompEx) {
+for my $s (@$CompEx) {
     my $u = hex $s;
     next if !$Canon{$u}; # not assigned
     next if $u == 0xFB1D && !$Canon{0x1D15E}; # 3.0.1 before Corrigendum #2
@@ -590,39 +580,13 @@ sub check($$)
 1;
 __END__
 
-=head1 NAME
-
-Unicode::Normalize - Unicode Normalization Forms
-
-=head1 SYNOPSIS
-
-(1) using function names exported by default:
-
-  use Unicode::Normalize;
-
-  $NFD_string  = NFD($string);  # Normalization Form D
-  $NFC_string  = NFC($string);  # Normalization Form C
-  $NFKD_string = NFKD($string); # Normalization Form KD
-  $NFKC_string = NFKC($string); # Normalization Form KC
-
-(2) using function names exported on request:
-
-  use Unicode::Normalize 'normalize';
-
-  $NFD_string  = normalize('D',  $string);  # Normalization Form D
-  $NFC_string  = normalize('C',  $string);  # Normalization Form C
-  $NFKD_string = normalize('KD', $string);  # Normalization Form KD
-  $NFKC_string = normalize('KC', $string);  # Normalization Form KC
-
 =head1 DESCRIPTION
 
-Parameters:
-
-C<$string> is used as a string under character semantics (see F<perlunicode>).
+Parameters:-C<$string> is used as a string under character semantics (see F<perlunicode>).
 
 C<$code_point> should be an unsigned integer representing a Unicode code point.
 
-Note: Do not use a floating point nor a negative sign in C<$code_point>.
+Note:
 
 =head2 Normalization Forms
 
@@ -1038,12 +1002,21 @@ lower than 4.1.0.
 
 =head1 AUTHOR
 
-SADAHIRO Tomoyuki <SADAHIRO@cpan.org>
+Wakaba <wakaba@suikawiki.org>.
+
+=head1 ACKNOWLEDGEMENTS
+
+This module derived from L<Unicode::Normalize> by SADAHIRO Tomoyuki
+<SADAHIRO@cpan.org>.
+
+=head1 LICENSE
 
 Copyright(C) 2001-2012, SADAHIRO Tomoyuki. Japan. All rights reserved.
 
-This module is free software; you can redistribute it
-and/or modify it under the same terms as Perl itself.
+Copyright 2016 Wakaba <wakaba@suikawiki.org>.
+
+This module is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
