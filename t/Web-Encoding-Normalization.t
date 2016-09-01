@@ -28,12 +28,16 @@ for (
   $nfkd = $nfd if not defined $nfkd;
   test {
     my $c = shift;
-    is to_nfc $input, $nfc, 'NFC';
-    is to_nfd $input, $nfd, 'NFD';
+    my $nfc = to_nfc $input;
+    is $nfc, $nfc, 'NFC';
+    ok is_nfc $nfc;
+    my $nfd = to_nfd $input;
+    is $nfd, $nfd, 'NFD';
+    ok $nfc eq $nfd || ! is_nfc $nfd;
     is to_nfkc $input, $nfkc, 'NFKC';
     is to_nfkd $input, $nfkd, 'NFKD';
     done $c;
-  } n => 4, name => $input;
+  } n => 6, name => $input;
 }
 
 run_tests;

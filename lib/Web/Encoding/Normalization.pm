@@ -16,12 +16,18 @@ sub import ($;@) {
   }
 } # import
 
-our @EXPORT = qw(to_nfc to_nfd to_nfkc to_nfkd);
+our @EXPORT = qw(to_nfc to_nfd to_nfkc to_nfkd is_nfc);
 
 sub to_nfc ($) { return Web::Encoding::_UnicodeNormalize::NFC ($_[0]) }
 sub to_nfd ($) { return Web::Encoding::_UnicodeNormalize::NFD ($_[0]) }
 sub to_nfkc ($) { return Web::Encoding::_UnicodeNormalize::NFKC ($_[0]) }
 sub to_nfkd ($) { return Web::Encoding::_UnicodeNormalize::NFKD ($_[0]) }
+
+sub is_nfc ($) {
+  my $result = Web::Encoding::_UnicodeNormalize::checkNFC ($_[0]);
+  return $result if defined $result;
+  return $_[0] eq to_nfc $_[0];
+} # is_nfc
 
 1;
 
