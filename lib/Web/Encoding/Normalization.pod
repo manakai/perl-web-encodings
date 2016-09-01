@@ -41,9 +41,11 @@ return the result.
 Apply the NFKD (Normalization Form KD) operation to the input and
 return the result.
 
-=back
+=item $boolean = is_nfc $string
 
-The module supports Unicode 6.0.0.
+Returns whether the argument is a NFC-normalized string or not.
+
+=back
 
 =head1 SPECIFICATIONS
 
@@ -51,6 +53,12 @@ The Unicode Standard.
 
 UAX #15: Unicode Normalization Forms
 <http://www.unicode.org/reports/tr15/>.
+
+This module supports the latest version of the Unicode Standard at the
+time of the build of the module files.  You should always use the
+latest version of the module.  See
+<https://github.com/manakai/perl-web-encodings> to get up-to-date
+version of the module.
 
 =head1 DEPENDENCY
 
