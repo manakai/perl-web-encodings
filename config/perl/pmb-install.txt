@@ -4,7 +4,7 @@ Digest::SHA~5.96
 Encode~2.86
 Filter::Util::Call~1.55
 Path::Tiny~0.096
-Scalar::Util~1.45
+Scalar::Util~1.46
 Term::ANSIColor~4.05
-Test::More~1.302059
+Test::Builder~1.302059
 Time::HiRes~1.9740
