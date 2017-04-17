@@ -6,5 +6,5 @@ Filter::Util::Call~1.57
 Path::Tiny~0.104
 Scalar::Util~1.47
 Term::ANSIColor~4.06
-Test::Builder~1.302083
-Time::HiRes~1.9741
+Test::More~1.302083
+Time::HiRes~1.9742
