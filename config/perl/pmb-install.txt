@@ -1,10 +1,10 @@
 AnyEvent~7.13
 Carp~1.38
 Digest::SHA~5.96
-Encode~2.88
+Encode~2.89
 Filter::Util::Call~1.57
 Path::Tiny~0.104
 Scalar::Util~1.47
 Term::ANSIColor~4.06
-Test::Builder~1.302083
+Test::More~1.302083
 Time::HiRes~1.9742
