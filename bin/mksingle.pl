@@ -8,6 +8,8 @@ my $json_path = path (__FILE__)->parent->parent->child
     ('local/encoding-indexes.json');
 my $json = json_bytes2perl $json_path->slurp;
 
+$json->{'x-user-defined'} = [map { $_ + 0xF780 - 0x80 } 0x80..0xFF];
+
 my $Encoder = {};
 my $Decoder = {};
 

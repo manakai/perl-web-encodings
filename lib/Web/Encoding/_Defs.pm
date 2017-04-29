@@ -688,7 +688,8 @@ $Web::Encoding::_Defs = {
                                                                "x-user-defined" => {}
                                                              },
                                                  "name" => "x-user-defined",
-                                                 "output" => "x-user-defined"
+                                                 "output" => "x-user-defined",
+                                                 "single_byte" => 1
                                                }
                          },
           "html_decl_map" => {

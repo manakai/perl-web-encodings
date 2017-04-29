@@ -62,6 +62,7 @@ lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 	$(PERL) -MJSON::PS -MData::Dumper -e ' #\
 	  local $$/ = undef; #\
 	  $$data = json_bytes2perl (scalar <>); #\
+	  $$data->{encodings}->{"x-user-defined"}->{single_byte} = 1; #\
 	  $$Data::Dumper::Sortkeys = 1; #\
 	  $$Data::Dumper::Useqq = 1; #\
 	  $$pm = Dumper $$data; #\
@@ -92,7 +93,7 @@ PROVE = ./prove
 
 test: test-deps test-main
 
-test-deps: deps
+test-deps: deps local/encoding-indexes.json
 
 test-main:
 	$(PROVE) t/*.t t/normalize/*.t

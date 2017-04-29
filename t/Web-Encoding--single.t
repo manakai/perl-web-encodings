@@ -15,6 +15,7 @@ sub u ($) {
 
 for my $test (
   ["windows-1252", "\xFE\x80\xCCabc\x90x", "\xFE\x{20AC}\xCCabc\x90x"],
+  ["x-user-defined", "y\x80\x81", "y\x{F780}\x{F781}"],
 ) {
   test {
     my $c = shift;
@@ -40,6 +41,7 @@ for my $test (
   ["windows-1252", "\x{110000}", "&#1114112;"],
   ["windows-1252", u "", ""],
   ["windows-1252", u "bageaegagea", "bageaegagea"],
+  ["x-user-defined", "\x{F780}x\x{F781}", "\x80x\x81"],
 ) {
   test {
     my $c = shift;
@@ -53,6 +55,8 @@ for my $test (
 {
   my $json_path = path (__FILE__)->parent->parent->child ('local/encoding-indexes.json');
   my $json = json_bytes2perl $json_path->slurp;
+  $json->{'x-user-defined'} = [map { $_ + 0xF780 - 0x80 } 0x80..0xFF];
+
   my $input = join '', map { pack 'C', $_ } 0x00..0xFF;
   for my $name (keys %{$json}) {
     my $def = $json->{$name};
