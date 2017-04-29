@@ -14,6 +14,7 @@ sub u ($) {
 } # u
 
 for my $test (
+  ["windows-1252", undef, ''],
   ["windows-1252", "\xFE\x80\xCCabc\x90x", "\xFE\x{20AC}\xCCabc\x90x"],
   ["x-user-defined", "y\x80\x81", "y\x{F780}\x{F781}"],
   ["iso-8859-8", "\xFE\x80\xCCabc\x90x", "\x{200F}\x80\x{FFFD}abc\x90x"],
@@ -29,6 +30,7 @@ for my $test (
 
 for my $test (
   ["windows-1252", "", ""],
+  ["windows-1252", undef, ""],
   ["windows-1252", "0", "0"],
   ["windows-1252", "\x00", "\x00"],
   ["windows-1252", "\xFE\x{20AC}\xCCabc\x90x", "\xFE\x80\xCCabc\x90x"],

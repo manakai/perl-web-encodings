@@ -46,6 +46,8 @@ sub decode_web_utf8 ($) {
   if (not defined $_[0]) {
     carp "Use of uninitialized value in subroutine entry";
     return '';
+  } elsif (utf8::is_utf8 $_[0]) {
+    croak "Cannot decode string with wide characters";
   } else {
     my $x = substr ($_[0], 0, 3) eq "\xEF\xBB\xBF" ? substr $_[0], 3 : $_[0];
     $x =~ s{
@@ -73,6 +75,8 @@ sub decode_web_utf8_no_bom ($) {
   if (not defined $_[0]) {
     carp "Use of uninitialized value an argument";
     return '';
+  } elsif (utf8::is_utf8 $_[0]) {
+    croak "Cannot decode string with wide characters";
   } else {
     my $x = $_[0];
     $x =~ s{
@@ -104,6 +108,10 @@ sub encode_web_charset ($$) {
   if ($_[0] eq 'utf-8') {
     return encode_web_utf8 $_[1];
   } elsif (_is_single $_[0]) {
+    if (not defined $_[1]) {
+      carp "Use of uninitialized value an argument";
+      return '';
+    }
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
     my $Map = $Web::Encoding::_Single::Encoder->{$_[0]};
@@ -122,6 +130,12 @@ sub decode_web_charset ($$) {
   if ($_[0] eq 'utf-8') {
     return decode_web_utf8 $_[1];
   } elsif (_is_single $_[0]) {
+    if (not defined $_[1]) {
+      carp "Use of uninitialized value an argument";
+      return '';
+    } elsif (utf8::is_utf8 $_[1]) {
+      croak "Cannot decode string with wide characters";
+    }
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
     my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]});

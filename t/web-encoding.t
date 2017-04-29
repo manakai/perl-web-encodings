@@ -111,9 +111,57 @@ test {
 
 test {
   my $c = shift;
+  my $input = u "abc";
+  eval { decode_web_utf8 $input };
+  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+  done $c;
+} n => 1, name => 'decode_web_utf8 utf8 flagged string';
+
+test {
+  my $c = shift;
+  my $input = "\x{5333}abc";
+  eval { decode_web_utf8 $input };
+  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+  done $c;
+} n => 1, name => 'decode_web_utf8 utf8 flagged string';
+
+test {
+  my $c = shift;
+  my $input = u "abc";
+  eval { decode_web_utf8_no_bom $input };
+  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+  done $c;
+} n => 1, name => 'decode_web_utf8_no_bom utf8 flagged string';
+
+test {
+  my $c = shift;
+  my $input = "\x{5333}abc";
+  eval { decode_web_utf8_no_bom $input };
+  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+  done $c;
+} n => 1, name => 'decode_web_utf8_no_bom utf8 flagged string';
+
+test {
+  my $c = shift;
   is encode_web_charset ('shift_jis', undef), '';
   done $c;
 } n => 1;
+
+test {
+  my $c = shift;
+  my $input = u "abc";
+  eval { decode_web_charset "windows-1252", $input };
+  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+  done $c;
+} n => 1, name => 'decode_web_charset utf8 flagged string';
+
+test {
+  my $c = shift;
+  my $input = "\x{5333}abc";
+  eval { decode_web_charset "windows-1252", $input };
+  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+  done $c;
+} n => 1, name => 'decode_web_charset utf8 flagged string';
 
 for my $test (
   [undef, undef],
