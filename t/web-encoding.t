@@ -141,27 +141,74 @@ test {
   done $c;
 } n => 1, name => 'decode_web_utf8_no_bom utf8 flagged string';
 
-test {
-  my $c = shift;
-  is encode_web_charset ('shift_jis', undef), '';
-  done $c;
-} n => 1;
+for my $name (qw(utf-8 shift_jis windows-1252)) {
+  test {
+    my $c = shift;
+    is encode_web_charset ($name, undef), '';
+    done $c;
+  } n => 1, name => 'encode_web_charset undef';
+}
 
-test {
-  my $c = shift;
-  my $input = u "abc";
-  eval { decode_web_charset "windows-1252", $input };
-  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
-  done $c;
-} n => 1, name => 'decode_web_charset utf8 flagged string';
+for my $name (qw(utf-8 windows-1252 replacement)) {
+  test {
+    my $c = shift;
+    is decode_web_charset ($name, undef), '';
+    done $c;
+  } n => 1, name => 'decode_web_charset undef';
 
-test {
-  my $c = shift;
-  my $input = "\x{5333}abc";
-  eval { decode_web_charset "windows-1252", $input };
-  like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
-  done $c;
-} n => 1, name => 'decode_web_charset utf8 flagged string';
+  test {
+    my $c = shift;
+    is decode_web_charset ($name, ''), '';
+    done $c;
+  } n => 1, name => 'decode_web_charset empty';
+
+  test {
+    my $c = shift;
+    my $input = u "abc";
+    eval { decode_web_charset $name, $input };
+    like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+    done $c;
+  } n => 1, name => ['decode_web_charset utf8 flagged string', $name];
+
+  test {
+    my $c = shift;
+    my $input = "\x{5333}abc";
+    eval { decode_web_charset $name, $input };
+    like $@, qr{^Cannot decode string with wide characters at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+    done $c;
+  } n => 1, name => ['decode_web_charset utf8 flagged string', $name];
+}
+
+for my $input (
+  '0',
+  'a',
+  'trwatwaw',
+  "\x80\xFE00\xABwa41!!",
+) {
+  test {
+    my $c = shift;
+    my $result = decode_web_charset 'replacement', $input;
+    is $result, "\x{FFFD}";
+    done $c;
+  } n => 1, name => 'decode_web_charset replacement';
+}
+
+for my $input (
+  undef,
+  '',
+  '0',
+  'x',
+  (u 'x'),
+  "\x{5533}",
+  "\x{110000}",
+) {
+  test {
+    my $c = shift;
+    eval { encode_web_charset 'replacement', $input };
+    like $@, qr{^The replacement encoding has no encoder at \Q@{[__FILE__]}\E line @{[__LINE__-1]}\.};
+    done $c;
+  } n => 1, name => 'encode_web_charset replacement';
+}
 
 for my $test (
   [undef, undef],
@@ -283,7 +330,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2011-2016 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

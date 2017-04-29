@@ -185,9 +185,10 @@ windows-1257
 windows-1258
 x-mac-cyrillic
 x-user-defined
+replacement
 
 This module does not support GBK, gb18030, Big5, EUC-JP, ISO-2022-JP,
-Shift_JIS, EUC-KR, UTF-16BE, UTF-16LE, and replacement yet.
+Shift_JIS, EUC-KR, UTF-16BE, and UTF-16LE yet.
 
 =head1 SPECIFICATIONS
 

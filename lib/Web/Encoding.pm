@@ -120,6 +120,8 @@ sub encode_web_charset ($$) {
     }ge;
     utf8::downgrade $s if utf8::is_utf8 $s;
     return $s;
+  } elsif ($_[0] eq 'replacement') {
+    croak "The replacement encoding has no encoder";
   } else {
     require Encode;
     return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
@@ -143,6 +145,17 @@ sub decode_web_charset ($$) {
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
     return $s;
+  } elsif ($_[0] eq 'replacement') {
+    if (not defined $_[1]) {
+      carp "Use of uninitialized value an argument";
+      return '';
+    } elsif (utf8::is_utf8 $_[1]) {
+      croak "Cannot decode string with wide characters";
+    } elsif (length $_[1]) {
+      return "\x{FFFD}";
+    } else {
+      return '';
+    }
   } else {
     require Encode;
     return Encode::decode ($_[0], $_[1]); # XXX
