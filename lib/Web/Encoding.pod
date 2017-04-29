@@ -18,12 +18,12 @@ repository:
 
 =over 4
 
-=item Web::Encoding::UnivCharDet
+=item L<Web::Encoding::UnivCharDet>
 
 The universalchardet (or universal detector) implementation in Perl,
 which can be used to implement HTML parsers.
 
-=item Web::Encoding::Normalization
+=item L<Web::Encoding::Normalization>
 
 Implementation of Unicode's string normalization algorithms, i.e. NFC,
 NFD, NFKC, and NFKD.
@@ -43,8 +43,8 @@ properties of encodings:
 
 =item $key = encoding_label_to_name $label
 
-Find the encoding identified by the specified label.  As does Encoding
-Standard's "get an encoding" steps, this function ignores leading and
+Find the encoding identified by the specified label.  As does the "get
+an encoding" steps [ENCODING], this function ignores leading and
 trailing spaces, and compares labels ASCII case-insensitively.  The
 function returns the encoding key (not a name), if found, or C<undef>.
 
@@ -52,41 +52,41 @@ function returns the encoding key (not a name), if found, or C<undef>.
 
 Replace a encoding key for the purpose of HTML character encoding
 declaration, as in "prescan a byte stream to determine its encoding"
-and "change the encoding" algorithms.  The argument must be an
+and "change the encoding" algorithms [HTML].  The argument must be an
 encoding key (not a name or label).  The function returns an encoding
 key.
 
 =item $key = get_output_encoding_key $key
 
-Return the result of applying the steps to get an output encoding.
-The argument must be an encoding key (not a name or label).  The
-function returns an encoding key.
+Return the result of applying the steps to "get an output encoding"
+[ENCODING].  The argument must be an encoding key (not a name or
+label).  The function returns an encoding key.
 
 =item $name = encoding_name_to_compat_name $key
 
 Replace an encoding key to its official name as used in e.g.
 C<characterSet> or C<inputEncoding> attributes of the C<Document>
-interface.  The argument must be an encoding key (not a name or
-label).  The function returns an encoding name.
+interface [ENCODING] [DOM].  The argument must be an encoding key (not
+a name or label).  The function returns an encoding name.
 
 =item $boolean = is_ascii_compat_encoding_name $key
 
 Return whether the specified encoding is an ASCII-compatible character
-encoding or not.  The argument must be an encoding key (not a name or
-label).
+encoding [ENCODING] or not.  The argument must be an encoding key (not
+a name or label).
 
 =item $boolean = is_encoding_label $label
 
-Return whether the specified label identifies an encoding or not.  It
-compares labels ASCII case-insensitively.  Unlike the
+Return whether the specified label identifies an encoding [ENCODING]
+or not.  It compares labels ASCII case-insensitively.  Unlike the
 C<encoding_label_to_name> function, however, this function does not
 ignore spaces.
 
 =item $key = locale_default_encoding_name $tag
 
 Return the encoding key (not a name or label) of the default character
-encoding for a locale.  If no default is known for the specified
-locale, C<undef> is returned.
+encoding for a locale [HTML].  If no default is known for the
+specified locale, C<undef> is returned.
 
 The argument, which identifies the locale, must be either a BCP 47
 language tag or a string C<*>.  The language tag must be the primary
@@ -99,7 +99,7 @@ locale is not known or the locale has no default is returned.
 
 For the purpose of this module, the B<key> of the encoding is a short
 string uniquly identifying the encoding.  It is a lowercased variant
-of the encoding name defined in the Encoding Standard.
+of the encoding name [ENCODING].
 
 Note that the encoding names in the Encoding Standard are not
 compatible with Perl L<Encode> module's encoding names.
@@ -114,16 +114,14 @@ There are following functions for encoding and decoding:
 
 Encode the character string in UTF-8 and return the encoded bytes.
 
-This function corresponds to the "UTF-8 encode" operation of the
-Encoding Standard.
+This function corresponds to the "UTF-8 encode" operation [ENCODING].
 
 =item $chars = decode_web_utf8 $bytes
 
 Decode the bytes as UTF-8 and return the decoded character string.
 Any bad byte is replaced by U+FFFD characters without failure.
 
-This function corresponds to the "UTF-8 decode" operation of the
-Encoding Standard.
+This function corresponds to the "UTF-8 decode" operation [ENCODING].
 
 =item $chars = decode_web_utf8_no_bom $bytes
 
@@ -132,20 +130,42 @@ decoded character string.  Any bad byte is replaced by U+FFFD
 characters without failure.
 
 This function corresponds to the "UTF-8 decode without BOM" operation
-of the Encoding Standard.
+[ENCODING].
+
+=item $bytes = encode_web_charset $key, $chars
+
+Encode the character string and return the encoded bytes.
+
+The first argument must be the key of the encoding used to encode the
+string.
+
+Any character not representable in the encoding is converted to an
+HTML decimal character reference for the character.
+
+This function corresponds to the "encode" operation [ENCODING].
+
+=item $chars = decode_web_charset $key, $bytes
+
+Decode the bytes and return the decoded character string.
+
+The first argument must be the key of the encoding used to decode the
+bytes.
+
+Any bad byte is replaced by U+FFFD characters without failure.
 
 =back
 
-Unfortunately, no encoding other than UTF-8 from the Encoding Standard
-is supported for now.
+This module does not support GBK, gb18030, Big5, EUC-JP, ISO-2022-JP,
+Shift_JIS, EUC-KR, UTF-16BE, UTF-16LE, x-user-defined, and replacement
+yet.
 
 =head1 SPECIFICATIONS
 
-Encoding Standard <https://encoding.spec.whatwg.org/>.
+[ENCODING] Encoding Standard <https://encoding.spec.whatwg.org/>.
 
-HTML Standard <https://html.spec.whatwg.org/>.
+[HTML] HTML Standard <https://html.spec.whatwg.org/>.
 
-DOM Standard <https://dom.spec.whatwg.org/>.
+[DOM] DOM Standard <https://dom.spec.whatwg.org/>.
 
 =head1 DEPENDENCY
 
@@ -157,7 +177,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2011-2016 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

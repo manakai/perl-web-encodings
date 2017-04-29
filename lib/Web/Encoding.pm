@@ -2,7 +2,7 @@ package Web::Encoding;
 use strict;
 use warnings;
 no warnings 'utf8';
-our $VERSION = '6.0';
+our $VERSION = '7.0';
 use Carp;
 use Web::Encoding::_Defs;
 
@@ -96,9 +96,22 @@ sub decode_web_utf8_no_bom ($) {
   }
 } # decode_web_utf8_no_bom
 
+sub _is_single ($) {
+  return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
+} # _is_single
+
 sub encode_web_charset ($$) {
   if ($_[0] eq 'utf-8') {
     return encode_web_utf8 $_[1];
+  } elsif (_is_single $_[0]) {
+    require Web::Encoding::_Single;
+    my $s = $_[1]; # string copy!
+    my $Map = $Web::Encoding::_Single::Encoder->{$_[0]};
+    $s =~ s{([^\x00-\x7F])}{
+      defined $Map->{$1} ? $Map->{$1} : sprintf '&#%d;', ord $1;
+    }ge;
+    utf8::downgrade $s if utf8::is_utf8 $s;
+    return $s;
   } else {
     require Encode;
     return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
@@ -108,6 +121,14 @@ sub encode_web_charset ($$) {
 sub decode_web_charset ($$) {
   if ($_[0] eq 'utf-8') {
     return decode_web_utf8 $_[1];
+  } elsif (_is_single $_[0]) {
+    require Web::Encoding::_Single;
+    my $s = $_[1]; # string copy!
+    my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]});
+    #$s =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}g;
+    $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
+    #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
+    return $s;
   } else {
     require Encode;
     return Encode::decode ($_[0], $_[1]); # XXX
@@ -188,7 +209,7 @@ sub locale_default_encoding_name ($) {
 
 =head1 LICENSE
 
-Copyright 2011-2016 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

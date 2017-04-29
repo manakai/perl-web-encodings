@@ -48,11 +48,16 @@ local/perl-latest/pm/lib/perl5/JSON/PS.pm:
 build: lib/Web/Encoding/_Defs.pm \
     lib/Web/Encoding/unicore/CombiningClass.pl \
     lib/Web/Encoding/unicore/Decomposition.pl \
-    lib/Web/Encoding/unicore/CompositionExclusions.pl
+    lib/Web/Encoding/unicore/CompositionExclusions.pl \
+    lib/Web/Encoding/_Single.pm
 
 local/encodings.json:
 	mkdir -p local
 	$(WGET) -O $@ https://raw.github.com/manakai/data-web-defs/master/data/encodings.json
+local/encoding-indexes.json:
+	mkdir -p local
+	$(WGET) -O $@ https://raw.githubusercontent.com/manakai/data-web-defs/master/data/encoding-indexes.json
+
 lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 	$(PERL) -MJSON::PS -MData::Dumper -e ' #\
 	  local $$/ = undef; #\
@@ -64,6 +69,8 @@ lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 	  print "$$pm\n"; #\
 	' < local/encodings.json > $@
 	perl -c $@
+lib/Web/Encoding/_Single.pm: bin/mksingle.pl local/encoding-indexes.json json-ps
+	$(PERL) $< > $@
 
 lib/Web/Encoding/unicore/CombiningClass.pl:
 	$(WGET) -O $@ https://raw.githubusercontent.com/manakai/data-chars/master/data/perl/unicore-CombiningClass.pl

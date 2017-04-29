@@ -96,7 +96,8 @@ $Web::Encoding::_Defs = {
                                                        "ibm866" => {}
                                                      },
                                          "name" => "IBM866",
-                                         "output" => "ibm866"
+                                         "output" => "ibm866",
+                                         "single_byte" => 1
                                        },
                            "iso-2022-jp" => {
                                               "ascii_compat" => 1,
@@ -127,7 +128,8 @@ $Web::Encoding::_Defs = {
                                                             "latin6" => {}
                                                           },
                                               "name" => "ISO-8859-10",
-                                              "output" => "iso-8859-10"
+                                              "output" => "iso-8859-10",
+                                              "single_byte" => 1
                                             },
                            "iso-8859-13" => {
                                               "ascii_compat" => 1,
@@ -141,7 +143,8 @@ $Web::Encoding::_Defs = {
                                                             "iso885913" => {}
                                                           },
                                               "name" => "ISO-8859-13",
-                                              "output" => "iso-8859-13"
+                                              "output" => "iso-8859-13",
+                                              "single_byte" => 1
                                             },
                            "iso-8859-14" => {
                                               "ascii_compat" => 1,
@@ -155,7 +158,8 @@ $Web::Encoding::_Defs = {
                                                             "iso885914" => {}
                                                           },
                                               "name" => "ISO-8859-14",
-                                              "output" => "iso-8859-14"
+                                              "output" => "iso-8859-14",
+                                              "single_byte" => 1
                                             },
                            "iso-8859-15" => {
                                               "ascii_compat" => 1,
@@ -172,7 +176,8 @@ $Web::Encoding::_Defs = {
                                                             "l9" => {}
                                                           },
                                               "name" => "ISO-8859-15",
-                                              "output" => "iso-8859-15"
+                                              "output" => "iso-8859-15",
+                                              "single_byte" => 1
                                             },
                            "iso-8859-16" => {
                                               "ascii_compat" => 1,
@@ -184,7 +189,8 @@ $Web::Encoding::_Defs = {
                                                             "iso-8859-16" => {}
                                                           },
                                               "name" => "ISO-8859-16",
-                                              "output" => "iso-8859-16"
+                                              "output" => "iso-8859-16",
+                                              "single_byte" => 1
                                             },
                            "iso-8859-2" => {
                                              "ascii_compat" => 1,
@@ -204,7 +210,8 @@ $Web::Encoding::_Defs = {
                                                            "latin2" => {}
                                                          },
                                              "name" => "ISO-8859-2",
-                                             "output" => "iso-8859-2"
+                                             "output" => "iso-8859-2",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-3" => {
                                              "ascii_compat" => 1,
@@ -224,7 +231,8 @@ $Web::Encoding::_Defs = {
                                                            "latin3" => {}
                                                          },
                                              "name" => "ISO-8859-3",
-                                             "output" => "iso-8859-3"
+                                             "output" => "iso-8859-3",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-4" => {
                                              "ascii_compat" => 1,
@@ -244,7 +252,8 @@ $Web::Encoding::_Defs = {
                                                            "latin4" => {}
                                                          },
                                              "name" => "ISO-8859-4",
-                                             "output" => "iso-8859-4"
+                                             "output" => "iso-8859-4",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-5" => {
                                              "ascii_compat" => 1,
@@ -263,7 +272,8 @@ $Web::Encoding::_Defs = {
                                                            "iso_8859-5:1988" => {}
                                                          },
                                              "name" => "ISO-8859-5",
-                                             "output" => "iso-8859-5"
+                                             "output" => "iso-8859-5",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-6" => {
                                              "ascii_compat" => 1,
@@ -288,7 +298,8 @@ $Web::Encoding::_Defs = {
                                                            "iso_8859-6:1987" => {}
                                                          },
                                              "name" => "ISO-8859-6",
-                                             "output" => "iso-8859-6"
+                                             "output" => "iso-8859-6",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-7" => {
                                              "ascii_compat" => 1,
@@ -311,7 +322,8 @@ $Web::Encoding::_Defs = {
                                                            "sun_eu_greek" => {}
                                                          },
                                              "name" => "ISO-8859-7",
-                                             "output" => "iso-8859-7"
+                                             "output" => "iso-8859-7",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-8" => {
                                              "ascii_compat" => 1,
@@ -333,7 +345,8 @@ $Web::Encoding::_Defs = {
                                                            "visual" => {}
                                                          },
                                              "name" => "ISO-8859-8",
-                                             "output" => "iso-8859-8"
+                                             "output" => "iso-8859-8",
+                                             "single_byte" => 1
                                            },
                            "iso-8859-8-i" => {
                                                "ascii_compat" => 1,
@@ -363,7 +376,8 @@ $Web::Encoding::_Defs = {
                                                        "koi8_r" => {}
                                                      },
                                          "name" => "KOI8-R",
-                                         "output" => "koi8-r"
+                                         "output" => "koi8-r",
+                                         "single_byte" => 1
                                        },
                            "koi8-u" => {
                                          "ascii_compat" => 1,
@@ -376,7 +390,8 @@ $Web::Encoding::_Defs = {
                                                        "koi8-u" => {}
                                                      },
                                          "name" => "KOI8-U",
-                                         "output" => "koi8-u"
+                                         "output" => "koi8-u",
+                                         "single_byte" => 1
                                        },
                            "macintosh" => {
                                             "ascii_compat" => 1,
@@ -391,7 +406,8 @@ $Web::Encoding::_Defs = {
                                                           "x-mac-roman" => {}
                                                         },
                                             "name" => "macintosh",
-                                            "output" => "macintosh"
+                                            "output" => "macintosh",
+                                            "single_byte" => 1
                                           },
                            "replacement" => {
                                               "ascii_compat" => 1,
@@ -484,7 +500,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1250" => {}
                                                            },
                                                "name" => "windows-1250",
-                                               "output" => "windows-1250"
+                                               "output" => "windows-1250",
+                                               "single_byte" => 1
                                              },
                            "windows-1251" => {
                                                "ascii_compat" => 1,
@@ -498,7 +515,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1251" => {}
                                                            },
                                                "name" => "windows-1251",
-                                               "output" => "windows-1251"
+                                               "output" => "windows-1251",
+                                               "single_byte" => 1
                                              },
                            "windows-1252" => {
                                                "ascii_compat" => 1,
@@ -526,7 +544,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1252" => {}
                                                            },
                                                "name" => "windows-1252",
-                                               "output" => "windows-1252"
+                                               "output" => "windows-1252",
+                                               "single_byte" => 1
                                              },
                            "windows-1253" => {
                                                "ascii_compat" => 1,
@@ -540,7 +559,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1253" => {}
                                                            },
                                                "name" => "windows-1253",
-                                               "output" => "windows-1253"
+                                               "output" => "windows-1253",
+                                               "single_byte" => 1
                                              },
                            "windows-1254" => {
                                                "ascii_compat" => 1,
@@ -563,7 +583,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1254" => {}
                                                            },
                                                "name" => "windows-1254",
-                                               "output" => "windows-1254"
+                                               "output" => "windows-1254",
+                                               "single_byte" => 1
                                              },
                            "windows-1255" => {
                                                "ascii_compat" => 1,
@@ -577,7 +598,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1255" => {}
                                                            },
                                                "name" => "windows-1255",
-                                               "output" => "windows-1255"
+                                               "output" => "windows-1255",
+                                               "single_byte" => 1
                                              },
                            "windows-1256" => {
                                                "ascii_compat" => 1,
@@ -591,7 +613,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1256" => {}
                                                            },
                                                "name" => "windows-1256",
-                                               "output" => "windows-1256"
+                                               "output" => "windows-1256",
+                                               "single_byte" => 1
                                              },
                            "windows-1257" => {
                                                "ascii_compat" => 1,
@@ -605,7 +628,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1257" => {}
                                                            },
                                                "name" => "windows-1257",
-                                               "output" => "windows-1257"
+                                               "output" => "windows-1257",
+                                               "single_byte" => 1
                                              },
                            "windows-1258" => {
                                                "ascii_compat" => 1,
@@ -619,7 +643,8 @@ $Web::Encoding::_Defs = {
                                                              "x-cp1258" => {}
                                                            },
                                                "name" => "windows-1258",
-                                               "output" => "windows-1258"
+                                               "output" => "windows-1258",
+                                               "single_byte" => 1
                                              },
                            "windows-874" => {
                                               "ascii_compat" => 1,
@@ -636,7 +661,8 @@ $Web::Encoding::_Defs = {
                                                             "windows-874" => {}
                                                           },
                                               "name" => "windows-874",
-                                              "output" => "windows-874"
+                                              "output" => "windows-874",
+                                              "single_byte" => 1
                                             },
                            "x-mac-cyrillic" => {
                                                  "ascii_compat" => 1,
@@ -649,7 +675,8 @@ $Web::Encoding::_Defs = {
                                                                "x-mac-ukrainian" => {}
                                                              },
                                                  "name" => "x-mac-cyrillic",
-                                                 "output" => "x-mac-cyrillic"
+                                                 "output" => "x-mac-cyrillic",
+                                                 "single_byte" => 1
                                                },
                            "x-user-defined" => {
                                                  "ascii_compat" => 1,
