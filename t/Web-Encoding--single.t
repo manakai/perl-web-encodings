@@ -16,13 +16,15 @@ sub u ($) {
 for my $test (
   ["windows-1252", "\xFE\x80\xCCabc\x90x", "\xFE\x{20AC}\xCCabc\x90x"],
   ["x-user-defined", "y\x80\x81", "y\x{F780}\x{F781}"],
+  ["iso-8859-8", "\xFE\x80\xCCabc\x90x", "\x{200F}\x80\x{FFFD}abc\x90x"],
+  ["iso-8859-8-i", "\xFE\x80\xCCabc\x90x", "\x{200F}\x80\x{FFFD}abc\x90x"],
 ) {
   test {
     my $c = shift;
     my $out = decode_web_charset $test->[0], $test->[1];
     is $out, $test->[2];
     done $c;
-  } n => 1;
+  } n => 1, name => ['decode_web_charset', $test->[0]];
 }
 
 for my $test (
@@ -42,6 +44,8 @@ for my $test (
   ["windows-1252", u "", ""],
   ["windows-1252", u "bageaegagea", "bageaegagea"],
   ["x-user-defined", "\x{F780}x\x{F781}", "\x80x\x81"],
+  ["iso-8859-8", "\x80\xFE\xDD\xAC421\xA0\xFE", "\x80&#254;&#221;\xAC421\xA0&#254;"],
+  ["iso-8859-8-i", "\x80\xFE\xDD\xAC421\xA0\xFE", "\x80&#254;&#221;\xAC421\xA0&#254;"],
 ) {
   test {
     my $c = shift;
