@@ -1,8 +1,7 @@
 all: build
 
 clean: clean-json-ps
-	rm -fr local/encodings.json lib/Web/Encoding/unicore/*.pl
-	rm -fr local/CompositionExclusions.txt
+	rm -fr local/*.json local/*.txt lib/Web/Encoding/unicore/*.pl
 
 updatenightly: update-submodules dataautoupdate-commit
 
