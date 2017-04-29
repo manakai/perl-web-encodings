@@ -141,12 +141,22 @@ test {
   done $c;
 } n => 1, name => 'decode_web_utf8_no_bom utf8 flagged string';
 
-for my $name (qw(utf-8 shift_jis windows-1252)) {
+for my $name (qw(utf-8 shift_jis windows-1252 utf-16be utf-16le)) {
   test {
     my $c = shift;
-    is encode_web_charset ($name, undef), '';
+    my $result = encode_web_charset ($name, undef);
+    is $result, '';
+    ok ! utf8::is_utf8 $result;
     done $c;
-  } n => 1, name => 'encode_web_charset undef';
+  } n => 2, name => 'encode_web_charset undef';
+
+  test {
+    my $c = shift;
+    my $result = encode_web_charset ($name, '');
+    is $result, '';
+    ok ! utf8::is_utf8 $result;
+    done $c;
+  } n => 2, name => 'encode_web_charset empty';
 }
 
 for my $name (qw(utf-8 windows-1252 replacement)) {
@@ -209,6 +219,39 @@ for my $input (
     done $c;
   } n => 1, name => 'encode_web_charset replacement';
 }
+
+test {
+  my $c = shift;
+  my $result = encode_web_charset "utf-16be", "\x{1F4A9}\x{2603}";
+  is $result, "\xD8\x3D\xDC\xA9\x26\x03";
+  ok ! utf8::is_utf8 $result;
+  my $result2 = encode_web_charset "utf-16le", "\x{1F4A9}\x{2603}";
+  is $result2, "\x3D\xD8\xA9\xDC\x03\x26";
+  ok ! utf8::is_utf8 $result2;
+  done $c;
+} n => 4;
+
+test {
+  my $c = shift;
+  my $result = encode_web_charset "utf-16be", "\x{110000}";
+  is $result, "\xFF\xFD";
+  ok ! utf8::is_utf8 $result;
+  my $result2 = encode_web_charset "utf-16le", "\x{110000}";
+  is $result2, "\xFD\xFF";
+  ok ! utf8::is_utf8 $result2;
+  done $c;
+} n => 4;
+
+test {
+  my $c = shift;
+  my $result = encode_web_charset "utf-16be", u "abc";
+  is $result, "\x00a\x00b\x00c";
+  ok ! utf8::is_utf8 $result;
+  my $result2 = encode_web_charset "utf-16le", u "abc";
+  is $result2, "a\x00b\x00c\x00";
+  ok ! utf8::is_utf8 $result2;
+  done $c;
+} n => 4;
 
 for my $test (
   [undef, undef],

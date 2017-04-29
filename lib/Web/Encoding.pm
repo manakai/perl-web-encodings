@@ -100,6 +100,46 @@ sub decode_web_utf8_no_bom ($) {
   }
 } # decode_web_utf8_no_bom
 
+sub _encode_16be ($) {
+  if (not defined $_[0]) {
+    carp "Use of uninitialized value an argument";
+    return '';
+  }
+  my @s;
+  for (split //, $_[0]) {
+    my $c = ord $_;
+    if ($c <= 0xFFFF) {
+      push @s, pack 'n', $c;
+    } elsif ($c <= 0x10FFFF) {
+      $c -= 0x10000;
+      push @s, pack 'nn', ($c >> 10) + 0xD800, ($c & 0x3FF) + 0xDC00;
+    } else {
+      push @s, "\xFF\xFD";
+    }
+  }
+  return join '', @s;
+} # _encode_16be
+
+sub _encode_16le ($) {
+  if (not defined $_[0]) {
+    carp "Use of uninitialized value an argument";
+    return '';
+  }
+  my @s;
+  for (split //, $_[0]) {
+    my $c = ord $_;
+    if ($c <= 0xFFFF) {
+      push @s, pack 'v', $c;
+    } elsif ($c <= 0x10FFFF) {
+      $c -= 0x10000;
+      push @s, pack 'vv', ($c >> 10) + 0xD800, ($c & 0x3FF) + 0xDC00;
+    } else {
+      push @s, "\xFD\xFF";
+    }
+  }
+  return join '', @s;
+} # _encode_16le
+
 sub _is_single ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
 } # _is_single
@@ -120,6 +160,10 @@ sub encode_web_charset ($$) {
     }ge;
     utf8::downgrade $s if utf8::is_utf8 $s;
     return $s;
+  } elsif ($_[0] eq 'utf-16be') {
+    return _encode_16be $_[1];
+  } elsif ($_[0] eq 'utf-16le') {
+    return _encode_16le $_[1];
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {
