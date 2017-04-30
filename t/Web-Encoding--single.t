@@ -15,10 +15,6 @@ sub u ($) {
 
 for my $test (
   ["windows-1252", undef, ''],
-  ["windows-1252", "\xFE\x80\xCCabc\x90x", "\xFE\x{20AC}\xCCabc\x90x"],
-  ["x-user-defined", "y\x80\x81", "y\x{F780}\x{F781}"],
-  ["iso-8859-8", "\xFE\x80\xCCabc\x90x", "\x{200F}\x80\x{FFFD}abc\x90x"],
-  ["iso-8859-8-i", "\xFE\x80\xCCabc\x90x", "\x{200F}\x80\x{FFFD}abc\x90x"],
 ) {
   test {
     my $c = shift;

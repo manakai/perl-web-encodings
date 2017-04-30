@@ -148,6 +148,14 @@ sub _decode_16 ($$$$$) {
   my $offset = $_[1];
   #my $is_last = $_[3];
   #my $endian = $_[4]
+
+  if (not defined $_[2]) {
+    carp "Use of uninitialized value an argument";
+    return '';
+  } elsif (utf8::is_utf8 $_[2]) {
+    croak "Cannot decode string with wide characters";
+  }
+
   my @s;
   my $len = length $_[2];
   if (defined $states->{lead_byte}) {
