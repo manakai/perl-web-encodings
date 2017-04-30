@@ -143,24 +143,24 @@ sub _u16 ($$$) {
   }
 } # _u16
 
-sub _decode_16 ($$$$) {
+sub _decode_16 ($$$$$) {
   my $states = $_[0];
-  #my $is_last = $_[2];
-  #my $endian = $_[3]
+  my $offset = $_[1];
+  #my $is_last = $_[3];
+  #my $endian = $_[4]
   my @s;
-  my $offset = 0;
-  my $len = length $_[1];
+  my $len = length $_[2];
   if (defined $states->{lead_byte}) {
     if ($len) {
       my $lead = unpack 'C', delete $states->{lead_byte};
-      my $sec = unpack 'C', substr $_[1], 0, 1;
-      if ($_[3] eq 'n') {
+      my $sec = unpack 'C', substr $_[2], 0, 1;
+      if ($_[4] eq 'n') {
         _u16 $states, $lead * 0x100 + $sec, \@s;
       } else {
         _u16 $states, $sec * 0x100 + $lead, \@s;
       }
       $offset++;
-    } elsif ($_[2]) {
+    } elsif ($_[3]) { # $is_last
       push @s, "\x{FFFD}"; # or error
     }
   }
@@ -168,16 +168,16 @@ sub _decode_16 ($$$$) {
   my $length = int $Length;
   my $i = 0;
   while ($i < $length) {
-    _u16 $states, (unpack $_[3], substr $_[1], $offset + $i * 2, 2), \@s;
+    _u16 $states, (unpack $_[4], substr $_[2], $offset + $i * 2, 2), \@s;
     $i++;
   }
-  if (defined $states->{lead_surrogate} and $_[2]) {
+  if (defined $states->{lead_surrogate} and $_[3]) { # $is_last
     push @s, "\x{FFFD}"; # or error
   } elsif ($length != $Length) {
-    if ($_[2]) {
+    if ($_[3]) { # $is_last
       push @s, "\x{FFFD}"; # or error
     } else {
-      $states->{lead_byte} = substr $_[1], -1;
+      $states->{lead_byte} = substr $_[2], -1;
     }
   }
   return join '', @s;
@@ -216,9 +216,20 @@ sub encode_web_charset ($$) {
 } # encode_web_charset
 
 sub decode_web_charset ($$) {
-  if ($_[0] eq 'utf-8') {
+  my $key = $_[0];
+  my $offset = 0;
+  if ($_[1] =~ /^\xEF\xBB\xBF/) {
+    $key = 'utf-8';
+  } elsif ($_[1] =~ /^\xFE\xFF/) {
+    $key = 'utf-16be';
+    $offset = 2;
+  } elsif ($_[1] =~ /^\xFF\xFE/) {
+    $key = 'utf-16le';
+    $offset = 2;
+  }
+  if ($key eq 'utf-8') {
     return decode_web_utf8 $_[1];
-  } elsif (_is_single $_[0]) {
+  } elsif (_is_single $key) {
     if (not defined $_[1]) {
       carp "Use of uninitialized value an argument";
       return '';
@@ -232,11 +243,11 @@ sub decode_web_charset ($$) {
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
     return $s;
-  } elsif ($_[0] eq 'utf-16be') {
-    return _decode_16 {}, $_[1], 1, 'n';
-  } elsif ($_[0] eq 'utf-16le') {
-    return _decode_16 {}, $_[1], 1, 'v';
-  } elsif ($_[0] eq 'replacement') {
+  } elsif ($key eq 'utf-16be') {
+    return _decode_16 {}, $offset, $_[1], 1, 'n';
+  } elsif ($key eq 'utf-16le') {
+    return _decode_16 {}, $offset, $_[1], 1, 'v';
+  } elsif ($key eq 'replacement') {
     if (not defined $_[1]) {
       carp "Use of uninitialized value an argument";
       return '';
@@ -249,7 +260,7 @@ sub decode_web_charset ($$) {
     }
   } else {
     require Encode;
-    return Encode::decode ($_[0], $_[1]); # XXX
+    return Encode::decode ($key, $_[1]); # XXX
   }
 } # decode_web_charset
 

@@ -93,6 +93,17 @@ for (
   } n => 3, name => ['decode_web_utf8', $input];
 }
 
+for my $test (
+  ["\xFE\xFF\x12\x34", "\x{1234}"],
+  ["\xFF\xFE\x12\x34", "\x{3412}"],
+) {
+  test {
+    my $c = shift;
+    is decode_web_charset ("utf-8", $test->[0]), $test->[1], 'charset';
+    done $c;
+  } n => 1;
+}
+
 test {
   my $c = shift;
   "\x91" =~ /(.)/;
@@ -259,9 +270,16 @@ for my $test (
   ["\x01\x02\x03", "\x{0102}\x{FFFD}"],
   ["\xFF\xFD", "\x{FFFD}"],
   ["\x06", "\x{FFFD}"],
-  ["\xFE\xFF\x12\x34", "\x{FEFF}\x{1234}"],
-  ["\xFF\xFE\x12\x34", "\x{FFFE}\x{1234}"],
+  ["\xFE\xFF\xFE\xFF\x12\x34", "\x{FEFF}\x{1234}"],
+  ["\xFE\xFF\xFF\xFE\x12\x34", "\x{FFFE}\x{1234}"],
   ["\xD8\x3D\xDC\xA9\x26\x03", "\x{1F4A9}\x{2603}"],
+  ["\xFE", "\x{FFFD}"],
+  ["\xFF", "\x{FFFD}"],
+  ["\xFF\xFE", ""],
+  ["\xFE\xFF", ""],
+  ["\xFE\xFF\x12\x34", "\x{1234}"],
+  ["\xFF\xFE\x12\x34", "\x{3412}"],
+  ["\xEF\xBB\xBF\xE4\xB8\x80", "\x{4e00}"],
 ) {
   test {
     my $c = shift;
@@ -278,9 +296,16 @@ for my $test (
   ["\xFF\xFD", "\x{FDFF}"],
   ["\xFD\xFF", "\x{FFFD}"],
   ["\x06", "\x{FFFD}"],
-  ["\xFF\xFE\x12\x34", "\x{FEFF}\x{3412}"],
-  ["\xFE\xFF\x12\x34", "\x{FFFE}\x{3412}"],
+  ["\xFF\xFE\xFF\xFE\x12\x34", "\x{FEFF}\x{3412}"],
+  ["\xFF\xFE\xFE\xFF\x12\x34", "\x{FFFE}\x{3412}"],
   ["\x3D\xD8\xA9\xDC\x03\x26", "\x{1F4A9}\x{2603}"],
+  ["\xFE", "\x{FFFD}"],
+  ["\xFF", "\x{FFFD}"],
+  ["\xFF\xFE", ""],
+  ["\xFE\xFF", ""],
+  ["\xFE\xFF\x12\x34", "\x{1234}"],
+  ["\xFF\xFE\x12\x34", "\x{3412}"],
+  ["\xEF\xBB\xBF\xE4\xB8\x80", "\x{4e00}"],
 ) {
   test {
     my $c = shift;
@@ -308,15 +333,17 @@ for my $test (
   [["\xDC\xA9\x26\x03"], "\x{FFFD}\x{2603}"],
   [["\xD8\x3D", "\xDC\xA9\xD8\x3D", "\xDC\xA9\x26\x03"], "\x{1F4A9}\x{1F4A9}\x{2603}"],
   [["\xD8\x3D\xD8\x3D\xDC", "\xA9\x26\x03"], "\x{FFFD}\x{1F4A9}\x{2603}"],
+  [["\x12\x34", "\xFE\xFF\x23\x45"], "\x{1234}\x{FEFF}\x{2345}"],
+  [["\xFF\xFE\x12\x34", "\xFE\xFF\x23\x45"], "\x{FFFE}\x{1234}\x{FEFF}\x{2345}"],
 ) {
   test {
     my $c = shift;
     my $result = '';
     my $states = {};
     for (@{$test->[0]}[0..($#{$test->[0]}-1)]) {
-      $result .= Web::Encoding::_decode_16 $states, $_, 0, 'n';
+      $result .= Web::Encoding::_decode_16 $states, 0, $_, 0, 'n';
     }
-    $result .= Web::Encoding::_decode_16 $states, $test->[0]->[-1], 1, 'n';
+    $result .= Web::Encoding::_decode_16 $states, 0, $test->[0]->[-1], 1, 'n';
     is $result, $test->[1];
     done $c;
   } n => 1, name => 'decode_web_charset utf-16be';
