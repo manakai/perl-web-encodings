@@ -113,13 +113,34 @@ sub bytes ($$) {
     return '';
   } elsif (utf8::is_utf8 $_[1]) {
     croak "Cannot decode string with wide characters";
+  } elsif ($_[1] eq '') {
+    return '';
   }
 
+  my $prefix = '';
   my $offset = 0;
-  # XXX need to wait until an entire BOM is read
-  if ($_[0]->{bom_sniffing}) {
-    unless ($_[0]->{states}->{bom_seen}) {
+  if ($_[0]->{bom_sniffing} and not $_[0]->{states}->{bom_seen}) {
+    if (delete $_[0]->{states}->{has_ff}) {
+      if ($_[1] =~ /^\xFE/) {
+        $_[0]->{key} = $key = 'utf-16le';
+        $offset = 1;
+        $_[0]->{states}->{bom_seen} = 1;
+      } else {
+        $prefix = "\xFF";
+        $_[0]->{states}->{bom_seen} = 1;
+      }
+    } elsif (delete $_[0]->{states}->{has_fe}) {
+      if ($_[1] =~ /^\xFF/) {
+        $_[0]->{key} = $key = 'utf-16be';
+        $offset = 1;
+        $_[0]->{states}->{bom_seen} = 1;
+      } else {
+        $prefix = "\xFE";
+        $_[0]->{states}->{bom_seen} = 1;
+      }
+    } else {
       if ($_[1] =~ /^\xEF\xBB\xBF/) {
+        # XXX need to wait until an entire BOM is read
         $_[0]->{key} = $key = 'utf-8';
         $_[0]->{states}->{bom_seen} = 1;
       } elsif ($_[1] =~ /^\xFE\xFF/) {
@@ -130,22 +151,12 @@ sub bytes ($$) {
         $_[0]->{key} = $key = 'utf-16le';
         $offset = 2;
         $_[0]->{states}->{bom_seen} = 1;
-      } elsif ($_[1] eq '' or $_[1] eq "\xFE" or $_[1] eq "\xFF") {
-        #
-      } else {
-        $_[0]->{states}->{bom_seen} = 1;
-      }
-    }
-  } elsif ($_[0]->{ignore_bom}) {
-    unless ($_[0]->{states}->{bom_seen}) {
-      if ($key eq 'utf-16be' and $_[1] =~ /^\xFE\xFF/) {
-        $offset = 2;
-        $_[0]->{states}->{bom_seen} = 1;
-      } elsif ($key eq 'utf-16le' and $_[1] =~ /^\xFF\xFE/) {
-        $offset = 2;
-        $_[0]->{states}->{bom_seen} = 1;
-      } elsif ($_[1] eq '' or $_[1] eq "\xFE" or $_[1] eq "\xFF") {
-        #
+      } elsif ($_[1] eq "\xFE") {
+        $_[0]->{states}->{has_fe} = 1;
+        return '';
+      } elsif ($_[1] eq "\xFF") {
+        $_[0]->{states}->{has_ff} = 1;
+        return '';
       } else {
         $_[0]->{states}->{bom_seen} = 1;
       }
@@ -153,25 +164,71 @@ sub bytes ($$) {
   }
   if ($key eq 'utf-8') {
     # XXX this is not streamable
-    if ($_[0]->{bom_sniffing} or $_[0]->{ignore_bom}) {
+    if (length $prefix) { # \xFF or \xFE
+      return "\x{FFFD}" . Web::Encoding::decode_web_utf8_no_bom $_[1];
+    } elsif ($_[0]->{bom_sniffing} or $_[0]->{ignore_bom}) {
       return Web::Encoding::decode_web_utf8 $_[1];
     } else {
       return Web::Encoding::decode_web_utf8_no_bom $_[1];
     }
   } elsif (Web::Encoding::_is_single $key) {
     require Web::Encoding::_Single;
-    my $s = $_[1]; # string copy!
+    my $s = $prefix . $_[1]; # string copy!
     my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]->{key}});
     #$s =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}g;
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
     return $s;
   } elsif ($key eq 'utf-16be') {
+    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
+      if (delete $_[0]->{states}->{has_fe}) {
+        if ($_[1] =~ /^\xFF/) {
+          $offset = 1;
+        } else {
+          _decode_16 $_[0]->{states}, $offset, "\xFE", 0, 'n'; # returns empty
+        }
+        $_[0]->{states}->{bom_seen} = 1;
+      } else {
+        if ($_[1] =~ /^\xFE\xFF/) {
+          $offset = 2;
+          $_[0]->{states}->{bom_seen} = 1;
+        } elsif ($_[1] eq "\xFE") {
+          $_[0]->{states}->{has_fe} = 1;
+          return '';
+        } else {
+          $_[0]->{states}->{bom_seen} = 1;
+        }
+      }
+    } elsif (length $prefix) { # \xFF or \xFE
+      _decode_16 $_[0]->{states}, $offset, $prefix, 0, 'n'; # returns empty
+    }
     return _decode_16 $_[0]->{states}, $offset, $_[1], 0, 'n';
   } elsif ($key eq 'utf-16le') {
+    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
+      if (delete $_[0]->{states}->{has_ff}) {
+        if ($_[1] =~ /^\xFE/) {
+          $offset = 1;
+        } else {
+          _decode_16 $_[0]->{states}, $offset, "\xFF", 0, 'v'; # returns empty
+        }
+        $_[0]->{states}->{bom_seen} = 1;
+      } else {
+        if ($_[1] =~ /^\xFF\xFE/) {
+          $offset = 2;
+          $_[0]->{states}->{bom_seen} = 1;
+        } elsif ($_[1] eq "\xFF") {
+          $_[0]->{states}->{has_ff} = 1;
+          return '';
+        } else {
+          $_[0]->{states}->{bom_seen} = 1;
+        }
+      }
+    } elsif (length $prefix) { # \xFF or \xFE
+      _decode_16 $_[0]->{states}, $offset, $prefix, 0, 'v'; # returns empty
+    }
     return _decode_16 $_[0]->{states}, $offset, $_[1], 0, 'v';
   } elsif ($key eq 'replacement') {
-    if (not $_[0]->{states}->{written} and length $_[1]) {
+    if (not $_[0]->{states}->{written}) {
       $_[0]->{states}->{written} = 1;
       return "\x{FFFD}";
     } else {
@@ -179,18 +236,52 @@ sub bytes ($$) {
     }
   } else {
     require Encode;
-    return Encode::decode ($key, $_[1]); # XXX
+    return Encode::decode ($key, $prefix . $_[1]); # XXX
   }
 } # bytes
 
 sub eof ($) {
   my $key = $_[0]->{key};
-  if ($key eq 'utf-16be') {
-    return _decode_16 $_[0]->{states}, 0, '', 1, 'n';
+  if ($key eq 'utf-8') {
+    if ($_[0]->{states}->{has_ff} or $_[0]->{states}->{has_fe}) {
+      return "\x{FFFD}";
+    } else {
+      return '';
+    }
+  } elsif (Web::Encoding::_is_single $key) {
+    require Web::Encoding::_Single;
+    my $prefix = '';
+    $prefix = "\xFF" if $_[0]->{states}->{has_ff};
+    $prefix = "\xFE" if $_[0]->{states}->{has_fe};
+    my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]->{key}});
+    #$prefix =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}g;
+    $prefix =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
+    #return undef if $prefix =~ /\x{FFFD}/ and error mode is fatal;
+    return $prefix;
+  } elsif ($key eq 'utf-16be') {
+    my $prefix = '';
+    $prefix = "\xFF" if $_[0]->{states}->{has_ff};
+    $prefix = "\xFE" if $_[0]->{states}->{has_fe};
+    return _decode_16 $_[0]->{states}, 0, $prefix, 1, 'n';
   } elsif ($key eq 'utf-16le') {
-    return _decode_16 $_[0]->{states}, 0, '', 1, 'v';
+    my $prefix = '';
+    $prefix = "\xFF" if $_[0]->{states}->{has_ff};
+    $prefix = "\xFE" if $_[0]->{states}->{has_fe};
+    return _decode_16 $_[0]->{states}, 0, $prefix, 1, 'v';
+  } elsif ($key eq 'replacement') {
+    if (not $_[0]->{states}->{written} and
+        ($_[0]->{states}->{has_ff} or $_[0]->{states}->{has_fe})) {
+      $_[0]->{states}->{written} = 1;
+      return "\x{FFFD}";
+    } else {
+      return '';
+    }
   } else {
-    return '';
+    my $prefix = '';
+    $prefix = "\xFF" if $_[0]->{states}->{has_ff};
+    $prefix = "\xFE" if $_[0]->{states}->{has_fe};
+    require Encode;
+    return Encode::decode ($key, $prefix); # XXX
   }
 } # eof
 
