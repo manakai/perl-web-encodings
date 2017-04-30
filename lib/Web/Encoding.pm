@@ -246,7 +246,7 @@ sub decode_web_charset ($$) {
     }
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
-    my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]});
+    my $Map = \($Web::Encoding::_Single::Decoder->{$key});
     #$s =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}g;
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;

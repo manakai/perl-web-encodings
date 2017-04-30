@@ -6,6 +6,7 @@ use Test::X1;
 use Test::More;
 use Test::HTCT::Parser;
 use Web::Encoding;
+use Web::Encoding::Decoder;
 
 my $tests_path = path (__FILE__)->parent->parent->child
     ('t_deps/tests/charset/encodings');
@@ -53,25 +54,37 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
 
     if ($test->{bc}) {
       my $opts = {map { $_ => 1 } @{$test->{bc}->[1]}};
-      if (not $opts->{nobom} and not $opts->{utf8}) {
+      for (
+        [1, 1, $opts->{nobomsniffing} || $opts->{nobom}],
+        [1, 0, $opts->{nobomsniffing} || $opts->{nobom}],
+        [0, 1, $opts->{bomsniffing} || $opts->{nobom}],
+        [0, 0, $opts->{bomsniffing} || $opts->{bom}],
+      ) {
+        my ($BOMSniffing, $Ignore, $skip) = @$_;
+        next if $skip;
         test {
           my $c = shift;
-          my $result = decode_web_charset $encoding, join '', @$bytes;
+          my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($encoding);
+          $decoder->bom_sniffing ($BOMSniffing);
+          $decoder->ignore_bom ($Ignore);
+          my $result = '';
+          $result .= $decoder->bytes ($_) for @$bytes;
+          $result .= $decoder->eof;
           is $result, join '', @$chars;
+          is $decoder->used_encoding_key, $test->{used}->[0] // $encoding;
           done $c;
-        } n => 1, name => [$file_name, 'bc', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
-      }
+        } n => 2, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
 
-      if ($encoding eq 'utf-8' and not $opts->{decode}) {
-        unless ($opts->{bom}) {
+        if ($BOMSniffing and not $Ignore) {
           test {
             my $c = shift;
-            my $result = decode_web_utf8_no_bom join '', @$bytes;
+            my $result = decode_web_charset $encoding, join '', @$bytes;
             is $result, join '', @$chars;
             done $c;
-          } n => 1, name => [$file_name, 'utf-8 no BOM bc', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
+          } n => 1, name => [$file_name, 'decode_web_charset', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
         }
-        unless ($opts->{nobom}) {
+
+        if (not $BOMSniffing and $Ignore and $encoding eq 'utf-8') {
           test {
             my $c = shift;
             my $result = decode_web_utf8 join '', @$bytes;
@@ -79,7 +92,16 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             done $c;
           } n => 1, name => [$file_name, 'utf-8 bc', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
         }
-      }
+
+        if (not $BOMSniffing and not $Ignore and $encoding eq 'utf-8') {
+          test {
+            my $c = shift;
+            my $result = decode_web_utf8_no_bom join '', @$bytes;
+            is $result, join '', @$chars;
+            done $c;
+          } n => 1, name => [$file_name, 'utf-8 no BOM bc', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
+        }
+      } # for
     } # $test->{bc}
 
     if ($test->{cb}) {
