@@ -184,15 +184,20 @@ windows-1256
 windows-1257
 windows-1258
 x-mac-cyrillic
+UTF-16BE
+UTF-16LE
 x-user-defined
 replacement
 
 This module does not support GBK, gb18030, Big5, EUC-JP, ISO-2022-JP,
-Shift_JIS, EUC-KR, UTF-16BE, and UTF-16LE yet.
+Shift_JIS, and EUC-KR yet.
 
 =head1 SPECIFICATIONS
 
 [ENCODING] Encoding Standard <https://encoding.spec.whatwg.org/>.
+
+UTF-16 encoder
+<https://github.com/whatwg/encoding/commit/8360f775c8df145f649047c7d59c5ff733ade112>.
 
 [HTML] HTML Standard <https://html.spec.whatwg.org/>.
 

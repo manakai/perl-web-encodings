@@ -100,7 +100,7 @@ sub decode_web_utf8_no_bom ($) {
   }
 } # decode_web_utf8_no_bom
 
-sub _encode_16be ($) {
+sub _encode_16 ($$) {
   if (not defined $_[0]) {
     carp "Use of uninitialized value an argument";
     return '';
@@ -109,36 +109,79 @@ sub _encode_16be ($) {
   for (split //, $_[0]) {
     my $c = ord $_;
     if ($c <= 0xFFFF) {
-      push @s, pack 'n', $c;
+      push @s, pack $_[1], $c;
     } elsif ($c <= 0x10FFFF) {
       $c -= 0x10000;
-      push @s, pack 'nn', ($c >> 10) + 0xD800, ($c & 0x3FF) + 0xDC00;
+      push @s, pack $_[1].$_[1], ($c >> 10) + 0xD800, ($c & 0x3FF) + 0xDC00;
     } else {
-      push @s, "\xFF\xFD";
+      push @s, $_[1] eq 'n' ? "\xFF\xFD" : "\xFD\xFF";
     }
   }
   return join '', @s;
-} # _encode_16be
+} # _encode_16
 
-sub _encode_16le ($) {
-  if (not defined $_[0]) {
-    carp "Use of uninitialized value an argument";
-    return '';
-  }
-  my @s;
-  for (split //, $_[0]) {
-    my $c = ord $_;
-    if ($c <= 0xFFFF) {
-      push @s, pack 'v', $c;
-    } elsif ($c <= 0x10FFFF) {
-      $c -= 0x10000;
-      push @s, pack 'vv', ($c >> 10) + 0xD800, ($c & 0x3FF) + 0xDC00;
+sub _u16 ($$$) {
+  #$states, $u, \@s;
+  if ($_[1] < 0xD800 or 0xDFFF < $_[1]) {
+    if (defined $_[0]->{lead_surrogate}) {
+      push @{$_[2]}, "\x{FFFD}"; # or error
+    }
+    push @{$_[2]}, chr $_[1];
+  } elsif ($_[1] <= 0xDBFF) { # [U+D800, U+DBFF]
+    if (defined $_[0]->{lead_surrogate}) {
+      push @{$_[2]}, "\x{FFFD}"; # or error
+    }
+    $_[0]->{lead_surrogate} = $_[1];
+  } else { # [U+DC00, U+DFFF]
+    if (defined $_[0]->{lead_surrogate}) {
+      push @{$_[2]}, chr (0x10000
+                          + ((delete ($_[0]->{lead_surrogate}) - 0xD800) << 10)
+                          + $_[1] - 0xDC00);
     } else {
-      push @s, "\xFD\xFF";
+      push @{$_[2]}, "\x{FFFD}"; # or error
+    }
+  }
+} # _u16
+
+sub _decode_16 ($$$$) {
+  my $states = $_[0];
+  #my $is_last = $_[2];
+  #my $endian = $_[3]
+  my @s;
+  my $offset = 0;
+  my $len = length $_[1];
+  if (defined $states->{lead_byte}) {
+    if ($len) {
+      my $lead = unpack 'C', delete $states->{lead_byte};
+      my $sec = unpack 'C', substr $_[1], 0, 1;
+      if ($_[3] eq 'n') {
+        _u16 $states, $lead * 0x100 + $sec, \@s;
+      } else {
+        _u16 $states, $sec * 0x100 + $lead, \@s;
+      }
+      $offset++;
+    } elsif ($_[2]) {
+      push @s, "\x{FFFD}"; # or error
+    }
+  }
+  my $Length = ($len - $offset) / 2;
+  my $length = int $Length;
+  my $i = 0;
+  while ($i < $length) {
+    _u16 $states, (unpack $_[3], substr $_[1], $offset + $i * 2, 2), \@s;
+    $i++;
+  }
+  if (defined $states->{lead_surrogate} and $_[2]) {
+    push @s, "\x{FFFD}"; # or error
+  } elsif ($length != $Length) {
+    if ($_[2]) {
+      push @s, "\x{FFFD}"; # or error
+    } else {
+      $states->{lead_byte} = substr $_[1], -1;
     }
   }
   return join '', @s;
-} # _encode_16le
+} # _decode_16
 
 sub _is_single ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
@@ -161,9 +204,9 @@ sub encode_web_charset ($$) {
     utf8::downgrade $s if utf8::is_utf8 $s;
     return $s;
   } elsif ($_[0] eq 'utf-16be') {
-    return _encode_16be $_[1];
+    return _encode_16 $_[1], 'n';
   } elsif ($_[0] eq 'utf-16le') {
-    return _encode_16le $_[1];
+    return _encode_16 $_[1], 'v';
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {
@@ -189,6 +232,10 @@ sub decode_web_charset ($$) {
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
     return $s;
+  } elsif ($_[0] eq 'utf-16be') {
+    return _decode_16 {}, $_[1], 1, 'n';
+  } elsif ($_[0] eq 'utf-16le') {
+    return _decode_16 {}, $_[1], 1, 'v';
   } elsif ($_[0] eq 'replacement') {
     if (not defined $_[1]) {
       carp "Use of uninitialized value an argument";
