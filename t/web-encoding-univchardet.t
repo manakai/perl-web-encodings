@@ -1,14 +1,14 @@
 use strict;
 use warnings;
 use Path::Tiny;
-use lib glob path (__FILE__)->parent->parent->child ('t_deps', 'modules', '*', 'lib');
+use lib glob path (__FILE__)->parent->parent->child ('t_deps/modules/*/lib');
 use Test::X1;
 use Test::More;
 use JSON::PS;
 use Web::Encoding::UnivCharDet;
 
-my $data_path = path (__FILE__)->parent->parent
-    ->child ('t_deps/modules/tests-web/charset/univchardet/mozilla');
+my $data_path = path (__FILE__)->parent->parent->child
+    ('t_deps/tests/charset/univchardet/mozilla');
 my $json_path = $data_path->child ('tests.json');
 
 my $tests = json_bytes2perl $json_path->slurp;
