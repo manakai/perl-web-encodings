@@ -114,14 +114,16 @@ There are following functions for encoding and decoding:
 
 Encode the character string in UTF-8 and return the encoded bytes.
 
-This function corresponds to the "UTF-8 encode" operation [ENCODING].
+This function can be used to implement the "UTF-8 encode" operation
+[ENCODING].
 
 =item $chars = decode_web_utf8 $bytes
 
 Decode the bytes as UTF-8 and return the decoded character string.
 Any bad byte is replaced by U+FFFD characters without failure.
 
-This function corresponds to the "UTF-8 decode" operation [ENCODING].
+This function can be used to implement the "UTF-8 decode" operation
+[ENCODING].
 
 =item $chars = decode_web_utf8_no_bom $bytes
 
@@ -129,8 +131,8 @@ Decode the bytes as UTF-8, not recognizing BOM, and returns the
 decoded character string.  Any bad byte is replaced by U+FFFD
 characters without failure.
 
-This function corresponds to the "UTF-8 decode without BOM" operation
-[ENCODING].
+This function can be used to implement the "UTF-8 decode without BOM"
+operation [ENCODING].
 
 =item $bytes = encode_web_charset $key, $chars
 
@@ -142,7 +144,8 @@ string.
 Any character not representable in the encoding is converted to an
 HTML decimal character reference for the character.
 
-This function corresponds to the "encode" operation [ENCODING].
+This function can be used to implement the "encode" operation with
+error mode C<html> [ENCODING].
 
 =item $chars = decode_web_charset $key, $bytes
 
@@ -152,6 +155,13 @@ The first argument must be the key of the encoding used to decode the
 bytes.
 
 Any bad byte is replaced by U+FFFD characters without failure.
+
+This function is equivalent to the following code using
+L<Web::Encoding::Decoder>:
+
+  $decoder = Web::Encoding::Decoder->new_from_encoding_key ($key);
+  $decoder->ignore_bom (1);
+  return $decoder->bytes ($bytes) . $decoder->eof;
 
 =back
 

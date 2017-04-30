@@ -75,7 +75,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           done $c;
         } n => 2, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
 
-        if ($BOMSniffing and not $Ignore) {
+        if (not $BOMSniffing and $Ignore) {
           test {
             my $c = shift;
             my $result = decode_web_charset $encoding, join '', @$bytes;

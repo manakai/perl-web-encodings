@@ -120,77 +120,6 @@ sub _encode_16 ($$) {
   return join '', @s;
 } # _encode_16
 
-sub _u16 ($$$) {
-  #$states, $u, \@s;
-  if ($_[1] < 0xD800 or 0xDFFF < $_[1]) {
-    if (defined $_[0]->{lead_surrogate}) {
-      push @{$_[2]}, "\x{FFFD}"; # or error
-    }
-    push @{$_[2]}, chr $_[1];
-  } elsif ($_[1] <= 0xDBFF) { # [U+D800, U+DBFF]
-    if (defined $_[0]->{lead_surrogate}) {
-      push @{$_[2]}, "\x{FFFD}"; # or error
-    }
-    $_[0]->{lead_surrogate} = $_[1];
-  } else { # [U+DC00, U+DFFF]
-    if (defined $_[0]->{lead_surrogate}) {
-      push @{$_[2]}, chr (0x10000
-                          + ((delete ($_[0]->{lead_surrogate}) - 0xD800) << 10)
-                          + $_[1] - 0xDC00);
-    } else {
-      push @{$_[2]}, "\x{FFFD}"; # or error
-    }
-  }
-} # _u16
-
-sub _decode_16 ($$$$$) {
-  my $states = $_[0];
-  my $offset = $_[1];
-  #my $is_last = $_[3];
-  #my $endian = $_[4]
-
-  if (not defined $_[2]) {
-    carp "Use of uninitialized value an argument";
-    return '';
-  } elsif (utf8::is_utf8 $_[2]) {
-    croak "Cannot decode string with wide characters";
-  }
-
-  my @s;
-  my $len = length $_[2];
-  if (defined $states->{lead_byte}) {
-    if ($len) {
-      my $lead = unpack 'C', delete $states->{lead_byte};
-      my $sec = unpack 'C', substr $_[2], 0, 1;
-      if ($_[4] eq 'n') {
-        _u16 $states, $lead * 0x100 + $sec, \@s;
-      } else {
-        _u16 $states, $sec * 0x100 + $lead, \@s;
-      }
-      $offset++;
-    } elsif ($_[3]) { # $is_last
-      push @s, "\x{FFFD}"; # or error
-    }
-  }
-  my $Length = ($len - $offset) / 2;
-  my $length = int $Length;
-  my $i = 0;
-  while ($i < $length) {
-    _u16 $states, (unpack $_[4], substr $_[2], $offset + $i * 2, 2), \@s;
-    $i++;
-  }
-  if (defined $states->{lead_surrogate} and $_[3]) { # $is_last
-    push @s, "\x{FFFD}"; # or error
-  } elsif ($length != $Length) {
-    if ($_[3]) { # $is_last
-      push @s, "\x{FFFD}"; # or error
-    } else {
-      $states->{lead_byte} = substr $_[2], -1;
-    }
-  }
-  return join '', @s;
-} # _decode_16
-
 sub _is_single ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
 } # _is_single
@@ -224,51 +153,13 @@ sub encode_web_charset ($$) {
 } # encode_web_charset
 
 sub decode_web_charset ($$) {
-  my $key = $_[0];
-  my $offset = 0;
-  if ($_[1] =~ /^\xEF\xBB\xBF/) {
-    $key = 'utf-8';
-  } elsif ($_[1] =~ /^\xFE\xFF/) {
-    $key = 'utf-16be';
-    $offset = 2;
-  } elsif ($_[1] =~ /^\xFF\xFE/) {
-    $key = 'utf-16le';
-    $offset = 2;
-  }
-  if ($key eq 'utf-8') {
+  if ($_[0] eq 'utf-8') { # shortcut
     return decode_web_utf8 $_[1];
-  } elsif (_is_single $key) {
-    if (not defined $_[1]) {
-      carp "Use of uninitialized value an argument";
-      return '';
-    } elsif (utf8::is_utf8 $_[1]) {
-      croak "Cannot decode string with wide characters";
-    }
-    require Web::Encoding::_Single;
-    my $s = $_[1]; # string copy!
-    my $Map = \($Web::Encoding::_Single::Decoder->{$key});
-    #$s =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}g;
-    $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
-    #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
-    return $s;
-  } elsif ($key eq 'utf-16be') {
-    return _decode_16 {}, $offset, $_[1], 1, 'n';
-  } elsif ($key eq 'utf-16le') {
-    return _decode_16 {}, $offset, $_[1], 1, 'v';
-  } elsif ($key eq 'replacement') {
-    if (not defined $_[1]) {
-      carp "Use of uninitialized value an argument";
-      return '';
-    } elsif (utf8::is_utf8 $_[1]) {
-      croak "Cannot decode string with wide characters";
-    } elsif (length $_[1]) {
-      return "\x{FFFD}";
-    } else {
-      return '';
-    }
   } else {
-    require Encode;
-    return Encode::decode ($key, $_[1]); # XXX
+    require Web::Encoding::Decoder;
+    my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($_[0]);
+    $decoder->ignore_bom (1);
+    return $decoder->bytes ($_[1]) . $decoder->eof;
   }
 } # decode_web_charset
 

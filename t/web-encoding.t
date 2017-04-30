@@ -187,40 +187,6 @@ test {
 } n => 4;
 
 for my $test (
-  [[""], ""],
-  [["\x12", "\x34\x56\x78"], "\x{1234}\x{5678}"],
-  [["\x12"], "\x{FFFD}"],
-  [["\x12", "\x34\x56"], "\x{1234}\x{FFFD}"],
-  [["\x12", "", "\x34"], "\x{1234}"],
-  [["\x12", "", ""], "\x{FFFD}"],
-  [["\x12", "", "", "\x34\x56"], "\x{1234}\x{FFFD}"],
-  [["\x12\x34\x56", "\x67\x89\x12\x45"], "\x{1234}\x{5667}\x{8912}\x{FFFD}"],
-  [["\xD8\x3D", "\xDC\xA9\x26\x03"], "\x{1F4A9}\x{2603}"],
-  [["\xD8\x3D\xDC", "\xA9\x26\x03"], "\x{1F4A9}\x{2603}"],
-  [["\xD8", "\x3D\xDC\xA9\x26\x03"], "\x{1F4A9}\x{2603}"],
-  [["\xD8", "\x3D", "\xDC", "\xA9\x26\x03"], "\x{1F4A9}\x{2603}"],
-  [["\xD8\x3D\xDC"], "\x{FFFD}"],
-  [["\xD8\x3D"], "\x{FFFD}"],
-  [["\xDC\xA9\x26\x03"], "\x{FFFD}\x{2603}"],
-  [["\xD8\x3D", "\xDC\xA9\xD8\x3D", "\xDC\xA9\x26\x03"], "\x{1F4A9}\x{1F4A9}\x{2603}"],
-  [["\xD8\x3D\xD8\x3D\xDC", "\xA9\x26\x03"], "\x{FFFD}\x{1F4A9}\x{2603}"],
-  [["\x12\x34", "\xFE\xFF\x23\x45"], "\x{1234}\x{FEFF}\x{2345}"],
-  [["\xFF\xFE\x12\x34", "\xFE\xFF\x23\x45"], "\x{FFFE}\x{1234}\x{FEFF}\x{2345}"],
-) {
-  test {
-    my $c = shift;
-    my $result = '';
-    my $states = {};
-    for (@{$test->[0]}[0..($#{$test->[0]}-1)]) {
-      $result .= Web::Encoding::_decode_16 $states, 0, $_, 0, 'n';
-    }
-    $result .= Web::Encoding::_decode_16 $states, 0, $test->[0]->[-1], 1, 'n';
-    is $result, $test->[1];
-    done $c;
-  } n => 1, name => 'decode_web_charset utf-16be';
-}
-
-for my $test (
   [undef, undef],
   ['' => undef],
   [0 => undef],
