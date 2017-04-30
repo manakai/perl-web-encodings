@@ -71,9 +71,9 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           $result .= $decoder->bytes ($_) for @$bytes;
           $result .= $decoder->eof;
           is $result, join '', @$chars;
-          is $decoder->used_encoding_key, $test->{used}->[0] // $encoding;
+          is $decoder->used_encoding_key, $test->{used}->[0] || $encoding;
           done $c;
-        } n => 2, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
+        } n => 2, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
 
         if (not $BOMSniffing and $Ignore) {
           test {
@@ -81,7 +81,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             my $result = decode_web_charset $encoding, join '', @$bytes;
             is $result, join '', @$chars;
             done $c;
-          } n => 1, name => [$file_name, 'decode_web_charset', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
+          } n => 1, name => [$file_name, 'decode_web_charset', $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
         }
 
         if (not $BOMSniffing and $Ignore and $encoding eq 'utf-8') {
@@ -90,7 +90,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             my $result = decode_web_utf8 join '', @$bytes;
             is $result, join '', @$chars;
             done $c;
-          } n => 1, name => [$file_name, 'utf-8 bc', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
+          } n => 1, name => [$file_name, 'utf-8 bc', $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
         }
 
         if (not $BOMSniffing and not $Ignore and $encoding eq 'utf-8') {
@@ -99,7 +99,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             my $result = decode_web_utf8_no_bom join '', @$bytes;
             is $result, join '', @$chars;
             done $c;
-          } n => 1, name => [$file_name, 'utf-8 no BOM bc', $test->{name}->[0] // join "\n", @{$test->{b}->[0]}];
+          } n => 1, name => [$file_name, 'utf-8 no BOM bc', $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
         }
       } # for
     } # $test->{bc}
@@ -111,7 +111,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
         is $result, join '', @$bytes;
         ok ! utf8::is_utf8 $result;
         done $c;
-      } n => 2, name => [$file_name, 'cb', $test->{name}->[0] // join "\n", @{$test->{c}->[0]}];
+      } n => 2, name => [$file_name, 'cb', $test->{name}->[0] || join "\n", @{$test->{c}->[0]}];
 
       if ($encoding eq 'utf-8') {
         test {
@@ -120,7 +120,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           is $result, join '', @$bytes;
           ok ! utf8::is_utf8 $result;
           done $c;
-        } n => 2, name => [$file_name, 'utf-8 cb', $test->{name}->[0] // join "\n", @{$test->{c}->[0]}];
+        } n => 2, name => [$file_name, 'utf-8 cb', $test->{name}->[0] || join "\n", @{$test->{c}->[0]}];
       }
     } # $test->{cb}
   };
