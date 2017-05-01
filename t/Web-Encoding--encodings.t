@@ -7,6 +7,7 @@ use Test::More;
 use Test::HTCT::Parser;
 use Web::Encoding;
 use Web::Encoding::Decoder;
+use Web::Encoding::Sniffer;
 
 my $tests_path = path (__FILE__)->parent->parent->child
     ('t_deps/tests/charset/encodings');
@@ -56,7 +57,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
       my $opts = {map { $_ => 1 } @{$test->{bc}->[1]}};
       for (
         [1, 1, $opts->{nobomsniffing} || $opts->{nobom}],
-        [1, 0, $opts->{nobomsniffing} || $opts->{nobom}],
+        #[1, 0, $opts->{nobomsniffing} || $opts->{nobom}],
         [0, 1, $opts->{bomsniffing} || $opts->{nobom}],
         [0, 0, $opts->{bomsniffing} || $opts->{bom}],
       ) {
@@ -64,8 +65,17 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
         next if $skip;
         test {
           my $c = shift;
-          my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($encoding);
-          $decoder->bom_sniffing ($BOMSniffing);
+          my $enc = $encoding;
+          if ($BOMSniffing) {
+            $enc = 'iso-2022-kr' if $enc eq 'replacement';
+            my $sniffer = Web::Encoding::Sniffer->new_from_context ('');
+            $sniffer->detect (
+              (join '', @$bytes),
+              override => $enc,
+            );
+            $enc = $sniffer->encoding;
+          }
+          my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($enc);
           $decoder->ignore_bom ($Ignore);
           my $result = '';
           $result .= $decoder->bytes ($_) for @$bytes;
