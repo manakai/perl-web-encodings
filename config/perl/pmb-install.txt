@@ -1,10 +1,13 @@
+Algorithm::Diff~1.1903
 AnyEvent~7.13
+Capture::Tiny~0.46
 Carp~1.38
-Digest::SHA~5.96
 Encode~2.89
 Filter::Util::Call~1.57
+Path::Class~0.37
 Path::Tiny~0.104
 Scalar::Util~1.47
 Term::ANSIColor~4.06
-Test::More~1.302083
-Time::HiRes~1.9742
+Test::Builder~1.302083
+Test::Differences~0.64
+Text::Diff~1.44
