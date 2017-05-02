@@ -220,10 +220,11 @@ sub detect ($$;%) {
         $self->{encoding} = $name;
         if ($self->{context} eq 'responsehtml') {
           $self->{confident} = 1;
+          $self->{source} = 'html';
         } else {
           delete $self->{confident};
+          $self->{source} = $self->{context};
         }
-        $self->{source} = $self->{context};
         return;
       }
     }
