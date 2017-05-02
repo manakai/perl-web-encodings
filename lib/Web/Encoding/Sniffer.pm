@@ -4,9 +4,17 @@ use warnings;
 our $VERSION = '1.0';
 use Web::Encoding;
 
+## context
+##   html         - HTML (navigate)
+##   responsehtml - HTML (responseXML)
+##   xml          - XML (navigate, responseXML, responseText)
+##   css          - CSS
+##   text         - text (navigate)
+##   responsetext - non-XML (responseText)
+##   classicscript - <script src> with type "classic"
 sub new_from_context ($$) {
   return bless {
-    context => $_[1], # html responsehtml xml css responsetext classicscript
+    context => $_[1],
   }, $_[0];
 } # new_from_context
 
@@ -28,6 +36,7 @@ my $Prescanner = {};
 ## transport - transport encoding label (valid or invalid) or undef
 ## reference - reference's encoding label (valid or invalid) or undef
 ## embed     - embedding context's encoding or undef
+## locale    - user's locale's language tag in lowercase or undef
 sub detect ($$;%) {
   my ($self, undef, %args) = @_;
 
@@ -77,7 +86,11 @@ sub detect ($$;%) {
       my $name = $prescanner->($_[1]);
       if (defined $name) {
         $self->{encoding} = $name;
-        delete $self->{confident};
+        if ($self->{context} eq 'responsehtml') {
+          $self->{confident} = 1;
+        } else {
+          delete $self->{confident};
+        }
         $self->{source} = $self->{context};
         return;
       }
@@ -102,7 +115,7 @@ sub detect ($$;%) {
       return;
     }
 
-    if ($self->{context} eq 'html') {
+    if ($self->{context} eq 'html' or $self->{context} eq 'text') {
       ## UNIVCHARDET
       require Web::Encoding::UnivCharDet;
       my $det = Web::Encoding::UnivCharDet->new;
@@ -128,12 +141,16 @@ sub detect ($$;%) {
         $self->{source} = 'locale';
         return;
       }
-    } # context
+    } # context = html | text
   }
 
   ## The encoding
   $self->{encoding} = 'utf-8';
-  delete $self->{confident};
+  if ($self->{context} eq 'responsehtml') {
+    $self->{confident} = 1;
+  } else {
+    delete $self->{confident};
+  }
   $self->{source} = 'default';
   return;
 } # detect
