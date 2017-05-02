@@ -32,6 +32,138 @@ sub source ($) {
 
 my $Prescanner = {};
 
+## get an attribute
+## <https://www.whatwg.org/specs/web-apps/current-work/#concept-get-attributes-when-sniffing>.
+sub _get_attr ($) {
+  # 1.
+  $_[0] =~ /\G[\x09\x0A\x0C\x0D\x20\x2F]+/gc;
+
+  # 2.
+  if ($_[0] =~ /\G>/gc) {
+    pos ($_[0])--;
+    return undef;
+  }
+  
+  # 3.
+  my $attr = {name => '', value => ''};
+
+  # 4.-5.
+  if ($_[0] =~ m{\G([^\x09\x0A\x0C\x0D\x20/>][^\x09\x0A\x0C\x0D\x20/>=]*)}gc) {
+    $attr->{name} .= $1;
+    $attr->{name} =~ tr/A-Z/a-z/;
+  }
+  return undef if $_[0] =~ m{\G\z}gc;
+  return $attr if $_[0] =~ m{\G(?=[/>])}gc;
+
+  # 6.
+  $_[0] =~ m{\G[\x09\x0A\x0C\x0D\x20]+}gc;
+
+  # 7.-8.
+  return $attr unless $_[0] =~ m{\G=}gc;
+
+  # 9.
+  $_[0] =~ m{\G[\x09\x0A\x0C\x0D\x20]+}gc;
+
+  # 10.-12.
+  if ($_[0] =~ m{\G\x22([^\x22]*)\x22}gc) {
+    $attr->{value} .= $1;
+    $attr->{value} =~ tr/A-Z/a-z/;
+  } elsif ($_[0] =~ m{\G\x27([^\x27]*)\x27}gc) {
+    $attr->{value} .= $1;
+    $attr->{value} =~ tr/A-Z/a-z/;
+  } elsif ($_[0] =~ m{\G([^\x09\x0A\x0C\x0D\x20>]+)}gc) {
+    $attr->{value} .= $1;
+    $attr->{value} =~ tr/A-Z/a-z/;
+  }
+  return undef if $_[0] =~ m{\G\z}gc;
+  return $attr;
+} # _get_attr
+
+## prescan a byte stream to determine its encoding
+## <https://www.whatwg.org/specs/web-apps/current-work/#prescan-a-byte-stream-to-determine-its-encoding>.
+sub _prescan_byte_stream ($) {
+  # 1.
+  (pos $_[0]) = 0;
+
+  # 2.
+  LOOP: {
+    $_[0] =~ /\G<!--+>/gc;
+    $_[0] =~ /\G<!--.*?-->/gcs;
+    if ($_[0] =~ /\G<[Mm][Ee][Tt][Aa](?=[\x09\x0A\x0C\x0D\x20\x2F])/gc) {
+      # 1.
+      #
+
+      # 2.-5.
+      my $attr_list = {};
+      my $got_pragma = 0;
+      my $need_pragma = undef;
+      my $charset;
+
+      # 6.
+      ATTRS: {
+        my $attr = _get_attr ($_[0]) or last ATTRS;
+
+        # 7.
+        redo ATTRS if $attr_list->{$attr->{name}};
+        
+        # 8.
+        $attr_list->{$attr->{name}} = $attr;
+
+        # 9.
+        if ($attr->{name} eq 'http-equiv') {
+          $got_pragma = 1 if $attr->{value} eq 'content-type';
+        } elsif ($attr->{name} eq 'content') {
+          ## algorithm for extracting a character encoding from a
+          ## |meta| element
+          ## <https://www.whatwg.org/specs/web-apps/current-work/#algorithm-for-extracting-a-character-encoding-from-a-meta-element>.
+          if (not defined $charset and
+              $attr->{value} =~ /[Cc][Hh][Aa][Rr][Ss][Ee][Tt]
+                                 [\x09\x0A\x0C\x0D\x20]*=
+                                 [\x09\x0A\x0C\x0D\x20]*(?>"([^"]*)"|'([^']*)'|
+                                 ([^"'\x09\x0A\x0C\x0D\x20]
+                                  [^\x09\x0A\x0C\x0D\x20\x3B]*))/x) {
+            $charset = encoding_label_to_name
+                (defined $1 ? $1 : defined $2 ? $2 : $3);
+            $need_pragma = 1;
+          }
+        } elsif ($attr->{name} eq 'charset') {
+          $charset = encoding_label_to_name $attr->{value};
+          $need_pragma = 0;
+        }
+
+        # 10.
+        return undef if pos $_[0] >= length $_[0];
+        redo ATTRS;
+      } # ATTRS
+
+      # 11. Processing, 12.
+      if (not defined $need_pragma or
+          ($need_pragma and not $got_pragma)) {
+        #
+      } elsif (defined $charset) {
+        # 13.-14.
+        $charset = fixup_html_meta_encoding_name $charset;
+
+        # 15.-16.
+        return $charset if defined $charset;
+      }
+    } elsif ($_[0] =~ m{\G</?[A-Za-z][^\x09\x0A\x0C\x0D\x20>]*}gc) {
+      {
+        _get_attr ($_[0]) and redo;
+      }
+    } elsif ($_[0] =~ m{\G<[!/?][^>]*}gc) {
+      #
+    }
+
+    # 3. Next byte
+    $_[0] =~ /\G[^<]+/gc || $_[0] =~ /\G</gc;
+    return undef if pos $_[0] >= length $_[0];
+    redo LOOP;
+  } # LOOP
+} # _prescan_byte_stream
+
+$Prescanner->{html} = $Prescanner->{responsehtml} = \&_prescan_byte_stream;
+
 ## override  - override encoding label (valid or invalid) or undef
 ## transport - transport encoding label (valid or invalid) or undef
 ## reference - reference's encoding label (valid or invalid) or undef
@@ -137,6 +269,11 @@ sub detect ($$;%) {
         $name = 'windows-1252' if not defined $name;
 
         $self->{encoding} = $name;
+        delete $self->{confident};
+        $self->{source} = 'locale';
+        return;
+      } else {
+        $self->{encoding} = 'windows-1252';
         delete $self->{confident};
         $self->{source} = 'locale';
         return;
