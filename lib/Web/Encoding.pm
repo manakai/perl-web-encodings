@@ -42,8 +42,9 @@ sub encode_web_utf8 ($) {
   }
 } # encode_web_utf8
 
-sub _decode8 ($) {
-  my $x = $_[0]; # string copy!
+sub _decode8 ($$$) {
+  # $states, $x, $final
+  my $x = defined $_[0]->{lead} ? (delete $_[0]->{lead}) . $_[1] : $_[1]; # string copy!
   $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
        \xE0               [\xA0-\xBF][\x80-\xBF]|
@@ -52,10 +53,26 @@ sub _decode8 ($) {
        \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
        [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
        \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
-      [^\x00-\x7F]
+
+      ([\xC2-\xDF]                                      \z|
+       \xE0               [\xA0-\xBF]?                  \z|
+       [\xE1-\xEC\xEE\xEF][\x80-\xBF]?                  \z|
+       \xED               [\x80-\x9F]?                  \z|
+       \xF0               (?:[\x90-\xBF][\x80-\xBF]?|)  \z|
+       [\xF1-\xF3]        (?:[\x80-\xBF][\x80-\xBF]?|)  \z|
+       \xF4               (?:[\x80-\x8F][\x80-\xBF]?|)  \z)|
+
+      ([^\x00-\x7F])
   }{
     if (defined $1) {
       $1;
+    } elsif (defined $2) {
+      if ($_[2]) {
+        qq{\xEF\xBF\xBD} x length $2; # U+FFFD
+      } else {
+        $_[0]->{lead} .= $2;
+        '';
+      }
     } else {
       qq{\xEF\xBF\xBD}; # U+FFFD
     }
@@ -71,7 +88,10 @@ sub decode_web_utf8 ($) {
   } elsif (utf8::is_utf8 $_[0]) {
     croak "Cannot decode string with wide characters";
   } else {
-    return _decode8 (substr ($_[0], 0, 3) eq "\xEF\xBB\xBF" ? substr $_[0], 3 : $_[0]);
+    return _decode8
+        ({},
+         substr ($_[0], 0, 3) eq "\xEF\xBB\xBF" ? substr $_[0], 3 : $_[0],
+         1);
   }
 } # decode_web_utf8
 
@@ -82,7 +102,7 @@ sub decode_web_utf8_no_bom ($) {
   } elsif (utf8::is_utf8 $_[0]) {
     croak "Cannot decode string with wide characters";
   } else {
-    return _decode8 $_[0];
+    return _decode8 {}, $_[0], 1;
   }
 } # decode_web_utf8_no_bom
 

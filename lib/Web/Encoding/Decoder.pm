@@ -106,12 +106,14 @@ sub bytes ($$) {
   }
 
   if ($key eq 'utf-8') {
-    # XXX this is not streamable
-    if ($_[0]->{ignore_bom}) {
-      return [Web::Encoding::decode_web_utf8 $_[1]];
-    } else {
-      return [Web::Encoding::decode_web_utf8_no_bom $_[1]];
+    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, $_[1], 0];
+    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
+      if (@$decoded and length $decoded->[0]) {
+        $decoded->[0] =~ s/^\x{FEFF}//;
+        $_[0]->{states}->{bom_seen} = 1;
+      }
     }
+    return $decoded;
   } elsif (Web::Encoding::_is_single $key) {
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
@@ -153,7 +155,16 @@ sub bytes ($$) {
 
 sub eof ($) {
   my $key = $_[0]->{key};
-  if ($key eq 'utf-16be') {
+  if ($key eq 'utf-8') {
+    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, '', 1];
+    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
+      if (@$decoded) {
+        $decoded->[0] =~ s/^\x{FEFF}//;
+        $_[0]->{states}->{bom_seen} = 1;
+      }
+    }
+    return $decoded;
+  } elsif ($key eq 'utf-16be') {
     my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
