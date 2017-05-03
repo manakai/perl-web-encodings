@@ -18,6 +18,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
   for_each_test $test_file_path, {
     b => {is_list => 1},
     c => {is_list => 1},
+    errors => {is_list => 1},
   }, sub {
     my $test = shift;
 
@@ -63,6 +64,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
       ) {
         my ($BOMSniffing, $Ignore, $skip) = @$_;
         next if $skip;
+
         test {
           my $c = shift;
           my $enc = $encoding;
@@ -77,13 +79,68 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           }
           my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($enc);
           $decoder->ignore_bom ($Ignore);
+          my @error;
+          $decoder->onerror (sub {
+            my %args = @_;
+            my $value = $args{value};
+            $value =~ s/(.)/sprintf '\x%02X', ord $1/ges;
+            push @error, join ';',
+                $args{index},
+                $args{level},
+                $args{type},
+                $value;
+          });
           my $result = '';
           $result .= join '', @{$decoder->bytes ($_)} for @$bytes;
           $result .= join '', @{$decoder->eof};
           is $result, join '', @$chars;
           is $decoder->used_encoding_key, $test->{used}->[0] || $encoding;
+          is join ("\n", @error), join ("\n", @{$test->{errors}->[0] or []}), "errors";
           done $c;
-        } n => 2, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
+        } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
+
+        test {
+          my $c = shift;
+          my $enc = $encoding;
+          if ($BOMSniffing) {
+            $enc = 'iso-2022-kr' if $enc eq 'replacement';
+            my $sniffer = Web::Encoding::Sniffer->new_from_context ('');
+            $sniffer->detect (
+              (join '', @$bytes),
+              override => $enc,
+            );
+            $enc = $sniffer->encoding;
+          }
+          my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($enc);
+          $decoder->ignore_bom ($Ignore);
+          my @error;
+          $decoder->onerror (sub {
+            my %args = @_;
+            my $value = $args{value};
+            $value =~ s/(.)/sprintf '\x%02X', ord $1/ges;
+            push @error, join ';',
+                $args{index},
+                $args{level},
+                $args{type},
+                $value;
+          });
+          $decoder->fatal (1);
+          my $result = '';
+          eval {
+            $result .= join '', @{$decoder->bytes ($_)} for @$bytes;
+            $result .= join '', @{$decoder->eof};
+          };
+          if (($test->{errors}->[1]->[0] || '') eq 'fatal') {
+            like $@, qr{^Input has invalid bytes}, 'exception';
+            ok 1;
+            is join ("\n", @error), $test->{errors}->[0]->[0] || '', "errors";
+          } else {
+            ok ! $@, 'no exception';
+            is $result, join '', @$chars;
+            is join ("\n", @error), '', "errors";
+          }
+          done $c;
+        } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore with fatal", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
 
         if (not $BOMSniffing and $Ignore) {
           test {

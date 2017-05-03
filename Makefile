@@ -48,7 +48,8 @@ build: lib/Web/Encoding/_Defs.pm \
     lib/Web/Encoding/unicore/CombiningClass.pl \
     lib/Web/Encoding/unicore/Decomposition.pl \
     lib/Web/Encoding/unicore/CompositionExclusions.pl \
-    lib/Web/Encoding/_Single.pm
+    lib/Web/Encoding/_Single.pm \
+    intermediate/encoding-errors.json
 
 local/encodings.json:
 	mkdir -p local
@@ -85,6 +86,14 @@ lib/Web/Encoding/unicore/CompositionExclusions.pl: \
 	cat local/CompositionExclusions.txt >> $@
 	echo ')]' >> $@
 	perl -c $@
+
+intermediate/encoding-errors.json: bin/generate-errors.pl \
+    src/encoding-errors.txt json-ps local-for-errors
+	$(PERL) $< src/encoding-errors.txt > $@
+
+local-for-errors: local/bin/pmbp.pl
+	git clone https://github.com/manakai/perl-web-dom local/modules/web-dom || (cd local/modules/web-dom && git pull)
+	git clone https://github.com/manakai/perl-web-markup local/modules/web-markup || (cd local/modules/web-markup && git pull)
 
 ## ------ Tests ------
 

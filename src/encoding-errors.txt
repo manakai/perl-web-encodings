@@ -1,0 +1,25 @@
+## Validation errors and warnings
+##
+## This file is used to generate error definition data file available
+## from <https://github.com/manakai/data-errors>.
+##
+## Per CC0 <https://creativecommons.org/publicdomain/zero/1.0/>, to
+## the extent possible under law, the author has waived all copyright
+## and related or neighboring rights to this work.
+
+module=Web::Encoding::Decoder
+
+* utf8:bad bytes
+
+layer=charencoding
+default_level=m
+
+@en
+There is a byte that is not allowed in UTF-8
+@ja
+UTF-8 で認められていないバイトが現れました
+
+@en
+<p>There is a byte that is not allowed in UTF-8.
+@ja
+<p>UTF-8 で認められていないバイトが現れました。

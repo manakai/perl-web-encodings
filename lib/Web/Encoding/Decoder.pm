@@ -21,6 +21,28 @@ sub ignore_bom ($;$) {
   return $_[0]->{ignore_bom};
 } # ignore_bom
 
+sub fatal ($;$) {
+  if (@_ > 1) {
+    $_[0]->{fatal} = 1;
+  }
+  return $_[0]->{fatal};
+} # fatal
+
+sub onerror ($;$) {
+  if (@_ > 1) {
+    $_[0]->{onerror} = $_[1];
+  }
+  return $_[0]->{onerror} || sub { };
+} # onerror
+
+sub _onerror ($) {
+  my $onerror = $_[0]->{onerror};
+  return $_[0]->{fatal} ? sub {
+    $onerror->(@_);
+    die "Input has invalid bytes";
+  } : $onerror || sub { };
+} # _onerror
+
 sub used_encoding_key ($) {
   return $_[0]->{key};
 } # used_encoding_key
@@ -106,7 +128,11 @@ sub bytes ($$) {
   }
 
   if ($key eq 'utf-8') {
-    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, $_[1], 0];
+    $_[0]->{states}->{index} = 0 unless defined $_[0]->{states}->{index};
+    my $offset = $_[0]->{states}->{index}
+               + (defined $_[0]->{states}->{lead} ? -length $_[0]->{states}->{lead} : 0);
+    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, $_[1], 0, $offset, $_[0]->_onerror];
+    $_[0]->{states}->{index} += length $_[1];
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded and length $decoded->[0]) {
         $decoded->[0] =~ s/^\x{FEFF}//;
@@ -156,7 +182,9 @@ sub bytes ($$) {
 sub eof ($) {
   my $key = $_[0]->{key};
   if ($key eq 'utf-8') {
-    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, '', 1];
+    $_[0]->{states}->{index} = 0 unless defined $_[0]->{states}->{index};
+    my $offset = $_[0]->{states}->{index} + (defined $_[0]->{states}->{lead} ? -length $_[0]->{states}->{lead} : 0);
+    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, '', 1, $offset, $_[0]->_onerror];
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
         $decoded->[0] =~ s/^\x{FEFF}//;

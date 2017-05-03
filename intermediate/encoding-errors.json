@@ -1,0 +1,19 @@
+{
+   "errors" : {
+      "utf8:bad bytes" : {
+         "default_level" : "m",
+         "desc" : {
+            "en" : "\u003Cp>There is a byte that is not allowed in UTF-8.\u003C/p>",
+            "ja" : "\u003Cp>UTF-8 で認められていないバイトが現れました。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "There is a byte that is not allowed in UTF-8",
+            "ja" : "UTF-8 で認められていないバイトが現れました"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      }
+   }
+}

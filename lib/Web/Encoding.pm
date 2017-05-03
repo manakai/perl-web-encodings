@@ -42,8 +42,8 @@ sub encode_web_utf8 ($) {
   }
 } # encode_web_utf8
 
-sub _decode8 ($$$) {
-  # $states, $x, $final
+sub _decode8 ($$$;$$) {
+  # $states, $x, $final, $index_offset, $onerror
   my $x = defined $_[0]->{lead} ? (delete $_[0]->{lead}) . $_[1] : $_[1]; # string copy!
   $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
@@ -68,12 +68,22 @@ sub _decode8 ($$$) {
       $1;
     } elsif (defined $2) {
       if ($_[2]) {
-        qq{\xEF\xBF\xBD} x length $2; # U+FFFD
+        my $length = length $2;
+        if ($_[4]) {
+          my $index = $_[3] + $-[2];
+          for (split //, $2) {
+            $_[4]->(type => 'utf-8:bad bytes', level => 'm',
+                    index => $index++, value => $_);
+          }
+        }
+        qq{\xEF\xBF\xBD} x $length; # U+FFFD
       } else {
         $_[0]->{lead} .= $2;
         '';
       }
     } else {
+      $_[4]->(type => 'utf-8:bad bytes', level => 'm',
+              index => $_[3] + $-[3], value => $3) if $_[4];
       qq{\xEF\xBF\xBD}; # U+FFFD
     }
   }gex;
