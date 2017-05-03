@@ -28,6 +28,8 @@ sub fatal ($;$) {
   return $_[0]->{fatal};
 } # fatal
 
+## Specification: Encoding Standard and
+## <https://wiki.suikawiki.org/n/Encoding%20Validation>.
 sub onerror ($;$) {
   if (@_ > 1) {
     $_[0]->{onerror} = $_[1];
@@ -38,8 +40,10 @@ sub onerror ($;$) {
 sub _onerror ($) {
   my $onerror = $_[0]->{onerror};
   return $_[0]->{fatal} ? sub {
-    $onerror->(@_);
-    die "Input has invalid bytes";
+    my %args = @_;
+    my $fatal = delete $args{fatal};
+    $onerror->(%args);
+    die "Input has invalid bytes" if $fatal;
   } : $onerror || sub { };
 } # _onerror
 
@@ -135,7 +139,9 @@ sub bytes ($$) {
     $_[0]->{states}->{index} += length $_[1];
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded and length $decoded->[0]) {
-        $decoded->[0] =~ s/^\x{FEFF}//;
+        if ($decoded->[0] =~ s/^\x{FEFF}//) {
+          $_[0]->_onerror->(type => 'bom', level => 's', index => 0);
+        }
         $_[0]->{states}->{bom_seen} = 1;
       }
     }
@@ -152,7 +158,9 @@ sub bytes ($$) {
     my $decoded = _decode_16 $_[0]->{states}, 0, $_[1], 0, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
-        $decoded->[0] =~ s/^\x{FEFF}//;
+        if ($decoded->[0] =~ s/^\x{FEFF}//) {
+          $_[0]->_onerror->(type => 'bom', level => 's', index => 0);
+        }
         $_[0]->{states}->{bom_seen} = 1;
       }
     }
@@ -161,7 +169,9 @@ sub bytes ($$) {
     my $decoded = _decode_16 $_[0]->{states}, 0, $_[1], 0, 'v';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
-        $decoded->[0] =~ s/^\x{FEFF}//;
+        if ($decoded->[0] =~ s/^\x{FEFF}//) {
+          $_[0]->_onerror->(type => 'bom', level => 's', index => 0);
+        }
         $_[0]->{states}->{bom_seen} = 1;
       }
     }
@@ -184,19 +194,15 @@ sub eof ($) {
   if ($key eq 'utf-8') {
     $_[0]->{states}->{index} = 0 unless defined $_[0]->{states}->{index};
     my $offset = $_[0]->{states}->{index} + (defined $_[0]->{states}->{lead} ? -length $_[0]->{states}->{lead} : 0);
-    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, '', 1, $offset, $_[0]->_onerror];
-    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
-      if (@$decoded) {
-        $decoded->[0] =~ s/^\x{FEFF}//;
-        $_[0]->{states}->{bom_seen} = 1;
-      }
-    }
-    return $decoded;
+    ## Returns zero or more U+FFFD.
+    return [Web::Encoding::_decode8 $_[0]->{states}, '', 1, $offset, $_[0]->_onerror];
   } elsif ($key eq 'utf-16be') {
     my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
-        $decoded->[0] =~ s/^\x{FEFF}//;
+        if ($decoded->[0] =~ s/^\x{FEFF}//) {
+          $_[0]->_onerror->(type => 'bom', level => 's', index => 0);
+        }
         $_[0]->{states}->{bom_seen} = 1;
       }
     }
@@ -205,7 +211,9 @@ sub eof ($) {
     my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'v';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
-        $decoded->[0] =~ s/^\x{FEFF}//;
+        if ($decoded->[0] =~ s/^\x{FEFF}//) {
+          $_[0]->_onerror->(type => 'bom', level => 's', index => 0);
+        }
         $_[0]->{states}->{bom_seen} = 1;
       }
     }

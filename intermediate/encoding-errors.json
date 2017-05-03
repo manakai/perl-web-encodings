@@ -1,5 +1,20 @@
 {
    "errors" : {
+      "bom" : {
+         "default_level" : "s",
+         "desc" : {
+            "en" : "\u003Cp>There is a BOM (byte order mark).  It should not be used as it can\u000Acause interoperability and security problems.\u003C/p>",
+            "ja" : "\u003Cp>BOM (バイト順マーク) があります。\u000A相互運用性やセキュリティーの問題の元ですから、\u000A省くべきです。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "There is a BOM",
+            "ja" : "BOM があります"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      },
       "utf8:bad bytes" : {
          "default_level" : "m",
          "desc" : {

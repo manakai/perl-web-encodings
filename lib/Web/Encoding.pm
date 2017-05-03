@@ -72,7 +72,7 @@ sub _decode8 ($$$;$$) {
         if ($_[4]) {
           my $index = $_[3] + $-[2];
           for (split //, $2) {
-            $_[4]->(type => 'utf-8:bad bytes', level => 'm',
+            $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
                     index => $index++, value => $_);
           }
         }
@@ -82,7 +82,7 @@ sub _decode8 ($$$;$$) {
         '';
       }
     } else {
-      $_[4]->(type => 'utf-8:bad bytes', level => 'm',
+      $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
               index => $_[3] + $-[3], value => $3) if $_[4];
       qq{\xEF\xBF\xBD}; # U+FFFD
     }

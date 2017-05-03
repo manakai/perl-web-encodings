@@ -23,3 +23,21 @@ UTF-8 で認められていないバイトが現れました
 <p>There is a byte that is not allowed in UTF-8.
 @ja
 <p>UTF-8 で認められていないバイトが現れました。
+
+* bom
+
+layer=charencoding
+default_level=s
+
+@en
+There is a BOM
+@ja
+BOM があります
+
+@en
+<p>There is a BOM (byte order mark).  It should not be used as it can
+cause interoperability and security problems.
+@ja
+<p>BOM (バイト順マーク) があります。
+相互運用性やセキュリティーの問題の元ですから、
+省くべきです。

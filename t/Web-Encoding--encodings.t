@@ -82,7 +82,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           my @error;
           $decoder->onerror (sub {
             my %args = @_;
-            my $value = $args{value};
+            my $value = $args{value} || '';
             $value =~ s/(.)/sprintf '\x%02X', ord $1/ges;
             push @error, join ';',
                 $args{index},
@@ -95,6 +95,8 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           $result .= join '', @{$decoder->eof};
           is $result, join '', @$chars;
           is $decoder->used_encoding_key, $test->{used}->[0] || $encoding;
+          $test->{errors}->[0] = [sort { $a cmp $b } @{$test->{errors}->[0] or []}];
+          @error = sort { $a cmp $b } @error;
           is join ("\n", @error), join ("\n", @{$test->{errors}->[0] or []}), "errors";
           done $c;
         } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
@@ -116,7 +118,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           my @error;
           $decoder->onerror (sub {
             my %args = @_;
-            my $value = $args{value};
+            my $value = $args{value} || '';
             $value =~ s/(.)/sprintf '\x%02X', ord $1/ges;
             push @error, join ';',
                 $args{index},
@@ -130,14 +132,16 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             $result .= join '', @{$decoder->bytes ($_)} for @$bytes;
             $result .= join '', @{$decoder->eof};
           };
+          $test->{errors}->[0] = [sort { $a cmp $b } @{$test->{errors}->[0] or []}];
+          @error = sort { $a cmp $b } @error;
           if (($test->{errors}->[1]->[0] || '') eq 'fatal') {
             like $@, qr{^Input has invalid bytes}, 'exception';
             ok 1;
-            is join ("\n", @error), $test->{errors}->[0]->[0] || '', "errors";
+            is join ("\n", @error), [grep { /;m;/ } @{$test->{errors}->[0] or []}]->[0] || '', "errors";
           } else {
             ok ! $@, 'no exception';
             is $result, join '', @$chars;
-            is join ("\n", @error), '', "errors";
+            is join ("\n", @error), join ("\n", grep { not /;m;/ } @{$test->{errors}->[0] or []}), "errors";
           }
           done $c;
         } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore with fatal", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
