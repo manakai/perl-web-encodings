@@ -54,36 +54,33 @@ sub _decode8 ($$$;$$) {
        [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
        \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
 
-      ([\xC2-\xDF]                                      \z|
-       \xE0               [\xA0-\xBF]?                  \z|
-       [\xE1-\xEC\xEE\xEF][\x80-\xBF]?                  \z|
-       \xED               [\x80-\x9F]?                  \z|
-       \xF0               (?:[\x90-\xBF][\x80-\xBF]?|)  \z|
-       [\xF1-\xF3]        (?:[\x80-\xBF][\x80-\xBF]?|)  \z|
-       \xF4               (?:[\x80-\x8F][\x80-\xBF]?|)  \z)|
+   ((?:[\xC2-\xDF]                                      |
+       \xE0               [\xA0-\xBF]?                  |
+       [\xE1-\xEC\xEE\xEF][\x80-\xBF]?                  |
+       \xED               [\x80-\x9F]?                  |
+       \xF0               (?:[\x90-\xBF][\x80-\xBF]?|)  |
+       [\xF1-\xF3]        (?:[\x80-\xBF][\x80-\xBF]?|)  |
+       \xF4               (?:[\x80-\x8F][\x80-\xBF]?|))(\z)?)|
 
       ([^\x00-\x7F])
   }{
     if (defined $1) {
       $1;
     } elsif (defined $2) {
-      if ($_[2]) {
+      if ($_[2] or not defined $3) {
         my $length = length $2;
         if ($_[4]) {
-          my $index = $_[3] + $-[2];
-          for (split //, $2) {
-            $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
-                    index => $index++, value => $_);
-          }
+          $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
+                  index => $_[3] + $-[2], value => $2);
         }
-        qq{\xEF\xBF\xBD} x $length; # U+FFFD
+        qq{\xEF\xBF\xBD}; # U+FFFD
       } else {
         $_[0]->{lead} .= $2;
         '';
       }
-    } else {
+    } else { # $4
       $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
-              index => $_[3] + $-[3], value => $3) if $_[4];
+              index => $_[3] + $-[4], value => $4) if $_[4];
       qq{\xEF\xBF\xBD}; # U+FFFD
     }
   }gex;
