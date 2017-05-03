@@ -66,9 +66,9 @@ layer=charencoding
 default_level=m
 
 @en
-There is a high surrogate not immediately followed by a low surrogate
+There is a high surrogate not immediately (<var>{text}</var>) followed by a low surrogate
 @ja
-直後に低サロゲートがない高サロゲートがあります
+直後に低サロゲートがない高サロゲート (<var>{text}</var>) があります
 
 @en
 <p>In a UTF-16 string, a high surrogate code unit must be immediately
@@ -82,12 +82,48 @@ layer=charencoding
 default_level=m
 
 @en
-There is a low surrogate not immediately following a high surrogate
+There is a low surrogate (<var>{text}</var>) not immediately following a high surrogate
 @ja
-直前に高サロゲートがない低サロゲートがあります
+直前に高サロゲートがない低サロゲート (<var>{text}</var>) があります
 
 @en
 <p>In a UTF-16 string, a low surrogate code unit must immediately
 follow a high surrogate code unit.
 @ja
 <p>UTF-16 文字列中で低サロゲート符号単位の直前には高サロゲート符号単位がなければいけません。
+
+* encoding:unassigned
+
+layer=charencoding
+default_level=m
+
+@en
+There is an unassigned byte
+@ja
+未割当のバイトがあります
+
+@en
+<p>Some byte sequences are left unassigned in several encodings.  For
+interoperability, they must not be used.
+@ja
+<p>符号化によっては割当のないバイト列があります。
+相互運用性のため、そうしたバイト列を使ってはいけません。
+
+* encoding:replacement
+
+layer=charencoding
+default_level=m
+
+@en
+An obsolete encoding is used
+@ja
+廃止された符号化が使われています
+
+@en
+<p>There are some historical encodings that have not been used on the
+Web and have security concerns.  To protect the user, the files in
+those encodings are discarded.
+@ja
+<p>歴史的な符号化の中には、 Web では長らく使われていない反面、
+セキュリティー上の懸念のあるものもあります。利用者を保護するため、
+そうした符号化を使ったファイルは開けません。

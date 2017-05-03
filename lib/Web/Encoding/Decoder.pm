@@ -90,10 +90,7 @@ sub _decode_16 ($$$$$) {
   #my $onerror = $_[1];
   #my $is_last = $_[3];
   #my $endian = $_[4]
-
   my $offset = 0;
-  $states->{index} = 0 unless defined $states->{index};
-
   my @s;
   my $len = length $_[2];
   if (defined $states->{lead_byte}) {
@@ -156,8 +153,8 @@ sub bytes ($$) {
     return [];
   }
 
+  $_[0]->{states}->{index} = 0 unless defined $_[0]->{states}->{index};
   if ($key eq 'utf-8') {
-    $_[0]->{states}->{index} = 0 unless defined $_[0]->{states}->{index};
     my $offset = $_[0]->{states}->{index}
                + (defined $_[0]->{states}->{lead} ? -length $_[0]->{states}->{lead} : 0);
     my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, $_[1], 0, $offset, $_[0]->_onerror];
@@ -175,9 +172,13 @@ sub bytes ($$) {
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
     my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]->{key}});
-    #$s =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}g;
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
-    #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
+    while ($s =~ m{\x{FFFD}}g) {
+      $_[0]->_onerror->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                        index => $_[0]->{states}->{index} + $-[0],
+                        value => substr $_[1], $-[0], 1);
+    }
+    $_[0]->{states}->{index} += length $_[1];
     return [$s];
   } elsif ($key eq 'utf-16be') {
     my $decoded = _decode_16 $_[0]->{states}, $_[0]->_onerror, $_[1], 0, 'n';
@@ -204,6 +205,8 @@ sub bytes ($$) {
   } elsif ($key eq 'replacement') {
     if (not $_[0]->{states}->{written}) {
       $_[0]->{states}->{written} = 1;
+      $_[0]->_onerror->(type => 'encoding:replacement', level => 'm', fatal => 1,
+                        index => 0);
       return ["\x{FFFD}"];
     } else {
       return [];

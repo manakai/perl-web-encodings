@@ -15,6 +15,36 @@
             "Web::Encoding::Decoder" : 1
          }
       },
+      "encoding:replacement" : {
+         "default_level" : "m",
+         "desc" : {
+            "en" : "\u003Cp>There are some historical encodings that have not been used on the\u000AWeb and have security concerns.  To protect the user, the files in\u000Athose encodings are discarded.\u003C/p>",
+            "ja" : "\u003Cp>歴史的な符号化の中には、 Web では長らく使われていない反面、\u000Aセキュリティー上の懸念のあるものもあります。利用者を保護するため、\u000Aそうした符号化を使ったファイルは開けません。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "An obsolete encoding is used",
+            "ja" : "廃止された符号化が使われています"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      },
+      "encoding:unassigned" : {
+         "default_level" : "m",
+         "desc" : {
+            "en" : "\u003Cp>Some byte sequences are left unassigned in several encodings.  For\u000Ainteroperability, they must not be used.\u003C/p>",
+            "ja" : "\u003Cp>符号化によっては割当のないバイト列があります。\u000A相互運用性のため、そうしたバイト列を使ってはいけません。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "There is an unassigned byte",
+            "ja" : "未割当のバイトがあります"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      },
       "utf-16:lone byte" : {
          "default_level" : "m",
          "desc" : {
@@ -38,8 +68,8 @@
          },
          "layer" : "charencoding",
          "message" : {
-            "en" : "There is a high surrogate not immediately followed by a low surrogate",
-            "ja" : "直後に低サロゲートがない高サロゲートがあります"
+            "en" : "There is a high surrogate not immediately (\u003Cvar>{text}\u003C/var>) followed by a low surrogate",
+            "ja" : "直後に低サロゲートがない高サロゲート (\u003Cvar>{text}\u003C/var>) があります"
          },
          "modules" : {
             "Web::Encoding::Decoder" : 1
@@ -53,8 +83,8 @@
          },
          "layer" : "charencoding",
          "message" : {
-            "en" : "There is a low surrogate not immediately following a high surrogate",
-            "ja" : "直前に高サロゲートがない低サロゲートがあります"
+            "en" : "There is a low surrogate (\u003Cvar>{text}\u003C/var>) not immediately following a high surrogate",
+            "ja" : "直前に高サロゲートがない低サロゲート (\u003Cvar>{text}\u003C/var>) があります"
          },
          "modules" : {
             "Web::Encoding::Decoder" : 1
