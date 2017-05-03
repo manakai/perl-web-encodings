@@ -89,6 +89,8 @@ sub _decode_16 ($$$$$) {
       $states->{lead_byte} = substr $_[2], -1;
     }
   }
+  ## @s can't contain an empty string for the convenience of later BOM
+  ## stripping.
   return \@s;
 } # _decode_16
 
@@ -119,51 +121,23 @@ sub bytes ($$) {
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
     return [$s];
   } elsif ($key eq 'utf-16be') {
-    my $offset = 0;
+    my $decoded = _decode_16 $_[0]->{states}, 0, $_[1], 0, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
-      if (delete $_[0]->{states}->{has_fe}) {
-        if ($_[1] =~ /^\xFF/) {
-          $offset = 1;
-        } else {
-          _decode_16 $_[0]->{states}, $offset, "\xFE", 0, 'n'; # returns empty
-        }
+      if (@$decoded) {
+        $decoded->[0] =~ s/^\x{FEFF}//;
         $_[0]->{states}->{bom_seen} = 1;
-      } else {
-        if ($_[1] =~ /^\xFE\xFF/) {
-          $offset = 2;
-          $_[0]->{states}->{bom_seen} = 1;
-        } elsif ($_[1] eq "\xFE") {
-          $_[0]->{states}->{has_fe} = 1;
-          return [];
-        } else {
-          $_[0]->{states}->{bom_seen} = 1;
-        }
       }
     }
-    return _decode_16 $_[0]->{states}, $offset, $_[1], 0, 'n';
+    return $decoded;
   } elsif ($key eq 'utf-16le') {
-    my $offset = 0;
+    my $decoded = _decode_16 $_[0]->{states}, 0, $_[1], 0, 'v';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
-      if (delete $_[0]->{states}->{has_ff}) {
-        if ($_[1] =~ /^\xFE/) {
-          $offset = 1;
-        } else {
-          _decode_16 $_[0]->{states}, $offset, "\xFF", 0, 'v'; # returns empty
-        }
+      if (@$decoded) {
+        $decoded->[0] =~ s/^\x{FEFF}//;
         $_[0]->{states}->{bom_seen} = 1;
-      } else {
-        if ($_[1] =~ /^\xFF\xFE/) {
-          $offset = 2;
-          $_[0]->{states}->{bom_seen} = 1;
-        } elsif ($_[1] eq "\xFF") {
-          $_[0]->{states}->{has_ff} = 1;
-          return [];
-        } else {
-          $_[0]->{states}->{bom_seen} = 1;
-        }
       }
     }
-    return _decode_16 $_[0]->{states}, $offset, $_[1], 0, 'v';
+    return $decoded;
   } elsif ($key eq 'replacement') {
     if (not $_[0]->{states}->{written}) {
       $_[0]->{states}->{written} = 1;
@@ -180,15 +154,23 @@ sub bytes ($$) {
 sub eof ($) {
   my $key = $_[0]->{key};
   if ($key eq 'utf-16be') {
-    my $prefix = '';
-    $prefix = "\xFF" if $_[0]->{states}->{has_ff};
-    $prefix = "\xFE" if $_[0]->{states}->{has_fe};
-    return _decode_16 $_[0]->{states}, 0, $prefix, 1, 'n';
+    my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'n';
+    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
+      if (@$decoded) {
+        $decoded->[0] =~ s/^\x{FEFF}//;
+        $_[0]->{states}->{bom_seen} = 1;
+      }
+    }
+    return $decoded;
   } elsif ($key eq 'utf-16le') {
-    my $prefix = '';
-    $prefix = "\xFF" if $_[0]->{states}->{has_ff};
-    $prefix = "\xFE" if $_[0]->{states}->{has_fe};
-    return _decode_16 $_[0]->{states}, 0, $prefix, 1, 'v';
+    my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'v';
+    if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
+      if (@$decoded) {
+        $decoded->[0] =~ s/^\x{FEFF}//;
+        $_[0]->{states}->{bom_seen} = 1;
+      }
+    }
+    return $decoded;
   } else {
     return [];
   }
