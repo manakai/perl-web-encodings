@@ -51,16 +51,24 @@ sub used_encoding_key ($) {
   return $_[0]->{key};
 } # used_encoding_key
 
-sub _u16 ($$$) {
-  #$states, $u, \@s;
+sub _u16 ($$$$$) {
+  #$states, $u, \@s, $onerror, $index;
   if ($_[1] < 0xD800 or 0xDFFF < $_[1]) {
     if (defined $_[0]->{lead_surrogate}) {
-      push @{$_[2]}, "\x{FFFD}"; # or error
+      $_[3]->(type => 'utf-16:lone high surrogate', level => 'm', fatal => 1,
+              index => $_[0]->{index} + $_[4] - 2,
+              text => sprintf '0x%04X', $_[0]->{lead_surrogate});
+      push @{$_[2]}, "\x{FFFD}";
+      delete $_[0]->{lead_surrogate};
     }
     push @{$_[2]}, chr $_[1];
   } elsif ($_[1] <= 0xDBFF) { # [U+D800, U+DBFF]
     if (defined $_[0]->{lead_surrogate}) {
-      push @{$_[2]}, "\x{FFFD}"; # or error
+      $_[3]->(type => 'utf-16:lone high surrogate', level => 'm', fatal => 1,
+              index => $_[0]->{index} + $_[4] - 2,
+              text => sprintf '0x%04X', $_[0]->{lead_surrogate});
+      push @{$_[2]}, "\x{FFFD}";
+      delete $_[0]->{lead_surrogate};
     }
     $_[0]->{lead_surrogate} = $_[1];
   } else { # [U+DC00, U+DFFF]
@@ -69,16 +77,22 @@ sub _u16 ($$$) {
                           + ((delete ($_[0]->{lead_surrogate}) - 0xD800) << 10)
                           + $_[1] - 0xDC00);
     } else {
-      push @{$_[2]}, "\x{FFFD}"; # or error
+      $_[3]->(type => 'utf-16:lone low surrogate', level => 'm', fatal => 1,
+              index => $_[0]->{index} + $_[4],
+              text => sprintf '0x%04X', $_[1]);
+      push @{$_[2]}, "\x{FFFD}";
     }
   }
 } # _u16
 
 sub _decode_16 ($$$$$) {
   my $states = $_[0];
-  my $offset = $_[1];
+  #my $onerror = $_[1];
   #my $is_last = $_[3];
   #my $endian = $_[4]
+
+  my $offset = 0;
+  $states->{index} = 0 unless defined $states->{index};
 
   my @s;
   my $len = length $_[2];
@@ -87,14 +101,16 @@ sub _decode_16 ($$$$$) {
       my $lead = unpack 'C', delete $states->{lead_byte};
       my $sec = unpack 'C', substr $_[2], 0, 1;
       if ($_[4] eq 'n') {
-        _u16 $states, $lead * 0x100 + $sec, \@s;
+        _u16 $states, $lead * 0x100 + $sec, \@s, $_[1], -1;
       } else {
-        _u16 $states, $sec * 0x100 + $lead, \@s;
+        _u16 $states, $sec * 0x100 + $lead, \@s, $_[1], -1;
       }
       $offset++;
     } else { # empty
       if ($_[3]) { # $is_last
-        push @s, "\x{FFFD}"; # or error
+        $_[1]->(type => 'utf-16:lone byte', level => 'm', fatal => 1,
+                index => $states->{index} - 1, value => $states->{lead_byte});
+        push @s, "\x{FFFD}";
         delete $states->{lead_surrogate};
       }
     }
@@ -103,18 +119,27 @@ sub _decode_16 ($$$$$) {
   my $length = int $Length;
   my $i = 0;
   while ($i < $length) {
-    _u16 $states, (unpack $_[4], substr $_[2], $offset + $i * 2, 2), \@s;
+    _u16 $states, (unpack $_[4], substr $_[2], $offset + $i * 2, 2), \@s, $_[1], $offset + $i * 2;
     $i++;
   }
   if (defined $states->{lead_surrogate} and $_[3]) { # $is_last
-    push @s, "\x{FFFD}"; # or error
+    $_[1]->(type => 'utf-16:lone high surrogate', level => 'm', fatal => 1,
+            index => $states->{index} + $len - 2,
+            text => sprintf '0x%04X', $_[0]->{lead_surrogate});
+    push @s, "\x{FFFD}";
   } elsif ($length != $Length) {
     if ($_[3]) { # $is_last
-      push @s, "\x{FFFD}"; # or error
+      $_[1]->(type => 'utf-16:lone byte', level => 'm', fatal => 1,
+              index => $states->{index} + $len - 1,
+              value => substr $_[2], -1);
+      push @s, "\x{FFFD}";
     } else {
       $states->{lead_byte} = substr $_[2], -1;
     }
   }
+
+  $states->{index} += $len;
+
   ## @s can't contain an empty string for the convenience of later BOM
   ## stripping.
   return \@s;
@@ -155,7 +180,7 @@ sub bytes ($$) {
     #return undef if $s =~ /\x{FFFD}/ and error mode is fatal;
     return [$s];
   } elsif ($key eq 'utf-16be') {
-    my $decoded = _decode_16 $_[0]->{states}, 0, $_[1], 0, 'n';
+    my $decoded = _decode_16 $_[0]->{states}, $_[0]->_onerror, $_[1], 0, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
         if ($decoded->[0] =~ s/^\x{FEFF}//) {
@@ -166,7 +191,7 @@ sub bytes ($$) {
     }
     return $decoded;
   } elsif ($key eq 'utf-16le') {
-    my $decoded = _decode_16 $_[0]->{states}, 0, $_[1], 0, 'v';
+    my $decoded = _decode_16 $_[0]->{states}, $_[0]->_onerror, $_[1], 0, 'v';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
         if ($decoded->[0] =~ s/^\x{FEFF}//) {
@@ -197,7 +222,7 @@ sub eof ($) {
     ## Returns zero or more U+FFFD.
     return [Web::Encoding::_decode8 $_[0]->{states}, '', 1, $offset, $_[0]->_onerror];
   } elsif ($key eq 'utf-16be') {
-    my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'n';
+    my $decoded = _decode_16 $_[0]->{states}, $_[0]->_onerror, '', 1, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
         if ($decoded->[0] =~ s/^\x{FEFF}//) {
@@ -208,7 +233,7 @@ sub eof ($) {
     }
     return $decoded;
   } elsif ($key eq 'utf-16le') {
-    my $decoded = _decode_16 $_[0]->{states}, 0, '', 1, 'v';
+    my $decoded = _decode_16 $_[0]->{states}, $_[0]->_onerror, '', 1, 'v';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded) {
         if ($decoded->[0] =~ s/^\x{FEFF}//) {

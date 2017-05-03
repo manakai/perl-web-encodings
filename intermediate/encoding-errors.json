@@ -15,6 +15,51 @@
             "Web::Encoding::Decoder" : 1
          }
       },
+      "utf-16:lone byte" : {
+         "default_level" : "m",
+         "desc" : {
+            "en" : "\u003Cp>In a UTF-16 string, anything other than code units, i.e. pairs of\u000Atwo bytes, are allowed.  The number of the bytes in the string cannot\u000Abe odd.\u003C/p>",
+            "ja" : "\u003Cp>UTF-16 文字列中には符号単位 (2つのバイトの組) しか入れられません。\u000A文字列中のバイトの数は奇数にはなりません。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "There is a garbage byte at the end of the string",
+            "ja" : "文字列の末尾に余計なバイトがあります"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      },
+      "utf-16:lone high surrogate" : {
+         "default_level" : "m",
+         "desc" : {
+            "en" : "\u003Cp>In a UTF-16 string, a high surrogate code unit must be immediately\u000Afollowed by a low surrogate code unit.\u003C/p>",
+            "ja" : "\u003Cp>UTF-16 文字列中で高サロゲート符号単位の直後には低サロゲート符号単位がなければいけません。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "There is a high surrogate not immediately followed by a low surrogate",
+            "ja" : "直後に低サロゲートがない高サロゲートがあります"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      },
+      "utf-16:lone low surrogate" : {
+         "default_level" : "m",
+         "desc" : {
+            "en" : "\u003Cp>In a UTF-16 string, a low surrogate code unit must immediately\u000Afollow a high surrogate code unit.\u003C/p>",
+            "ja" : "\u003Cp>UTF-16 文字列中で低サロゲート符号単位の直前には高サロゲート符号単位がなければいけません。\u003C/p>"
+         },
+         "layer" : "charencoding",
+         "message" : {
+            "en" : "There is a low surrogate not immediately following a high surrogate",
+            "ja" : "直前に高サロゲートがない低サロゲートがあります"
+         },
+         "modules" : {
+            "Web::Encoding::Decoder" : 1
+         }
+      },
       "utf8:bad bytes" : {
          "default_level" : "m",
          "desc" : {

@@ -87,7 +87,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             push @error, join ';',
                 $args{index},
                 $args{level},
-                $args{type},
+                $args{type} . (defined $args{text} ? '$' . $args{text} : ''),
                 $value;
           });
           my $result = '';
@@ -123,7 +123,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             push @error, join ';',
                 $args{index},
                 $args{level},
-                $args{type},
+                $args{type} . (defined $args{text} ? '$' . $args{text} : ''),
                 $value;
           });
           $decoder->fatal (1);

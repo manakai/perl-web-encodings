@@ -41,3 +41,53 @@ cause interoperability and security problems.
 <p>BOM (バイト順マーク) があります。
 相互運用性やセキュリティーの問題の元ですから、
 省くべきです。
+
+* utf-16:lone byte
+
+layer=charencoding
+default_level=m
+
+@en
+There is a garbage byte at the end of the string
+@ja
+文字列の末尾に余計なバイトがあります
+
+@en
+<p>In a UTF-16 string, anything other than code units, i.e. pairs of
+two bytes, are allowed.  The number of the bytes in the string cannot
+be odd.
+@ja
+<p>UTF-16 文字列中には符号単位 (2つのバイトの組) しか入れられません。
+文字列中のバイトの数は奇数にはなりません。
+
+* utf-16:lone high surrogate
+
+layer=charencoding
+default_level=m
+
+@en
+There is a high surrogate not immediately followed by a low surrogate
+@ja
+直後に低サロゲートがない高サロゲートがあります
+
+@en
+<p>In a UTF-16 string, a high surrogate code unit must be immediately
+followed by a low surrogate code unit.
+@ja
+<p>UTF-16 文字列中で高サロゲート符号単位の直後には低サロゲート符号単位がなければいけません。
+
+* utf-16:lone low surrogate
+
+layer=charencoding
+default_level=m
+
+@en
+There is a low surrogate not immediately following a high surrogate
+@ja
+直前に高サロゲートがない低サロゲートがあります
+
+@en
+<p>In a UTF-16 string, a low surrogate code unit must immediately
+follow a high surrogate code unit.
+@ja
+<p>UTF-16 文字列中で低サロゲート符号単位の直前には高サロゲート符号単位がなければいけません。
