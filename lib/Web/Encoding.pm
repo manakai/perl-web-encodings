@@ -159,7 +159,7 @@ sub decode_web_charset ($$) {
     require Web::Encoding::Decoder;
     my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($_[0]);
     $decoder->ignore_bom (1);
-    return $decoder->bytes ($_[1]) . $decoder->eof;
+    return join '', @{$decoder->bytes ($_[1])}, @{$decoder->eof};
   }
 } # decode_web_charset
 

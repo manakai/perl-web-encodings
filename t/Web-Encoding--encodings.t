@@ -78,8 +78,8 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           my $decoder = Web::Encoding::Decoder->new_from_encoding_key ($enc);
           $decoder->ignore_bom ($Ignore);
           my $result = '';
-          $result .= $decoder->bytes ($_) for @$bytes;
-          $result .= $decoder->eof;
+          $result .= join '', @{$decoder->bytes ($_)} for @$bytes;
+          $result .= join '', @{$decoder->eof};
           is $result, join '', @$chars;
           is $decoder->used_encoding_key, $test->{used}->[0] || $encoding;
           done $c;
