@@ -42,15 +42,9 @@ sub encode_web_utf8 ($) {
   }
 } # encode_web_utf8
 
-sub decode_web_utf8 ($) {
-  if (not defined $_[0]) {
-    carp "Use of uninitialized value in subroutine entry";
-    return '';
-  } elsif (utf8::is_utf8 $_[0]) {
-    croak "Cannot decode string with wide characters";
-  } else {
-    my $x = substr ($_[0], 0, 3) eq "\xEF\xBB\xBF" ? substr $_[0], 3 : $_[0];
-    $x =~ s{
+sub _decode8 ($) {
+  my $x = $_[0]; # string copy!
+  $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
        \xE0               [\xA0-\xBF][\x80-\xBF]|
        [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
@@ -59,15 +53,25 @@ sub decode_web_utf8 ($) {
        [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
        \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
       [^\x00-\x7F]
-    }{
-      if (defined $1) {
-        $1;
-      } else {
-        qq{\xEF\xBF\xBD};
-      }
-    }gex;
-    utf8::decode ($x);
-    return $x;
+  }{
+    if (defined $1) {
+      $1;
+    } else {
+      qq{\xEF\xBF\xBD}; # U+FFFD
+    }
+  }gex;
+  utf8::decode ($x);
+  return $x;
+} # _decode8
+
+sub decode_web_utf8 ($) {
+  if (not defined $_[0]) {
+    carp "Use of uninitialized value in subroutine entry";
+    return '';
+  } elsif (utf8::is_utf8 $_[0]) {
+    croak "Cannot decode string with wide characters";
+  } else {
+    return _decode8 (substr ($_[0], 0, 3) eq "\xEF\xBB\xBF" ? substr $_[0], 3 : $_[0]);
   }
 } # decode_web_utf8
 
@@ -78,25 +82,7 @@ sub decode_web_utf8_no_bom ($) {
   } elsif (utf8::is_utf8 $_[0]) {
     croak "Cannot decode string with wide characters";
   } else {
-    my $x = $_[0];
-    $x =~ s{
-      ([\xC2-\xDF]        [\x80-\xBF]|
-       \xE0               [\xA0-\xBF][\x80-\xBF]|
-       [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
-       \xED               [\x80-\x9F][\x80-\xBF]|
-       \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
-       [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
-       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
-      [^\x00-\x7F]
-    }{
-      if (defined $1) {
-        $1;
-      } else {
-        qq{\xEF\xBF\xBD};
-      }
-    }gex;
-    utf8::decode ($x);
-    return $x;
+    return _decode8 $_[0];
   }
 } # decode_web_utf8_no_bom
 
