@@ -202,6 +202,42 @@ sub _kr ($$$$$) {
   }
 } # _kr
 
+sub _jis ($$$$$) {
+  # $b1 $b2 $out $index_offset $onerror
+  unless (0x40 <= $_[1] and $_[1] <= 0xFC and not $_[1] == 0x7F) {
+    push @{$_[2]}, "\x{FFFD}";
+    $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[3], value => pack 'CC', $_[0], $_[1]);
+    push @{$_[2]}, chr $_[1] if $_[1] < 0x80;
+  } else {
+    my $pointer = ($_[0] - ($_[0] < 0xA0 ? 0x81 : 0xC1)) * 188
+        + $_[1] - ($_[1] < 0x7F ? 0x40 : 0x41);
+    my $c = $Web::Encoding::_JIS::DecodeIndex->[$pointer];
+    if (defined $c) {
+      if (8272 <= $pointer and $pointer <= 8835) {
+        $_[4]->(type => 'encoding:not canonical', level => 'w',
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+      push @{$_[2]}, $c;
+    } elsif (8836 <= $pointer and $pointer <= 10715) {
+      ## EUDC.  Though they are not roundtrippable, we don't emit any
+      ## warning here, as we will report them at Unicode character
+      ## validation.  PUA code points are not interoperable anyway.
+      push @{$_[2]}, chr (0xE000 - 8836 + $pointer);
+    } else {
+      if ($_[1] < 0x80) {
+        push @{$_[2]}, "\x{FFFD}", chr $_[1];
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      } else {
+        push @{$_[2]}, "\x{FFFD}";
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+    }
+  }
+} # _jis
+
 sub _decode_mb ($$$$$) {
   # $states $s $final $onerror $char
   $_[0]->{index} = 0 unless defined $_[0]->{index};
@@ -250,6 +286,60 @@ sub _decode_mb ($$$$$) {
   $_[0]->{index} += length $_[1];
   return \@s;
 } # _decode_mb
+
+sub _decode_sjis ($$$$) {
+  # $states $s $final $onerror
+  $_[0]->{index} = 0 unless defined $_[0]->{index};
+  my @s;
+  pos ($_[1]) = 0;
+  if (defined $_[0]->{lead_byte}) {
+    if ($_[1] =~ /\G([\x40-\xFF])/gc) {
+      _jis $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
+      delete $_[0]->{lead_byte};
+    } elsif ($_[1] eq '' and not $_[2]) {
+      #
+    } else {
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+              index => $_[0]->{index} - 1, value => pack 'C', $_[0]->{lead_byte});
+      delete $_[0]->{lead_byte};
+    }
+  } # lead_byte
+  while ($_[1] =~ m{
+    \G(?:
+      ([\x81-\x9F\xE0-\xFC](?:[\x40-\xFF]|(\z)?)) |
+      ([\xA0-\xDF\xFD\xFE\xFF]) |
+      ([\x00-\x7F\x80]+)
+    )
+  }gx) {
+    if (defined $1) {
+      if (2 == length $1) {
+        _jis ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+      } else {
+        if (defined $2 and not $_[2]) {
+          $_[0]->{lead_byte} = ord $1;
+        } else {
+          push @s, "\x{FFFD}";
+          $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                  index => $_[0]->{index} + $-[0], value => $1);
+        }
+      }
+    } elsif (defined $3) {
+      my $c = ord $3;
+      if (0xA1 <= $c and $c <= 0xDF) {
+        push @s, chr (0xFF61 - 0xA1 + $c);
+      } else {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $3);
+      }
+    } else {
+      push @s, $4;
+    }
+  }
+  $_[0]->{index} += length $_[1];
+  return \@s;
+} # _decode_sjis
 
 sub bytes ($$) {
   my $key = $_[0]->{key};
@@ -314,6 +404,9 @@ sub bytes ($$) {
   } elsif ($key eq 'big5') {
     require Web::Encoding::_Big5;
     return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_b5;
+  } elsif ($key eq 'shift_jis') {
+    require Web::Encoding::_JIS;
+    return _decode_sjis $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
   } elsif ($key eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_kr;
@@ -364,6 +457,9 @@ sub eof ($) {
   } elsif ($key eq 'big5') {
     require Web::Encoding::_Big5;
     return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_b5;
+  } elsif ($key eq 'shift_jis') {
+    require Web::Encoding::_JIS;
+    return _decode_sjis $_[0]->{states}, '', 1, $_[0]->_onerror;
   } elsif ($key eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_kr;

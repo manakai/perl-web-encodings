@@ -153,6 +153,8 @@ sub _encode_mb ($$$) {
         my $v = substr $_[1], $c * 2, 2;
         if ($v eq "\x00\x00") {
           push @s, sprintf '&#%d;', $c;
+        } elsif (substr ($v, 0, 1) eq "\x00") {
+          push @s, substr $v, 1, 1;
         } else {
           push @s, $v;
         }
@@ -191,6 +193,9 @@ sub encode_web_charset ($$) {
     return _encode_mb $_[1],
         $Web::Encoding::_Big5::EncodeBMP,
         $Web::Encoding::_Big5::EncodeNonBMP;
+  } elsif ($_[0] eq 'shift_jis') {
+    require Web::Encoding::_JIS;
+    return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPSJIS, {};
   } elsif ($_[0] eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _encode_mb $_[1], $Web::Encoding::_EUCKR::EncodeBMP, {};

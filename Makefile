@@ -51,6 +51,7 @@ build: lib/Web/Encoding/_Defs.pm \
     lib/Web/Encoding/_Single.pm \
     lib/Web/Encoding/_Big5.pm \
     lib/Web/Encoding/_EUCKR.pm \
+    lib/Web/Encoding/_JIS.pm \
     intermediate/encoding-errors.json
 
 local/encodings.json:
@@ -75,6 +76,8 @@ lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 lib/Web/Encoding/_Single.pm: bin/mksingle.pl local/encoding-indexes.json json-ps
 	$(PERL) $< > $@
 lib/Web/Encoding/_Big5.pm: bin/mkbig5.pl local/encoding-indexes.json json-ps
+	$(PERL) $< > $@
+lib/Web/Encoding/_JIS.pm: bin/mkjis.pl local/encoding-indexes.json json-ps
 	$(PERL) $< > $@
 lib/Web/Encoding/_EUCKR.pm: bin/mkeuckr.pl local/encoding-indexes.json json-ps
 	$(PERL) $< > $@
