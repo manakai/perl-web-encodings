@@ -133,6 +133,35 @@ sub _encode_16 ($$) {
   return join '', @s;
 } # _encode_16
 
+sub _encode_b5 ($) {
+  my @s;
+  pos ($_[0]) = 0;
+  while ($_[0] =~ m{\G(?:([\x00-\x7F]+)|(.))}gs) {
+    if (defined $1) {
+      push @s, $1;
+      utf8::downgrade $s[-1];
+    } else {
+      my $c = ord $2;
+      if ($c > 0xFFFF) {
+        my $v = $Web::Encoding::_Big5::EncodeNonBMP->{$c};
+        if (defined $v) {
+          push @s, $v;
+        } else {
+          push @s, sprintf '&#%d;', $c;
+        }
+      } else {
+        my $v = substr $Web::Encoding::_Big5::EncodeBMP, $c * 2, 2;
+        if ($v eq "\x00\x00") {
+          push @s, sprintf '&#%d;', $c;
+        } else {
+          push @s, $v;
+        }
+      }
+    }
+  } # while
+  return join '', @s;
+} # _encode_b5
+
 sub _is_single ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
 } # _is_single
@@ -157,6 +186,9 @@ sub encode_web_charset ($$) {
     return _encode_16 $_[1], 'n';
   } elsif ($_[0] eq 'utf-16le') {
     return _encode_16 $_[1], 'v';
+  } elsif ($_[0] eq 'big5') {
+    require Web::Encoding::_Big5;
+    return _encode_b5 $_[1];
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {

@@ -180,7 +180,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
         my $c = shift;
         my $result = encode_web_charset $encoding, join '', @$chars;
         is $result, join '', @$bytes;
-        ok ! utf8::is_utf8 $result;
+        ok ! (utf8::is_utf8 $result), "no utf8 flag";
         done $c;
       } n => 2, name => [$file_name, 'cb', $test->{name}->[0] || join "\n", @{$test->{c}->[0]}];
 
@@ -196,6 +196,24 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
     } # $test->{cb}
   };
 } # $test_file_path
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/big5_in.txt');
+  my $ref_path = $tests_path->child ('full/big5_in_ref.txt');
+  my $result = decode_web_charset 'big5', $input_path->slurp;
+  is $result, decode_web_utf8 $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data in big5';
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/big5_out.txt');
+  my $ref_path = $tests_path->child ('full/big5_out_ref.txt');
+  my $result = encode_web_charset 'big5', decode_web_utf8 $input_path->slurp;
+  is $result, $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data out big5';
 
 run_tests;
 

@@ -142,6 +142,85 @@ sub _decode_16 ($$$$$) {
   return \@s;
 } # _decode_16
 
+sub _b5 ($$$$$) {
+  # $b1 $b2 $out $index_offset $onerror
+  if ((0x7F <= $_[1] and $_[1] <= 0xA0) or $_[1] == 0xFF) {
+    push @{$_[2]}, "\x{FFFD}";
+    $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[3], value => pack 'CC', $_[0], $_[1]);
+  } else {
+    my $pointer = ($_[0] - 0x81) * 157
+        + $_[1] - ($_[1] < 0x7F ? 0x40 : 0x62);
+    my $c = $Web::Encoding::_Big5::DecodeIndex->[$pointer];
+    if (defined $c) {
+      if ($pointer < (0xA1 - 0x81) * 157) {
+        $_[4]->(type => 'big5:hkscs', level => 'w',
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+      push @{$_[2]}, $c;
+    } else {
+      if ($_[1] < 0x80) {
+        push @{$_[2]}, "\x{FFFD}", chr $_[1];
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      } else {
+        push @{$_[2]}, "\x{FFFD}";
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+    }
+  }
+} # _b5
+
+sub _decode_b5 ($$$$) {
+  # $states $s $final $onerror
+  $_[0]->{index} = 0 unless defined $_[0]->{index};
+  my @s;
+  pos ($_[1]) = 0;
+  if (defined $_[0]->{lead_byte}) {
+    if ($_[1] =~ /\G([\x40-\xFF])/gc) {
+      _b5 $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
+      delete $_[0]->{lead_byte};
+    } elsif ($_[1] eq '' and not $_[2]) {
+      #
+    } else {
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+              index => $_[0]->{index} - 1, value => pack 'C', $_[0]->{lead_byte});
+      delete $_[0]->{lead_byte};
+    }
+  } # lead_byte
+  while ($_[1] =~ m{
+    \G(?:
+      ([\x81-\xFE](?:[\x40-\xFF]|(\z)?)) |
+      ([\x80\xFF]) |
+      ([\x00-\x7F]+)
+    )
+  }gx) {
+    if (defined $1) {
+      if (2 == length $1) {
+        _b5 ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+      } else {
+        if (defined $2 and not $_[2]) {
+          $_[0]->{lead_byte} = ord $1;
+        } else {
+          push @s, "\x{FFFD}";
+          $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                  index => $_[0]->{index} + $-[0], value => $1);
+        }
+      }
+    } elsif (defined $3) {
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+              index => $_[0]->{index} + $-[0], value => $3);
+    } else {
+      push @s, $4;
+    }
+  }
+  $_[0]->{index} += length $_[1];
+  return \@s;
+} # _decode_b5
+
 sub bytes ($$) {
   my $key = $_[0]->{key};
   if (not defined $_[1]) {
@@ -202,6 +281,9 @@ sub bytes ($$) {
       }
     }
     return $decoded;
+  } elsif ($key eq 'big5') {
+    require Web::Encoding::_Big5;
+    return _decode_b5 $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
   } elsif ($key eq 'replacement') {
     if (not $_[0]->{states}->{written}) {
       $_[0]->{states}->{written} = 1;
@@ -246,6 +328,9 @@ sub eof ($) {
       }
     }
     return $decoded;
+  } elsif ($key eq 'big5') {
+    require Web::Encoding::_Big5;
+    return _decode_b5 $_[0]->{states}, '', 1, $_[0]->_onerror;
   } else {
     return [];
   }

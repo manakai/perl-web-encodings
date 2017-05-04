@@ -49,6 +49,7 @@ build: lib/Web/Encoding/_Defs.pm \
     lib/Web/Encoding/unicore/Decomposition.pl \
     lib/Web/Encoding/unicore/CompositionExclusions.pl \
     lib/Web/Encoding/_Single.pm \
+    lib/Web/Encoding/_Big5.pm \
     intermediate/encoding-errors.json
 
 local/encodings.json:
@@ -71,6 +72,8 @@ lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 	' < local/encodings.json > $@
 	perl -c $@
 lib/Web/Encoding/_Single.pm: bin/mksingle.pl local/encoding-indexes.json json-ps
+	$(PERL) $< > $@
+lib/Web/Encoding/_Big5.pm: bin/mkbig5.pl local/encoding-indexes.json json-ps
 	$(PERL) $< > $@
 
 lib/Web/Encoding/unicore/CombiningClass.pl:

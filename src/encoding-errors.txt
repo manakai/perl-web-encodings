@@ -127,3 +127,35 @@ those encodings are discarded.
 <p>歴史的な符号化の中には、 Web では長らく使われていない反面、
 セキュリティー上の懸念のあるものもあります。利用者を保護するため、
 そうした符号化を使ったファイルは開けません。
+
+* multibyte:lone lead byte
+
+layer=charencoding
+default_level=m
+
+@en
+There is a lead byte not immediately followed by a trail byte
+@ja
+第1バイトの直後に第2バイトがありません
+
+@en
+<p>In a multibyte encoding, a lead byte, which introduces a multibyte
+code, must be immediately followed by a trail byte.
+@ja
+<p>多バイト符号化では、多バイト符号の先頭のバイトの直後には第2バイトが来なければいけません。
+
+* big5:hkscs
+
+layer=charencoding
+default_level=w
+
+@en
+An HKSCS extended code is used
+@ja
+HKSCS 拡張符号が使われています
+
+@en
+<p>The HKSCS extended part of the Big5 encoding is not fully
+interoperable.
+@ja
+<p>Big5 符号化の HKSCS 拡張部分は十分相互運用可能ではありません。
