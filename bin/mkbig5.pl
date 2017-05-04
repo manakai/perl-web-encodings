@@ -19,6 +19,12 @@ sub b ($) {
   return pack 'CC', $lead, $trail + $offset;
 } # b
 
+sub bytes ($) {
+  my $s = shift;
+  $s =~ s/(.)/sprintf '\\x%02X', ord $1/ges;
+  return $s;
+} # bytes
+
 for my $name (qw(big5)) {
   $Decoder->{$name} = [map { defined $_ ? chr $_ : undef } @{$json->{$name}}];
 
@@ -30,20 +36,32 @@ for my $name (qw(big5)) {
 
   ## <https://encoding.spec.whatwg.org/#index-big5-pointer>
   my $map = {};
+  my $pmap = {};
   for (0..$#{$json->{$name}}) {
     next if $_ < (0xA1 - 0x81) * 157;
 
     my $v = $json->{$name}->[$_];
     if (defined $v) {
-      if ($v == 0x2550 or
-          $v == 0x255E or
-          $v == 0x2561 or
-          $v == 0x256A or
-          $v == 0x5341 or
-          $v == 0x5345) {
-        $map->{$v} = b $_;
+      if (defined $map->{$v}) {
+        #warn sprintf "Duplicate: U+%04X = (%s, %s)\n",
+        #    $v,
+        #    (bytes $map->{$v}),
+        #    (bytes b $_);
+        if ($v == 0x2550 or
+            $v == 0x255E or
+            $v == 0x2561 or
+            $v == 0x256A or
+            $v == 0x5341 or
+            $v == 0x5345) {
+          $Decoder->{noncanon}->{$pmap->{$v}} = 1;
+          $map->{$v} = b $_;
+          $pmap->{$v} = $_;
+        } else {
+          $Decoder->{noncanon}->{$_} = 1;
+        }
       } else {
-        $map->{$v} //= b $_;
+        $map->{$v} = b $_;
+        $pmap->{$v} = $_;
       }
     }
   }
@@ -63,6 +81,8 @@ print '$Web::Encoding::_Big5::EncodeNonBMP = ';
 print Dumper $Encoder->{nonbmp};
 print '$Web::Encoding::_Big5::DecodeIndex = ';
 print Dumper $Decoder->{big5};
+print '$Web::Encoding::_Big5::NonCanonical = ';
+print Dumper $Decoder->{noncanon};
 print "1;";
 
 ## License: Public Domain.

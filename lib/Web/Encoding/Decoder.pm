@@ -156,6 +156,9 @@ sub _b5 ($$$$$) {
       if ($pointer < (0xA1 - 0x81) * 157) {
         $_[4]->(type => 'big5:hkscs', level => 'w',
                 index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      } elsif ($Web::Encoding::_Big5::NonCanonical->{$pointer}) {
+        $_[4]->(type => 'encoding:not canonical', level => 'w',
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
       }
       push @{$_[2]}, $c;
     } else {
