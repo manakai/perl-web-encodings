@@ -148,6 +148,7 @@ sub _b5 ($$$$$) {
     push @{$_[2]}, "\x{FFFD}";
     $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
             index => $_[3], value => pack 'CC', $_[0], $_[1]);
+    push @{$_[2]}, chr $_[1] if $_[1] < 0x80;
   } else {
     my $pointer = ($_[0] - 0x81) * 157
         + $_[1] - ($_[1] < 0x7F ? 0x40 : 0x62);
@@ -175,14 +176,40 @@ sub _b5 ($$$$$) {
   }
 } # _b5
 
-sub _decode_b5 ($$$$) {
-  # $states $s $final $onerror
+sub _kr ($$$$$) {
+  # $b1 $b2 $out $index_offset $onerror
+  if ($_[1] < 0x41 or $_[1] == 0xFF) {
+    push @{$_[2]}, "\x{FFFD}";
+    $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[3], value => pack 'CC', $_[0], $_[1]);
+    push @{$_[2]}, chr $_[1] if $_[1] < 0x80;
+  } else {
+    my $pointer = ($_[0] - 0x81) * 190 + $_[1] - 0x41;
+    my $c = $Web::Encoding::_EUCKR::DecodeIndex->[$pointer];
+    if (defined $c) {
+      push @{$_[2]}, $c;
+    } else {
+      if ($_[1] < 0x80) {
+        push @{$_[2]}, "\x{FFFD}", chr $_[1];
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      } else {
+        push @{$_[2]}, "\x{FFFD}";
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+    }
+  }
+} # _kr
+
+sub _decode_mb ($$$$$) {
+  # $states $s $final $onerror $char
   $_[0]->{index} = 0 unless defined $_[0]->{index};
   my @s;
   pos ($_[1]) = 0;
   if (defined $_[0]->{lead_byte}) {
     if ($_[1] =~ /\G([\x40-\xFF])/gc) {
-      _b5 $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
+      $_[4]->($_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3]);
       delete $_[0]->{lead_byte};
     } elsif ($_[1] eq '' and not $_[2]) {
       #
@@ -202,7 +229,7 @@ sub _decode_b5 ($$$$) {
   }gx) {
     if (defined $1) {
       if (2 == length $1) {
-        _b5 ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+        $_[4]->(ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3]);
       } else {
         if (defined $2 and not $_[2]) {
           $_[0]->{lead_byte} = ord $1;
@@ -222,7 +249,7 @@ sub _decode_b5 ($$$$) {
   }
   $_[0]->{index} += length $_[1];
   return \@s;
-} # _decode_b5
+} # _decode_mb
 
 sub bytes ($$) {
   my $key = $_[0]->{key};
@@ -286,7 +313,10 @@ sub bytes ($$) {
     return $decoded;
   } elsif ($key eq 'big5') {
     require Web::Encoding::_Big5;
-    return _decode_b5 $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
+    return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_b5;
+  } elsif ($key eq 'euc-kr') {
+    require Web::Encoding::_EUCKR;
+    return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_kr;
   } elsif ($key eq 'replacement') {
     if (not $_[0]->{states}->{written}) {
       $_[0]->{states}->{written} = 1;
@@ -333,7 +363,10 @@ sub eof ($) {
     return $decoded;
   } elsif ($key eq 'big5') {
     require Web::Encoding::_Big5;
-    return _decode_b5 $_[0]->{states}, '', 1, $_[0]->_onerror;
+    return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_b5;
+  } elsif ($key eq 'euc-kr') {
+    require Web::Encoding::_EUCKR;
+    return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_kr;
   } else {
     return [];
   }

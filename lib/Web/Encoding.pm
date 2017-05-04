@@ -133,7 +133,7 @@ sub _encode_16 ($$) {
   return join '', @s;
 } # _encode_16
 
-sub _encode_b5 ($) {
+sub _encode_mb ($$$) {
   my @s;
   pos ($_[0]) = 0;
   while ($_[0] =~ m{\G(?:([\x00-\x7F]+)|(.))}gs) {
@@ -143,14 +143,14 @@ sub _encode_b5 ($) {
     } else {
       my $c = ord $2;
       if ($c > 0xFFFF) {
-        my $v = $Web::Encoding::_Big5::EncodeNonBMP->{$c};
+        my $v = $_[2]->{$c};
         if (defined $v) {
           push @s, $v;
         } else {
           push @s, sprintf '&#%d;', $c;
         }
       } else {
-        my $v = substr $Web::Encoding::_Big5::EncodeBMP, $c * 2, 2;
+        my $v = substr $_[1], $c * 2, 2;
         if ($v eq "\x00\x00") {
           push @s, sprintf '&#%d;', $c;
         } else {
@@ -160,7 +160,7 @@ sub _encode_b5 ($) {
     }
   } # while
   return join '', @s;
-} # _encode_b5
+} # _encode_mb
 
 sub _is_single ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
@@ -188,7 +188,12 @@ sub encode_web_charset ($$) {
     return _encode_16 $_[1], 'v';
   } elsif ($_[0] eq 'big5') {
     require Web::Encoding::_Big5;
-    return _encode_b5 $_[1];
+    return _encode_mb $_[1],
+        $Web::Encoding::_Big5::EncodeBMP,
+        $Web::Encoding::_Big5::EncodeNonBMP;
+  } elsif ($_[0] eq 'euc-kr') {
+    require Web::Encoding::_EUCKR;
+    return _encode_mb $_[1], $Web::Encoding::_EUCKR::EncodeBMP, {};
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {

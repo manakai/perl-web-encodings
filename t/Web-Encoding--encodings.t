@@ -215,6 +215,24 @@ test {
   done $c;
 } n => 1, name => 'test_data out big5';
 
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/euc_kr_in.txt');
+  my $ref_path = $tests_path->child ('full/euc_kr_in_ref.txt');
+  my $result = decode_web_charset 'euc-kr', $input_path->slurp;
+  is $result, decode_web_utf8 $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data in euc-kr';
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/euc_kr_out.txt');
+  my $ref_path = $tests_path->child ('full/euc_kr_out_ref.txt');
+  my $result = encode_web_charset 'euc-kr', decode_web_utf8 $input_path->slurp;
+  is $result, $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data out euc-kr';
+
 run_tests;
 
 =head1 LICENSE
