@@ -137,11 +137,11 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           if (($test->{errors}->[1]->[0] || '') eq 'fatal') {
             like $@, qr{^Input has invalid bytes}, 'exception';
             ok 1;
-            is join ("\n", @error), [grep { /;m;/ } @{$test->{errors}->[0] or []}]->[0] || '', "errors";
+            is join ("\n", @error), join ("\n", grep { /;m;/ } @{$test->{errors}->[0] or []}), "errors (fatal)";
           } else {
             ok ! $@, 'no exception';
             is $result, join '', @$chars;
-            is join ("\n", @error), join ("\n", grep { not /;m;/ } @{$test->{errors}->[0] or []}), "errors";
+            is join ("\n", @error), join ("\n", grep { not /;m;(?!iso2022jp:jis78)/ } @{$test->{errors}->[0] or []}), "errors";
           }
           done $c;
         } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore with fatal", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];

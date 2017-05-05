@@ -699,6 +699,9 @@ sub _esc ($$$$$) {
     $new_state = '0208';
   } elsif ($_[0]->{lead_escape} eq "\x24\x40") {
     $new_state = '6226';
+    $_[3]->(type => 'iso2022jp:jis78', level => 'm',
+            index => $_[0]->{index} + pos ($_[1]) - 2 - 1,
+            value => "\x1B\x24\x40");
   } elsif ($_[0]->{lead_escape} eq "\x28\x42") {
     $new_state = 'ASCII';
   } elsif ($_[0]->{lead_escape} eq "\x28\x4A") {

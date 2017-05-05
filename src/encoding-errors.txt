@@ -159,3 +159,51 @@ HKSCS 拡張符号が使われています
 interoperable.
 @ja
 <p>Big5 符号化の HKSCS 拡張部分は十分相互運用可能ではありません。
+
+* iso2022jp:jis78
+
+layer=charencoding
+default_level=m
+
+@en
+JIS C 6226-1978 is used
+@ja
+JIS C 6226-1978 が使われています
+
+@en
+<p>Though an escape sequence designating JIS C 6226-1978 (<code
+class=charname>ESC</code> 2/4 4/0), which has been obsoleted, is
+allowed in an ISO-2022-JP string, it is interpreted as per the revised
+definition, which is in fact incompatible with the original
+definition.
+@ja
+<p>古い規格である JIS C 6226-1978 を指示するエスケープシーケンス (<code
+class=charname>ESC</code> 2/4 4/0) を ISO-2022-JP 
+文字列で使うことは認められてはいますが、元の定義ではなく、
+本来非互換な改訂版の定義に従い解釈されます。
+
+* iso2022jp:lone escape
+
+layer=charencoding
+default_level=m
+
+@en
+There is a broken escape sequence
+@ja
+壊れたエスケープシーケンスがあります
+@en
+<p>In an ISO-2022-JP string, only escape sequences
+<code class=charname>ESC</code> 2/4 4/0,
+<code class=charname>ESC</code> 2/4 4/2,
+<code class=charname>ESC</code> 2/8 4/2,
+<code class=charname>ESC</code> 2/8 4/9, and
+<code class=charname>ESC</code> 2/8 4/10
+are allowed.
+@ja
+<p>ISO-2022-JP 文字列で使えるエスケープシーケンスは
+<code class=charname>ESC</code> 2/4 4/0,
+<code class=charname>ESC</code> 2/4 4/2,
+<code class=charname>ESC</code> 2/8 4/2,
+<code class=charname>ESC</code> 2/8 4/9,
+<code class=charname>ESC</code> 2/8 4/10
+だけです。
