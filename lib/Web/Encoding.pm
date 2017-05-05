@@ -203,6 +203,79 @@ sub _encode_mb ($$$$$) {
   return join '', @s;
 } # _encode_mb
 
+sub _encode_iso2022jp ($$$) {
+  # $states $s $final
+
+  my @s;
+
+  for (split //, $_[1]) {
+    my $c = ord $_;
+    
+    if ($c == 0x000E or $c == 0x000F or $c == 0x1B) {
+      if (defined $_[0]->{state} and not $_[0]->{state} eq 'J') {
+        delete $_[0]->{state};
+        push @s, "\x1B\x28\x42";
+      }
+      push @s, '&#65533;'; # U+FFFD
+    } elsif ($c == 0x5C or $c == 0x7E) {
+      if (defined $_[0]->{state}) {
+        delete $_[0]->{state};
+        push @s, "\x1B\x28\x42";
+      }
+      push @s, pack 'C', $c;
+    } elsif ($c <= 0x7F) {
+      if (defined $_[0]->{state} and not $_[0]->{state} eq 'J') {
+        delete $_[0]->{state};
+        push @s, "\x1B\x28\x42";
+      }
+      push @s, pack 'C', $c;
+    } elsif ($c == 0xA5) {
+      if (not defined $_[0]->{state} or not $_[0]->{state} eq 'J') {
+        $_[0]->{state} = 'J';
+        push @s, "\x1B\x28\x4A";
+      }
+      push @s, "\x5C";
+    } elsif ($c == 0x203E) {
+      if (not defined $_[0]->{state} or not $_[0]->{state} eq 'J') {
+        $_[0]->{state} = 'J';
+        push @s, "\x1B\x28\x4A";
+      }
+      push @s, "\x7E";
+    } elsif ($c > 0xFFFF) {
+      if (defined $_[0]->{state} and not $_[0]->{state} eq 'J') {
+        delete $_[0]->{state};
+        push @s, "\x1B\x28\x42";
+      }
+      push @s, sprintf '&#%d;', $c;
+    } else {
+      my $v = substr $Web::Encoding::_JIS::EncodeBMPEUC, $c * 2, 2;
+      if ($v =~ /^[\xA1-\xFE]/) {
+        if (not defined $_[0]->{state} or not $_[0]->{state} eq 'B') {
+          $_[0]->{state} = 'B';
+          push @s, "\x1B\x24\x42";
+        }
+        $v =~ tr/\x80-\xFF/\x00-\x7F/;
+        push @s, $v;
+      } else {
+        if (defined $_[0]->{state} and not $_[0]->{state} eq 'J') {
+          delete $_[0]->{state};
+          push @s, "\x1B\x28\x42";
+        }
+        push @s, sprintf '&#%d;', $c;
+      }
+    }
+  }
+
+  if ($_[2]) {
+    if (defined $_[0]->{state}) {
+      delete $_[0]->{state};
+      push @s, "\x1B\x28\x42";
+    }
+  }
+
+  return join '', @s;
+} # _encode_iso2022jp
+
 sub _is_single ($) {
   return (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte});
 } # _is_single
@@ -248,6 +321,9 @@ sub encode_web_charset ($$) {
   } elsif ($_[0] eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _encode_mb $_[1], $Web::Encoding::_EUCKR::EncodeBMP, {}, [], 0;
+  } elsif ($_[0] eq 'iso-2022-jp') {
+    require Web::Encoding::_JIS;
+    return _encode_iso2022jp {}, $_[1], 1;
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {

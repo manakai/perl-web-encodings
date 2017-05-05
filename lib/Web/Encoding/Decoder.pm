@@ -301,19 +301,21 @@ sub _sjis ($$$$$) {
   }
 } # _sjis
 
-sub _eucjp ($$$$$) {
-  # $b1 $b2 $out $index_offset $onerror
+sub _jis ($$$$$$) {
+  # $b1 $b2 $out $index_offset $onerror $delta
   unless (0xA1 <= $_[1] and $_[1] <= 0xFE) {
     push @{$_[2]}, "\x{FFFD}";
     $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
-            index => $_[3], value => pack 'CC', $_[0], $_[1]);
+            index => $_[3],
+            value => pack 'CC', $_[0] - $_[5], $_[1] - $_[5]);
   } elsif ($_[0] == 0x8E) {
     if ($_[1] <= 0xDF) {
       push @{$_[2]}, chr (0xFF61 - 0xA1 + $_[1]);
     } else {
       push @{$_[2]}, "\x{FFFD}";
       $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
-              index => $_[3], value => pack 'CC', $_[0], $_[1]);
+              index => $_[3],
+              value => pack 'CC', $_[0] - $_[5], $_[1] - $_[5]);
     }
   } else {
     my $pointer = ($_[0] - 0xA1) * 94 + $_[1] - 0xA1;
@@ -322,15 +324,17 @@ sub _eucjp ($$$$$) {
       push @{$_[2]}, $c;
       if ($Web::Encoding::_JIS::NonCanonicalEUC->{$pointer}) {
         $_[4]->(type => 'encoding:not canonical', level => 'w',
-                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+                index => $_[3],
+                value => pack 'CC', $_[0] - $_[5], $_[1] - $_[5]);
       }
     } else {
       push @{$_[2]}, "\x{FFFD}";
       $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
-              index => $_[3], value => pack 'CC', $_[0], $_[1]);
+              index => $_[3],
+              value => pack 'CC', $_[0] - $_[5], $_[1] - $_[5]);
     }
   }
-} # _eucjp
+} # _jis
 
 sub _eucjp0212 ($$$$$) {
   # $b1 $b2 $out $index_offset $onerror
@@ -504,7 +508,7 @@ sub _decode_eucjp ($$$$) {
     }
   } elsif (defined $_[0]->{lead_byte}) {
     if ($_[1] =~ /\G([\x80-\xFF])/gc) {
-      _eucjp $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
+      _jis $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3], 0;
       delete $_[0]->{lead_byte};
     } elsif ($_[1] eq '' and not $_[2]) {
       #
@@ -525,7 +529,7 @@ sub _decode_eucjp ($$$$) {
   }gx) {
     if (defined $1) {
       if (2 == length $1) {
-        _eucjp ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+        _jis ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3], 0;
       } else {
         if (defined $2 and not $_[2]) {
           $_[0]->{lead_byte} = ord $1;
@@ -675,6 +679,170 @@ sub _decode_gb18030 ($$$$) {
   return \@s;
 } # _decode_gb18030
 
+sub _esc ($$$$$) {
+  # $states $s $final $onerror $out
+  my $length = length $_[0]->{lead_escape};
+  if ($length == 0) {
+    if ($_[1] =~ m{\G(\x24[\x40\x42]?|\x28[BIJ]?)}gc) {
+      $_[0]->{lead_escape} .= $1;
+    }
+  } elsif ($length == 1) {
+    if ($_[0]->{lead_escape} eq "\x24" and $_[1] =~ m{\G([\x40\x42])}gc) {
+      $_[0]->{lead_escape} .= $1;
+    } elsif ($_[0]->{lead_escape} eq "\x28" and $_[1] =~ m{\G([BIJ])}gc) {
+      $_[0]->{lead_escape} .= $1;
+    }
+  }
+
+  my $new_state;
+  if ($_[0]->{lead_escape} eq "\x24\x42") {
+    $new_state = '0208';
+  } elsif ($_[0]->{lead_escape} eq "\x24\x40") {
+    $new_state = '6226';
+  } elsif ($_[0]->{lead_escape} eq "\x28\x42") {
+    $new_state = 'ASCII';
+  } elsif ($_[0]->{lead_escape} eq "\x28\x4A") {
+    $new_state = 'Latin';
+  } elsif ($_[0]->{lead_escape} eq "\x28\x49") {
+    $new_state = 'Katakana';
+  } else {
+    if (not $_[2] and $_[1] =~ m{\G\z}gc) {
+      return;
+    } else {
+      push @{$_[4]}, "\x{FFFD}", $_[0]->{lead_escape};
+      $_[3]->(type => 'iso2022jp:lone escape', level => 'm', fatal => 1,
+              index => $_[0]->{index} + pos ($_[1]) - length ($_[0]->{lead_escape}) - 1,
+              value => "\x1B");
+      delete $_[0]->{after_escape};
+      delete $_[0]->{lead_escape};
+      return;
+    }
+  }
+
+  if ($_[0]->{after_escape}) {
+    push @{$_[4]}, "\x{FFFD}";
+    $_[3]->(type => 'iso2022jp:redundant escape',
+            level => 'm', fatal => 1,
+            index => $_[0]->{index} + pos ($_[1]) - length ($_[0]->{lead_escape}) - 1 - 3,
+            value => {
+              '0208' => "\x1B\x24\x42",
+              '6226' => "\x1B\x24\x40",
+              'ASCII' => "\x1B\x28\x42",
+              'Latin' => "\x1B\x28\x4A",
+              'Katakana' => "\x1B\x28\x49",
+            }->{$_[0]->{state}});
+  }
+  $_[0]->{state} = $new_state;
+  $_[0]->{after_escape} = 1;
+  delete $_[0]->{lead_escape};
+} # _esc
+
+sub _decode_iso2022jp ($$$$) {
+  # $states $s $final $onerror
+  $_[0]->{index} = 0 unless defined $_[0]->{index};
+  $_[0]->{state} = 'ASCII' unless defined $_[0]->{state};
+  my @s;
+
+  pos ($_[1]) = 0;
+
+  if (defined $_[0]->{lead_escape}) {
+    _esc $_[0], $_[1], $_[2], $_[3], \@s;
+  }
+
+  if (defined $_[0]->{lead_byte}) {
+    if ($_[1] =~ m{\G([\x21-\x7E])}gc) {
+      _jis 0x80 + $_[0]->{lead_byte}, 0x80 + ord $1, \@s, $_[0]->{index} - 1, $_[3], 0x80;
+      delete $_[0]->{after_escape};
+      delete $_[0]->{lead_byte};
+    } elsif ($_[1] =~ m{\G([^\x1B])}gc) {
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+              index => $_[0]->{index} - 1,
+              value => (pack 'C', $_[0]->{lead_byte}) . $1);
+      delete $_[0]->{after_escape};
+      delete $_[0]->{lead_byte};
+    } elsif ($_[2]) {
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+              index => $_[0]->{index} - 1,
+              value => pack 'C', $_[0]->{lead_byte});
+      delete $_[0]->{lead_byte};
+    }
+  } # lead_byte
+
+  my $length = length $_[1];
+  while (pos ($_[1]) < $length) {
+    if ($_[0]->{state} eq 'ASCII') {
+      if ($_[1] =~ m{\G([\x00-\x0D\x10-\x1A\x1C-\x7F]+)}gc) {
+        push @s, $1;
+        delete $_[0]->{after_escape};
+      } elsif ($_[1] =~ m{\G([^\x1B])}gc) {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $1);
+        delete $_[0]->{after_escape};
+      }
+    } elsif ($_[0]->{state} eq 'Latin') {
+      if ($_[1] =~ m{\G([\x00-\x0D\x10-\x1A\x1C-\x7F]+)}gc) {
+        push @s, $1;
+        $s[-1] =~ tr/\x5C\x7E/\xA5\x{203E}/;
+        delete $_[0]->{after_escape};
+      } elsif ($_[1] =~ m{\G([^\x1B])}gc) {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $1);
+        delete $_[0]->{after_escape};
+      }
+    } elsif ($_[0]->{state} eq '0208' or $_[0]->{state} eq '6226') {
+      while ($_[1] =~ m{\G([\x21-\x7E])([\x21-\x7E])}gc) {
+        _jis 0x80 + ord $1, 0x80 + ord $2, \@s, $_[0]->{index} + $-[0], $_[3], 0x80;
+        delete $_[0]->{after_escape};
+      }
+      if ($_[1] =~ m{\G([\x21-\x7E][^\x1B])}gc) {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $1);
+        delete $_[0]->{after_escape};
+      } elsif (not $_[2] and $_[1] =~ m{\G([\x21-\x7E])\z}gc) {
+        $_[0]->{lead_byte} = ord $1;
+        delete $_[0]->{after_escape};
+      } elsif ($_[1] =~ m{\G([^\x1B])}gc) {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $1);
+        delete $_[0]->{after_escape};
+      }
+    } elsif ($_[0]->{state} eq 'Katakana') {
+      while ($_[1] =~ m{\G([\x21-\x5F])}gc) {
+        push @s, chr (0xFF61 - 0x21 + ord $1);
+        delete $_[0]->{after_escape};
+      }
+      if ($_[1] =~ m{\G([^\x1B])}gc) {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $1);
+        delete $_[0]->{after_escape};
+      }
+    }
+
+    if ($_[1] =~ m{\G\x1B}gc) {
+      $_[0]->{lead_escape} = '';
+      _esc $_[0], $_[1], $_[2], $_[3], \@s;
+    }
+  } # while
+
+  $_[0]->{index} += length $_[1];
+
+  if ($_[2]) {
+    unless ($_[0]->{state} eq 'ASCII') {
+      $_[3]->(type => 'iso2022jp:not ascii at end', level => 'w',
+              index => $_[0]->{index});
+    }
+  }
+
+  return \@s;
+} # _decode_iso2022jp
+
 sub bytes ($$) {
   my $key = $_[0]->{key};
   if (not defined $_[1]) {
@@ -750,6 +918,9 @@ sub bytes ($$) {
   } elsif ($key eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_kr;
+  } elsif ($key eq 'iso-2022-jp') {
+    require Web::Encoding::_JIS;
+    return _decode_iso2022jp $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
   } elsif ($key eq 'replacement') {
     if (not $_[0]->{states}->{written}) {
       $_[0]->{states}->{written} = 1;
@@ -809,6 +980,9 @@ sub eof ($) {
   } elsif ($key eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_kr;
+  } elsif ($key eq 'iso-2022-jp') {
+    require Web::Encoding::_JIS;
+    return _decode_iso2022jp $_[0]->{states}, '', 1, $_[0]->_onerror;
   } else {
     return [];
   }
