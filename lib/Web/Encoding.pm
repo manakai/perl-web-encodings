@@ -196,6 +196,9 @@ sub encode_web_charset ($$) {
   } elsif ($_[0] eq 'shift_jis') {
     require Web::Encoding::_JIS;
     return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPSJIS, {};
+  } elsif ($_[0] eq 'euc-jp') {
+    require Web::Encoding::_JIS;
+    return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPEUC, {};
   } elsif ($_[0] eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _encode_mb $_[1], $Web::Encoding::_EUCKR::EncodeBMP, {};

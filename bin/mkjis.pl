@@ -20,6 +20,13 @@ sub b ($) {
   return pack 'CC', $lead + $lead_offset, $trail + $offset;
 } # b
 
+sub be ($) {
+  my $pointer = shift;
+  my $lead = int ($pointer / 94);
+  my $trail = $pointer % 94;
+  return pack 'CC', $lead + 0xA1, $trail + 0xA1;
+} # be
+
 sub bytes ($) {
   my $s = shift;
   $s =~ s/(.)/sprintf '\\x%02X', ord $1/ges;
@@ -31,30 +38,62 @@ for my $name (qw(jis0208)) {
 
   ## <https://encoding.spec.whatwg.org/#index-shift_jis-pointer>
   my $map = {};
+  my $mape = {};
   for (0..$#{$json->{$name}}) {
-    next if 8272 <= $_ and $_ <= 8835;
-
     my $v = $json->{$name}->[$_];
+
+    unless (8272 <= $_ and $_ <= 8835) {
+      if (defined $v) {
+        if (defined $map->{$v}) {
+          #warn sprintf "U+%04X %s %s\n", $v, bytes $map->{$v}, bytes b $_;
+          $Decoder->{noncanons}->{$_} = 1;
+        }
+        $map->{$v} //= b $_;
+      }
+    }
+
     if (defined $v) {
-      $map->{$v} //= b $_;
+      if (defined $mape->{$v} and $_ < 8836) {
+        #warn sprintf "U+%04X %s %s\n", $v, bytes $mape->{$v}, bytes be $_;
+        $Decoder->{noncanone}->{$_} = 1;
+      }
+      $mape->{$v} //= be $_;
     }
   }
-  ## <https://encoding.spec.whatwg.org/#big5>
   $map->{0x0080} = "\x00\x80";
   $map->{0x00A5} = "\x00\x5C";
+  $mape->{0x00A5} = "\x00\x5C";
   $map->{0x203E} = "\x00\x7E";
+  $mape->{0x203E} = "\x00\x7E";
   $map->{$_} = pack 'CC', 0, $_ - 0xFF61 + 0xA1 for 0xFF61 .. 0xFF9F;
+  $mape->{$_} = pack 'CC', 0x8E, $_ - 0xFF61 + 0xA1 for 0xFF61 .. 0xFF9F;
   $map->{0x2212} = $map->{0xFF0D};
+  $mape->{0x2212} = $mape->{0xFF0D};
   $Encoder->{bmpsjis} = join '', map {
     $map->{$_} // "\x00\x00";
   } 0x0000..0xFFFF;
+  $Encoder->{bmpeuc} = join '', map {
+    $mape->{$_} // "\x00\x00";
+  } 0x0000..0xFFFF;
+}
+
+for my $name (qw(jis0212)) {
+  $Decoder->{$name} = [map { defined $_ ? chr $_ : undef } @{$json->{$name}}];
 }
 
 $Data::Dumper::Sortkeys = 1;
 print '$Web::Encoding::_JIS::EncodeBMPSJIS = ';
 print Dumper $Encoder->{bmpsjis};
+print '$Web::Encoding::_JIS::EncodeBMPEUC = ';
+print Dumper $Encoder->{bmpeuc};
 print '$Web::Encoding::_JIS::DecodeIndex = ';
 print Dumper $Decoder->{jis0208};
+print '$Web::Encoding::_JIS::DecodeIndex0212 = ';
+print Dumper $Decoder->{jis0212};
+print '$Web::Encoding::_JIS::NonCanonicalSJIS = ';
+print Dumper $Decoder->{noncanons};
+print '$Web::Encoding::_JIS::NonCanonicalEUC = ';
+print Dumper $Decoder->{noncanone};
 print "1;";
 
 ## License: Public Domain.

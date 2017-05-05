@@ -202,7 +202,7 @@ sub _kr ($$$$$) {
   }
 } # _kr
 
-sub _jis ($$$$$) {
+sub _sjis ($$$$$) {
   # $b1 $b2 $out $index_offset $onerror
   unless (0x40 <= $_[1] and $_[1] <= 0xFC and not $_[1] == 0x7F) {
     push @{$_[2]}, "\x{FFFD}";
@@ -214,7 +214,8 @@ sub _jis ($$$$$) {
         + $_[1] - ($_[1] < 0x7F ? 0x40 : 0x41);
     my $c = $Web::Encoding::_JIS::DecodeIndex->[$pointer];
     if (defined $c) {
-      if (8272 <= $pointer and $pointer <= 8835) {
+      if ((8272 <= $pointer and $pointer <= 8835) or
+          $Web::Encoding::_JIS::NonCanonicalSJIS->{$pointer}) {
         $_[4]->(type => 'encoding:not canonical', level => 'w',
                 index => $_[3], value => pack 'CC', $_[0], $_[1]);
       }
@@ -236,7 +237,59 @@ sub _jis ($$$$$) {
       }
     }
   }
-} # _jis
+} # _sjis
+
+sub _eucjp ($$$$$) {
+  # $b1 $b2 $out $index_offset $onerror
+  unless (0xA1 <= $_[1] and $_[1] <= 0xFE) {
+    push @{$_[2]}, "\x{FFFD}";
+    $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[3], value => pack 'CC', $_[0], $_[1]);
+  } elsif ($_[0] == 0x8E) {
+    if ($_[1] <= 0xDF) {
+      push @{$_[2]}, chr (0xFF61 - 0xA1 + $_[1]);
+    } else {
+      push @{$_[2]}, "\x{FFFD}";
+      $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+              index => $_[3], value => pack 'CC', $_[0], $_[1]);
+    }
+  } else {
+    my $pointer = ($_[0] - 0xA1) * 94 + $_[1] - 0xA1;
+    my $c = $Web::Encoding::_JIS::DecodeIndex->[$pointer];
+    if (defined $c) {
+      push @{$_[2]}, $c;
+      if ($Web::Encoding::_JIS::NonCanonicalEUC->{$pointer}) {
+        $_[4]->(type => 'encoding:not canonical', level => 'w',
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+    } else {
+      push @{$_[2]}, "\x{FFFD}";
+      $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+              index => $_[3], value => pack 'CC', $_[0], $_[1]);
+    }
+  }
+} # _eucjp
+
+sub _eucjp0212 ($$$$$) {
+  # $b1 $b2 $out $index_offset $onerror
+  unless (0xA1 <= $_[1] and $_[1] <= 0xFE) {
+    push @{$_[2]}, "\x{FFFD}";
+    $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[3], value => pack 'CCC', 0x8F, $_[0], $_[1]);
+  } else {
+    my $pointer = ($_[0] - 0xA1) * 94 + $_[1] - 0xA1;
+    my $c = $Web::Encoding::_JIS::DecodeIndex0212->[$pointer];
+    if (defined $c) {
+      push @{$_[2]}, $c;
+      $_[4]->(type => 'eucjp:0212', level => 'w',
+              index => $_[3], value => pack 'CCC', 0x8F, $_[0], $_[1]);
+    } else {
+      push @{$_[2]}, "\x{FFFD}";
+      $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+              index => $_[3], value => pack 'CCC', 0x8F, $_[0], $_[1]);
+    }
+  }
+} # _eucjp0212
 
 sub _decode_mb ($$$$$) {
   # $states $s $final $onerror $char
@@ -294,7 +347,7 @@ sub _decode_sjis ($$$$) {
   pos ($_[1]) = 0;
   if (defined $_[0]->{lead_byte}) {
     if ($_[1] =~ /\G([\x40-\xFF])/gc) {
-      _jis $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
+      _sjis $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
       delete $_[0]->{lead_byte};
     } elsif ($_[1] eq '' and not $_[2]) {
       #
@@ -314,7 +367,7 @@ sub _decode_sjis ($$$$) {
   }gx) {
     if (defined $1) {
       if (2 == length $1) {
-        _jis ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+        _sjis ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
       } else {
         if (defined $2 and not $_[2]) {
           $_[0]->{lead_byte} = ord $1;
@@ -340,6 +393,111 @@ sub _decode_sjis ($$$$) {
   $_[0]->{index} += length $_[1];
   return \@s;
 } # _decode_sjis
+
+sub _decode_eucjp ($$$$) {
+  # $states $s $final $onerror
+  $_[0]->{index} = 0 unless defined $_[0]->{index};
+  my @s;
+  pos ($_[1]) = 0;
+  if ($_[0]->{is_0212}) {
+    if (defined $_[0]->{lead_byte}) {
+      if ($_[1] =~ /\G([\x80-\xFF])/gc) {
+        _eucjp0212 $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 2, $_[3];
+        delete $_[0]->{lead_byte};
+        delete $_[0]->{is_0212};
+      } elsif ($_[1] eq '' and not $_[2]) {
+        #
+      } else {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} - 2,
+                value => pack 'CC', 0x8F, $_[0]->{lead_byte});
+        delete $_[0]->{lead_byte};
+        delete $_[0]->{is_0212};
+      }
+    } else {
+      if ($_[1] =~ /\G([\x80-\xFF])([\x80-\xFF])?/gc) {
+        if (defined $2) {
+          _eucjp0212 ord $1, ord $2, \@s, $_[0]->{index} - 1, $_[3];
+          delete $_[0]->{is_0212};
+        } else {
+          if (1 == length $_[1] and not $_[2]) {
+            $_[0]->{lead_byte} = ord $1;
+          } else {
+            push @s, "\x{FFFD}";
+            $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                    index => $_[0]->{index} - 1,
+                    value => "\x8F" . $1);
+            delete $_[0]->{is_0212};
+          }
+        }
+      } elsif ($_[1] eq '' and not $_[2]) {
+        #
+      } else {
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} - 1, value => "\x8F");
+        delete $_[0]->{is_0212};
+      }
+    }
+  } elsif (defined $_[0]->{lead_byte}) {
+    if ($_[1] =~ /\G([\x80-\xFF])/gc) {
+      _eucjp $_[0]->{lead_byte}, ord $1, \@s, $_[0]->{index} - 1, $_[3];
+      delete $_[0]->{lead_byte};
+    } elsif ($_[1] eq '' and not $_[2]) {
+      #
+    } else {
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+              index => $_[0]->{index} - 1, value => pack 'C', $_[0]->{lead_byte});
+      delete $_[0]->{lead_byte};
+    }
+  } # lead_byte
+  while ($_[1] =~ m{
+    \G(?:
+      ([\x8E\xA1-\xFE](?:[\x80-\xFF]|(\z)?)) |
+      \x8F ( (?:[\x80-\xFF] (?:[\x80-\xFF] |) |) (\z)? ) |
+      ([\x80-\x8D\x90-\xA0\xFF\x8F]) |
+      ([\x00-\x7F]+)
+    )
+  }gx) {
+    if (defined $1) {
+      if (2 == length $1) {
+        _eucjp ord substr ($1, 0, 1), ord substr ($1, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+      } else {
+        if (defined $2 and not $_[2]) {
+          $_[0]->{lead_byte} = ord $1;
+        } else {
+          push @s, "\x{FFFD}";
+          $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                  index => $_[0]->{index} + $-[0], value => $1);
+        }
+      }
+    } elsif (defined $3) {
+      if (2 == length $3) {
+        _eucjp0212 ord substr ($3, 0, 1), ord substr ($3, 1, 1), \@s, $_[0]->{index} + $-[0], $_[3];
+      } else {
+        if (defined $4 and not $_[2]) {
+          $_[0]->{lead_byte} = length $3 ? ord $3 : undef;
+          $_[0]->{is_0212} = 1;
+        } else {
+          push @s, "\x{FFFD}";
+          $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                  index => $_[0]->{index} + $-[0], value => "\x8F" . $3);
+        }
+      }
+    } elsif (defined $5) {
+      my $c = ord $5;
+      push @s, "\x{FFFD}";
+      $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+              index => $_[0]->{index} + $-[0], value => $5);
+    } else {
+      push @s, $6;
+    }
+  }
+  $_[0]->{index} += length $_[1];
+  return \@s;
+} # _decode_eucjp
 
 sub bytes ($$) {
   my $key = $_[0]->{key};
@@ -407,6 +565,9 @@ sub bytes ($$) {
   } elsif ($key eq 'shift_jis') {
     require Web::Encoding::_JIS;
     return _decode_sjis $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
+  } elsif ($key eq 'euc-jp') {
+    require Web::Encoding::_JIS;
+    return _decode_eucjp $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
   } elsif ($key eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_kr;
@@ -460,6 +621,9 @@ sub eof ($) {
   } elsif ($key eq 'shift_jis') {
     require Web::Encoding::_JIS;
     return _decode_sjis $_[0]->{states}, '', 1, $_[0]->_onerror;
+  } elsif ($key eq 'euc-jp') {
+    require Web::Encoding::_JIS;
+    return _decode_eucjp $_[0]->{states}, '', 1, $_[0]->_onerror;
   } elsif ($key eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
     return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_kr;

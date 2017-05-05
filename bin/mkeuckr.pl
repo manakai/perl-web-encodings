@@ -31,6 +31,10 @@ for my $name (qw(euc-kr)) {
   for (0..$#{$json->{$name}}) {
     my $v = $json->{$name}->[$_];
     if (defined $v) {
+      #if (defined $map->{$v}) {
+      #  warn sprintf "U+%04X %s %s\n", $v, bytes $map->{$v}, bytes b $_;
+      #  $Decoder->{noncanon}->{$_} = 1;
+      #}
       $map->{$v} = b $_;
     }
   }
