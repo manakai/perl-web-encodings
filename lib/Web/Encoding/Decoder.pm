@@ -153,6 +153,10 @@ sub _gb ($$$$$) {
     my $pointer = ($_[0] - 0x81) * 190 + $_[1] - ($_[1] < 0x7F ? 0x40 : 0x41);
     my $c = $Web::Encoding::_GB::DecodeIndex->[$pointer];
     if (defined $c) {
+      if ($pointer == (0xA3 - 0x81) * 190 + 0xA0 - 0x41) {
+        $_[4]->(type => 'encoding:not canonical', level => 'w',
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
       push @{$_[2]}, $c;
     } else {
       if ($_[1] < 0x80) {
@@ -648,6 +652,8 @@ sub _decode_gb18030 ($$$$) {
                 value => pack 'CC', @{delete $_[0]->{lead_surrogate}});
       }
       if ($3 eq "\x80") {
+        $_[3]->(type => 'encoding:not canonical', level => 'w',
+                index => $_[0]->{index} + $-[0], value => $3);
         push @s, "\x{20AC}";
       } else {
         my $c = ord $3;
