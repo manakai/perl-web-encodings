@@ -175,6 +175,27 @@ for my $input (
   } n => 1, name => 'encode_web_charset replacement';
 }
 
+for my $key (undef, '', "ac", "iso-2022-kr", "EUC", "unicode",
+             "SHIFT_JIS", "\x{4563}") {
+  test {
+    my $c = shift;
+    eval {
+      encode_web_charset $key, '';
+    };
+    like $@, qr{^Bad encoding key \|\Q$key\E\| at \Q@{[__FILE__]}\E line \Q@{[__LINE__-2]}\E};
+    done $c;
+  } n => 1, name => ['encode_web_charset bad key', $key];
+
+  test {
+    my $c = shift;
+    eval {
+      decode_web_charset $key, '';
+    };
+    like $@, qr{^Bad encoding key \|\Q$key\E\| at \Q@{[__FILE__]}\E line \Q@{[__LINE__-2]}\E};
+    done $c;
+  } n => 1, name => ['decode_web_charset bad key', $key];
+}
+
 test {
   my $c = shift;
   my $result = encode_web_charset "utf-16be", "\x{110000}";

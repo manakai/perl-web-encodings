@@ -327,8 +327,7 @@ sub encode_web_charset ($$) {
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {
-    require Encode;
-    return Encode::encode ($_[0], defined $_[1] ? $_[1] : ''); # XXX
+    croak "Bad encoding key |$_[0]|";
   }
 } # encode_web_charset
 

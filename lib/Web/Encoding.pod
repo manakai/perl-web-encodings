@@ -194,13 +194,17 @@ windows-1256
 windows-1257
 windows-1258
 x-mac-cyrillic
+gb18030
+GBK
+Big5
+EUC-JP
+ISO-2022-JP
+Shift_JIS
+EUC-KR
+x-user-defined
 UTF-16BE
 UTF-16LE
-x-user-defined
 replacement
-
-This module does not support GBK, gb18030, Big5, EUC-JP, ISO-2022-JP,
-Shift_JIS, and EUC-KR yet.
 
 =head1 SPECIFICATIONS
 
@@ -212,6 +216,9 @@ UTF-16 encoder
 [HTML] HTML Standard <https://html.spec.whatwg.org/>.
 
 [DOM] DOM Standard <https://dom.spec.whatwg.org/>.
+
+Encoding Validation
+<https://wiki.suikawiki.org/n/Encoding%20Validation>.
 
 =head1 DEPENDENCY
 

@@ -95,9 +95,9 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
           $result .= join '', @{$decoder->eof};
           is $result, join '', @$chars;
           is $decoder->used_encoding_key, $test->{used}->[0] || $encoding;
-          $test->{errors}->[0] = [sort { $a cmp $b } @{$test->{errors}->[0] or []}];
+          my @expected = sort { $a cmp $b } @{$test->{errors}->[0] or []};
           @error = sort { $a cmp $b } @error;
-          is join ("\n", @error), join ("\n", @{$test->{errors}->[0] or []}), "errors";
+          is join ("\n", @error), join ("\n", @expected), "errors";
           done $c;
         } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];
 
@@ -132,16 +132,26 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
             $result .= join '', @{$decoder->bytes ($_)} for @$bytes;
             $result .= join '', @{$decoder->eof};
           };
-          $test->{errors}->[0] = [sort { $a cmp $b } @{$test->{errors}->[0] or []}];
           @error = sort { $a cmp $b } @error;
           if (($test->{errors}->[1]->[0] || '') eq 'fatal') {
             like $@, qr{^Input has invalid bytes}, 'exception';
             ok 1;
-            is join ("\n", @error), join ("\n", grep { /;m;/ } @{$test->{errors}->[0] or []}), "errors (fatal)";
+            my @expected;
+            for (@{$test->{errors}->[0] or []}) {
+              if (/;m;(?!iso2022jp:jis78)/) {
+                push @expected, $_;
+                last;
+              } elsif (/;m;/) {
+                push @expected, $_;
+              }
+            }
+            @expected = sort { $a cmp $b } @expected;
+            is join ("\n", @error), join ("\n", @expected), "errors (fatal)";
           } else {
             ok ! $@, 'no exception';
             is $result, join '', @$chars;
-            is join ("\n", @error), join ("\n", grep { not /;m;(?!iso2022jp:jis78)/ } @{$test->{errors}->[0] or []}), "errors";
+            my @expected = sort { $a cmp $b } @{$test->{errors}->[0] or []};
+            is join ("\n", @error), join ("\n", grep { not /;m;(?!iso2022jp:jis78)/ } @expected), "errors";
           }
           done $c;
         } n => 3, name => [$file_name, "decoder $BOMSniffing/$Ignore with fatal", $test->{name}->[0] || join "\n", @{$test->{b}->[0]}];

@@ -28,8 +28,6 @@ sub fatal ($;$) {
   return $_[0]->{fatal};
 } # fatal
 
-## Specification: Encoding Standard and
-## <https://wiki.suikawiki.org/n/Encoding%20Validation>.
 sub onerror ($;$) {
   if (@_ > 1) {
     $_[0]->{onerror} = $_[1];
@@ -934,8 +932,7 @@ sub bytes ($$) {
       return [];
     }
   } else {
-    require Encode;
-    return [Encode::decode ($key, $_[1])]; # XXX
+    croak "Bad encoding key |$key|";
   }
 } # bytes
 
@@ -986,8 +983,10 @@ sub eof ($) {
   } elsif ($key eq 'iso-2022-jp') {
     require Web::Encoding::_JIS;
     return _decode_iso2022jp $_[0]->{states}, '', 1, $_[0]->_onerror;
-  } else {
+  } elsif ($key eq 'replacement' or Web::Encoding::_is_single $key) {
     return [];
+  } else {
+    croak "Bad encoding key |$key|";
   }
 } # eof
 
