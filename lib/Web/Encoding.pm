@@ -133,7 +133,7 @@ sub _encode_16 ($$) {
   return join '', @s;
 } # _encode_16
 
-sub _encode_mb ($$$) {
+sub _encode_mb ($$$$$) {
   my @s;
   pos ($_[0]) = 0;
   while ($_[0] =~ m{\G(?:([\x00-\x7F]+)|(.))}gs) {
@@ -146,19 +146,58 @@ sub _encode_mb ($$$) {
         my $v = $_[2]->{$c};
         if (defined $v) {
           push @s, $v;
+          next;
         } else {
-          push @s, sprintf '&#%d;', $c;
+          #
         }
       } else {
         my $v = substr $_[1], $c * 2, 2;
         if ($v eq "\x00\x00") {
-          push @s, sprintf '&#%d;', $c;
+          #
         } elsif (substr ($v, 0, 1) eq "\x00") {
           push @s, substr $v, 1, 1;
+          next;
         } else {
           push @s, $v;
+          next;
         }
       }
+
+      if ($c == 0x20AC) {
+        push @s, $_[4] == 2 ? "\xA2\xE3" : "\x80";
+        next;
+      }
+
+      if (@{$_[3]}) {
+        ## <https://encoding.spec.whatwg.org/#index-gb18030-ranges-pointer>
+
+        my $pointer;
+        if ($c == 0xE5E5) {
+          #
+        } elsif ($c == 0xE7C7) {
+          $pointer = 7457;
+        } else {
+          for (@{$_[3]}) {
+            if ($_->[1] <= $c) {
+              $pointer = $_->[0] + $c - $_->[1];
+            }
+          }
+        }
+
+        if (defined $pointer) {
+          my $byte1 = int ($pointer / (10 * 126 * 10));
+          $pointer = $pointer % (10 * 126 * 10);
+          my $byte2 = int ($pointer / (10 * 126));
+          $pointer = $pointer % (10 * 126);
+          my $byte3 = int ($pointer / 10);
+          my $byte4 = $pointer % 10;
+          push @s, pack 'CCCC',
+              $byte1 + 0x81, $byte2 + 0x30, $byte3 + 0x81, $byte4 + 0x30;
+          next;
+        }
+      }
+
+      push @s, sprintf '&#%d;', $c;
     }
   } # while
   return join '', @s;
@@ -188,20 +227,27 @@ sub encode_web_charset ($$) {
     return _encode_16 $_[1], 'n';
   } elsif ($_[0] eq 'utf-16le') {
     return _encode_16 $_[1], 'v';
+  } elsif ($_[0] eq 'gb18030') {
+    require Web::Encoding::_GB;
+    return _encode_mb $_[1], $Web::Encoding::_GB::EncodeBMP, {},
+        $Web::Encoding::_GB::Ranges, 2;
+  } elsif ($_[0] eq 'gbk') {
+    require Web::Encoding::_GB;
+    return _encode_mb $_[1], $Web::Encoding::_GB::EncodeBMP, {}, [], 1;
   } elsif ($_[0] eq 'big5') {
     require Web::Encoding::_Big5;
     return _encode_mb $_[1],
         $Web::Encoding::_Big5::EncodeBMP,
-        $Web::Encoding::_Big5::EncodeNonBMP;
+        $Web::Encoding::_Big5::EncodeNonBMP, [], 0;
   } elsif ($_[0] eq 'shift_jis') {
     require Web::Encoding::_JIS;
-    return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPSJIS, {};
+    return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPSJIS, {}, [], 0;
   } elsif ($_[0] eq 'euc-jp') {
     require Web::Encoding::_JIS;
-    return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPEUC, {};
+    return _encode_mb $_[1], $Web::Encoding::_JIS::EncodeBMPEUC, {}, [], 0;
   } elsif ($_[0] eq 'euc-kr') {
     require Web::Encoding::_EUCKR;
-    return _encode_mb $_[1], $Web::Encoding::_EUCKR::EncodeBMP, {};
+    return _encode_mb $_[1], $Web::Encoding::_EUCKR::EncodeBMP, {}, [], 0;
   } elsif ($_[0] eq 'replacement') {
     croak "The replacement encoding has no encoder";
   } else {

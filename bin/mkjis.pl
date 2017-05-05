@@ -75,6 +75,14 @@ for my $name (qw(jis0208)) {
   $Encoder->{bmpeuc} = join '', map {
     $mape->{$_} // "\x00\x00";
   } 0x0000..0xFFFF;
+  for (keys %$map) {
+    next if $_ < 0x10000;
+    die sprintf "U+%04X", $_;
+  }
+  for (keys %$mape) {
+    next if $_ < 0x10000;
+    die sprintf "U+%04X", $_;
+  }
 }
 
 for my $name (qw(jis0212)) {

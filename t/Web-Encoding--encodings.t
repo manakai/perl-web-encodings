@@ -197,7 +197,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
   };
 } # $test_file_path
 
-for my $name (qw(big5 shift_jis)) {
+for my $name (qw(big5 shift_jis gb18030)) {
   test {
     my $c = shift;
     my $input_path = $tests_path->child ("full/${name}_in.txt");
@@ -218,6 +218,42 @@ path (__FILE__)->parent->parent->child ("local/hoge.txt")->spew ($result);
     done $c;
   } n => 1, name => ['test_data out', $name];
 } # $name
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/gb18030_in.txt');
+  my $ref_path = $tests_path->child ('full/gb18030_in_ref.txt');
+  my $result = decode_web_charset 'gbk', $input_path->slurp;
+  is $result, decode_web_utf8 $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data in gbk';
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/jis0208_in.txt');
+  my $ref_path = $tests_path->child ('full/jis0208_in_ref.txt');
+  my $result = decode_web_charset 'euc-jp', $input_path->slurp;
+  is $result, decode_web_utf8 $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data in euc-jp JIS X 0208';
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/jis0208_out.txt');
+  my $ref_path = $tests_path->child ('full/jis0208_out_ref.txt');
+  my $result = encode_web_charset 'euc-jp', decode_web_utf8 $input_path->slurp;
+  is $result, $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data out euc-jp JIS X 0208';
+
+test {
+  my $c = shift;
+  my $input_path = $tests_path->child ('full/jis0212_in.txt');
+  my $ref_path = $tests_path->child ('full/jis0212_in_ref.txt');
+  my $result = decode_web_charset 'euc-jp', $input_path->slurp;
+  is $result, decode_web_utf8 $ref_path->slurp;
+  done $c;
+} n => 1, name => 'test_data in euc-jp JIS X 0212';
 
 test {
   my $c = shift;

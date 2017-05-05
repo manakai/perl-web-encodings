@@ -142,6 +142,64 @@ sub _decode_16 ($$$$$) {
   return \@s;
 } # _decode_16
 
+sub _gb ($$$$$) {
+  # $b1 $b2 $out $index_offset $onerror
+  if ($_[1] < 0x40 or $_[1] == 0x7F or $_[1] == 0xFF) {
+    push @{$_[2]}, "\x{FFFD}";
+    $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[3], value => pack 'CC', $_[0], $_[1]);
+    push @{$_[2]}, chr $_[1] if $_[1] < 0x80;
+  } else {
+    my $pointer = ($_[0] - 0x81) * 190 + $_[1] - ($_[1] < 0x7F ? 0x40 : 0x41);
+    my $c = $Web::Encoding::_GB::DecodeIndex->[$pointer];
+    if (defined $c) {
+      push @{$_[2]}, $c;
+    } else {
+      if ($_[1] < 0x80) {
+        push @{$_[2]}, "\x{FFFD}", chr $_[1];
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      } else {
+        push @{$_[2]}, "\x{FFFD}";
+        $_[4]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[3], value => pack 'CC', $_[0], $_[1]);
+      }
+    }
+  }
+} # _gb
+
+sub _gb4 ($$$$$$) {
+  # $b1b2 $b3 $b4 $out $index_offset $onerror
+  my $pointer = ($_[0]->[0] - 0x81) * (10 * 126 * 10)
+      + ($_[0]->[1] - 0x30) * (10 * 126)
+      + ($_[1] - 0x81) * 10
+      + $_[2] - 0x30;
+
+  if (($pointer > 39419 and $pointer < 189000) or $pointer > 1237575) {
+    push @{$_[3]}, "\x{FFFD}", chr $_[0]->[1];
+    $_[5]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+            index => $_[4],
+            value => pack 'CCCC', $_[0]->[0], $_[0]->[1], $_[1], $_[2]);
+    return [$_[1], $_[2]];
+  }
+
+  if ($pointer == 7457) {
+    push @{$_[3]}, "\x{E7C7}";
+    return undef;
+  }
+
+  my $offset;
+  my $cp;
+  for (@{$Web::Encoding::_GB::Ranges}) {
+    if ($_->[0] <= $pointer) {
+      $offset = $_->[0];
+      $cp = $_->[1];
+    }
+  }
+  push @{$_[3]}, chr ($cp + $pointer - $offset);
+  return undef;
+} # _gb4
+
 sub _b5 ($$$$$) {
   # $b1 $b2 $out $index_offset $onerror
   if ((0x7F <= $_[1] and $_[1] <= 0xA0) or $_[1] == 0xFF) {
@@ -457,7 +515,7 @@ sub _decode_eucjp ($$$$) {
     \G(?:
       ([\x8E\xA1-\xFE](?:[\x80-\xFF]|(\z)?)) |
       \x8F ( (?:[\x80-\xFF] (?:[\x80-\xFF] |) |) (\z)? ) |
-      ([\x80-\x8D\x90-\xA0\xFF\x8F]) |
+      ([\x80-\x8D\x90-\xA0\xFF]) |
       ([\x00-\x7F]+)
     )
   }gx) {
@@ -498,6 +556,118 @@ sub _decode_eucjp ($$$$) {
   $_[0]->{index} += length $_[1];
   return \@s;
 } # _decode_eucjp
+
+sub _decode_gb18030 ($$$$) {
+  # $states $s $final $onerror
+  $_[0]->{index} = 0 unless defined $_[0]->{index};
+  my @s;
+  pos ($_[1]) = 0;
+  if (defined $_[0]->{lead_byte}) {
+    if ($_[1] =~ /\G([\x30-\x39\x40-\xFF])/gc) {
+      my $b2 = ord $1;
+      if (0x30 <= $b2 and $b2 <= 0x39) {
+        if (defined $_[0]->{lead_surrogate}) {
+          $_[0]->{lead_surrogate} = _gb4 $_[0]->{lead_surrogate}, $_[0]->{lead_byte}, $b2, \@s, $_[0]->{index} - 2, $_[3];
+        } else {
+          $_[0]->{lead_surrogate} = [$_[0]->{lead_byte}, $b2];
+        }
+      } else {
+        if (defined $_[0]->{lead_surrogate}) {
+          push @s, "\x{FFFD}", chr $_[0]->{lead_surrogate}->[1];
+          $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                  index => $_[0]->{index} - 3,
+                  value => pack 'CC', @{delete $_[0]->{lead_surrogate}});
+        }
+        _gb $_[0]->{lead_byte}, $b2, \@s, $_[0]->{index} - 1, $_[3];
+      }
+      delete $_[0]->{lead_byte};
+    } elsif ($_[1] eq '' and not $_[2]) {
+      #
+    } else {
+      push @s, "\x{FFFD}";
+      if (defined $_[0]->{lead_surrogate}) {
+        push @s, chr $_[0]->{lead_surrogate}->[1] unless $_[2];
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} - 3,
+                value => pack 'CCC', @{delete $_[0]->{lead_surrogate}}, $_[0]->{lead_byte});
+      } else {
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} - 1, value => pack 'C', $_[0]->{lead_byte});
+      }
+      delete $_[0]->{lead_byte};
+    }
+  } # lead_byte
+
+  while ($_[1] =~ m{
+    \G(?:
+      ([\x81-\xFE](?:[\x30-\x39\x40-\xFF]|(\z)?)) |
+      ([\x80\xFF]) |
+      ([\x00-\x7F]+)
+    )
+  }gx) {
+    if (defined $1) {
+      if (2 == length $1) {
+        my $b1 = ord substr ($1, 0, 1);
+        my $b2 = ord substr ($1, 1, 1);
+        if (0x30 <= $b2 and $b2 <= 0x39) {
+          if (defined $_[0]->{lead_surrogate}) {
+            $_[0]->{lead_surrogate} = _gb4 $_[0]->{lead_surrogate}, $b1, $b2, \@s, $_[0]->{index} + $-[0] - 2, $_[3];
+          } else {
+            $_[0]->{lead_surrogate} = [$b1, $b2];
+          }
+        } else {
+          if (defined $_[0]->{lead_surrogate}) {
+            push @s, "\x{FFFD}", chr $_[0]->{lead_surrogate}->[1];
+            $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                    index => $_[0]->{index} + $-[0] - 2,
+                    value => (pack 'CC', @{delete $_[0]->{lead_surrogate}}));
+          }
+          _gb $b1, $b2, \@s, $_[0]->{index} + $-[0], $_[3];
+        }
+      } else {
+        if (defined $2 and not $_[2]) {
+          $_[0]->{lead_byte} = ord $1;
+        } else {
+          push @s, "\x{FFFD}";
+          if (defined $_[0]->{lead_surrogate}) {
+            push @s, chr $_[0]->{lead_surrogate}->[1];
+            $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                    index => $_[0]->{index} + $-[0] - 2,
+                    value => (pack 'CC', @{delete $_[0]->{lead_surrogate}}).$1);
+          } else {
+            $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                    index => $_[0]->{index} + $-[0], value => $1);
+          }
+        }
+      }
+    } elsif (defined $3) {
+      if (defined $_[0]->{lead_surrogate}) {
+        push @s, "\x{FFFD}", chr $_[0]->{lead_surrogate}->[1];
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0] - 2,
+                value => pack 'CC', @{delete $_[0]->{lead_surrogate}});
+      }
+      if ($3 eq "\x80") {
+        push @s, "\x{20AC}";
+      } else {
+        my $c = ord $3;
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0], value => $3);
+      }
+    } else {
+      if (defined $_[0]->{lead_surrogate}) {
+        push @s, "\x{FFFD}", chr $_[0]->{lead_surrogate}->[1];
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} + $-[0] - 2,
+                value => pack 'CC', @{delete $_[0]->{lead_surrogate}});
+      }
+      push @s, $4;
+    }
+  }
+  $_[0]->{index} += length $_[1];
+  return \@s;
+} # _decode_gb18030
 
 sub bytes ($$) {
   my $key = $_[0]->{key};
@@ -559,6 +729,9 @@ sub bytes ($$) {
       }
     }
     return $decoded;
+  } elsif ($key eq 'gb18030' or $key eq 'gbk') {
+    require Web::Encoding::_GB;
+    return _decode_gb18030 $_[0]->{states}, $_[1], 0, $_[0]->_onerror;
   } elsif ($key eq 'big5') {
     require Web::Encoding::_Big5;
     return _decode_mb $_[0]->{states}, $_[1], 0, $_[0]->_onerror, \&_b5;
@@ -615,6 +788,9 @@ sub eof ($) {
       }
     }
     return $decoded;
+  } elsif ($key eq 'gb18030' or $key eq 'gbk') {
+    require Web::Encoding::_GB;
+    return _decode_gb18030 $_[0]->{states}, '', 1, $_[0]->_onerror;
   } elsif ($key eq 'big5') {
     require Web::Encoding::_Big5;
     return _decode_mb $_[0]->{states}, '', 1, $_[0]->_onerror, \&_b5;
