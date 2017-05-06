@@ -1,0 +1,53 @@
+=head1 NAME
+
+Web::Encoding::Sniffer - Web encoding sniffer
+
+=head1 DESCRIPTION
+
+The C<Web::Encoding::Sniffer> class implements various character
+encoding sniffing alrogithms used within the Web platform.
+
+It implements following variants of sniffing algorithm:
+
+  BOM sniffing only (for JavaScript classic scripts and XHR texts)
+  plain text (for text documents)
+  HTML
+  XHR HTML
+  XML
+
+This module is intended to be invoked from another modules (rather
+than applications), such as L<Web::HTML::Parser> and
+L<Web::XML::Parser>.
+
+=head1 SPECIFICATIONS
+
+Encoding Standard <https://encoding.spec.whatwg.org/>.
+
+HTML Standard <https://html.spec.whatwg.org/>.
+
+Add XML declaration encoding sniffing
+<https://github.com/whatwg/html/pull/1752/files> (as of October 2016).
+
+The encoding of the XML and text documents MUST be determined by the
+encoding sniffing algorithm, with following modifications:
+
+The steps to prescan a byte stream to determine its encoding MUST
+abort after running steps to extract an encoding from an XML
+declaration.  If those steps return failure, the encoding used MUST be
+UTF-8.
+
+The steps to prescan a byte stream to determine its encoding MUST
+return failure.
+
+=head1 AUTHOR
+
+Wakaba <wakaba@suikawiki.org>.
+
+=head1 LICENSE
+
+Copyright 2007-2017 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

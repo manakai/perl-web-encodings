@@ -79,9 +79,47 @@ sub _get_attr ($) {
   return $attr;
 } # _get_attr
 
+## <https://github.com/whatwg/html/pull/1752/files> as of Oct 2016
+sub _prescan_xml ($) {
+  if ($_[0] =~ m{^\x3C\x3F\x78\x6D}) { # <?xm
+    if ($_[0] =~ m{^
+      \x3C\x3F\x78\x6D\x6C             # <?xml
+      (?>[^\x3E]*?                     #    more restrictive than the spec
+      \x65\x6E\x63\x6F\x64\x69\x6E\x67 # encoding
+      )
+      [\x00-\x20]* \x3D                # =
+      [\x00-\x20]*                     #    not in the spec
+      (?:                              #    more restrictive than the spec
+        \x22                           # "
+        ([^\x22\x3E]*)
+        \x22
+      |
+        \x27                           # '
+        ([^\x27\x3E]*)
+        \x27
+      )
+      [^\x3E]*                         #    more restrictive than the spec
+      \x3E                             # >
+    }x) {
+      return fixup_html_meta_encoding_name encoding_label_to_name ($1 || $2);
+    } else {
+      return undef;
+    }
+  } elsif ($_[0] =~ m{^\x3C\x00\x3F\x00\x78\x00}) {
+    return 'utf-16le';
+  } elsif ($_[0] =~ m{^\x00\x3C\x00\x3F\x00\x78}) {
+    return 'utf-16be';
+  } else {
+    return undef;
+  }
+} # _prescan_xml
+
 ## prescan a byte stream to determine its encoding
 ## <https://www.whatwg.org/specs/web-apps/current-work/#prescan-a-byte-stream-to-determine-its-encoding>.
 sub _prescan_byte_stream ($) {
+  my $xml_result = _prescan_xml $_[0];
+  return $xml_result if defined $xml_result;
+
   # 1.
   (pos $_[0]) = 0;
 
@@ -162,8 +200,6 @@ sub _prescan_byte_stream ($) {
   } # LOOP
 } # _prescan_byte_stream
 
-$Prescanner->{html} = $Prescanner->{responsehtml} = \&_prescan_byte_stream;
-
 ## override  - override encoding label (valid or invalid) or undef
 ## transport - transport encoding label (valid or invalid) or undef
 ## reference - reference's encoding label (valid or invalid) or undef
@@ -212,22 +248,41 @@ sub detect ($$;%) {
       }
     }
 
-    ## Prescan
-    my $prescanner = $Prescanner->{$self->{context}};
-    if (defined $prescanner) {
-      my $name = $prescanner->($_[1]);
+    ## Prescan xml
+    if ($self->{context} eq 'html' or
+        $self->{context} eq 'responsehtml' or
+        $self->{context} eq 'xml' or
+        $self->{context} eq 'responsexml') {
+      my $name = _prescan_xml $_[1];
       if (defined $name) {
         $self->{encoding} = $name;
         if ($self->{context} eq 'responsehtml') {
           $self->{confident} = 1;
-          $self->{source} = 'html';
         } else {
           delete $self->{confident};
-          $self->{source} = $self->{context};
         }
+        $self->{source} = 'xml';
         return;
       }
     }
+
+    ## Prescan html
+    if ($self->{context} eq 'html' or
+        $self->{context} eq 'responsehtml') {
+      my $name = _prescan_byte_stream $_[1];
+      if (defined $name) {
+        $self->{encoding} = $name;
+        if ($self->{context} eq 'responsehtml') {
+          $self->{confident} = 1;
+        } else {
+          delete $self->{confident};
+        }
+        $self->{source} = 'html';
+        return;
+      }
+    }
+
+    # XXX Prescan css
 
     ## Environment - explicit
     if (defined $args{reference}) {
