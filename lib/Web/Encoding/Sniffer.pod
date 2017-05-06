@@ -14,10 +14,11 @@ It implements following variants of sniffing algorithm:
   HTML
   XHR HTML
   XML
+  CSS
 
 This module is intended to be invoked from another modules (rather
-than applications), such as L<Web::HTML::Parser> and
-L<Web::XML::Parser>.
+than applications), such as L<Web::HTML::Parser>, L<Web::XML::Parser>,
+and L<Web::CSS::Parser>.
 
 =head1 SPECIFICATIONS
 
@@ -38,6 +39,8 @@ UTF-8.
 
 The steps to prescan a byte stream to determine its encoding MUST
 return failure.
+
+CSS Syntax Module <https://drafts.csswg.org/css-syntax/>.
 
 =head1 AUTHOR
 
