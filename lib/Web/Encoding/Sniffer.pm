@@ -251,8 +251,7 @@ sub detect ($$;%) {
     ## Prescan xml
     if ($self->{context} eq 'html' or
         $self->{context} eq 'responsehtml' or
-        $self->{context} eq 'xml' or
-        $self->{context} eq 'responsexml') {
+        $self->{context} eq 'xml') {
       my $name = _prescan_xml $_[1];
       if (defined $name) {
         $self->{encoding} = $name;
