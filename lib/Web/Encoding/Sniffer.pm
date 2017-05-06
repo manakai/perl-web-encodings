@@ -281,7 +281,18 @@ sub detect ($$;%) {
       }
     }
 
-    # XXX Prescan css
+    if ($self->{context} eq 'css') {
+      ## <https://drafts.csswg.org/css-syntax/#determine-the-fallback-encoding>
+      if ($_[1] =~ /\A\x40\x63\x68\x61\x72\x73\x65\x74\x20\x22([\x00-\x21\x23-\x7F]*)\x22\x3B/) {
+        my $name = fixup_html_meta_encoding_name encoding_label_to_name $1;
+        if (defined $name) {
+          $self->{encoding} = $name;
+          delete $self->{confident}; # in fact, irrelevant
+          $self->{source} = 'css';
+          return;
+        }
+      }
+    }
 
     ## Environment - explicit
     if (defined $args{reference}) {
