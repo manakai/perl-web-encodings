@@ -69,6 +69,7 @@ for my $name (qw(jis0208)) {
   $mape->{$_} = pack 'CC', 0x8E, $_ - 0xFF61 + 0xA1 for 0xFF61 .. 0xFF9F;
   $map->{0x2212} = $map->{0xFF0D};
   $mape->{0x2212} = $mape->{0xFF0D};
+
   $Encoder->{bmpsjis} = join '', map {
     $map->{$_} // "\x00\x00";
   } 0x0000..0xFFFF;
@@ -102,6 +103,8 @@ print '$Web::Encoding::_JIS::NonCanonicalSJIS = ';
 print Dumper $Decoder->{noncanons};
 print '$Web::Encoding::_JIS::NonCanonicalEUC = ';
 print Dumper $Decoder->{noncanone};
+print '$Web::Encoding::_JIS::KatakanaHF = ';
+print Dumper $json->{'iso-2022-jp-katakana'};
 print "1;";
 
 ## License: Public Domain.

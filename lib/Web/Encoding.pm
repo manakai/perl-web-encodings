@@ -248,6 +248,10 @@ sub _encode_iso2022jp ($$$) {
       }
       push @s, sprintf '&#%d;', $c;
     } else {
+      if (0xFF61 <= $c and $c <= 0xFF9F) {
+        $c = $Web::Encoding::_JIS::KatakanaHF->[$c - 0xFF61];
+      }
+
       my $v = substr $Web::Encoding::_JIS::EncodeBMPEUC, $c * 2, 2;
       if ($v =~ /^[\xA1-\xFE]/) {
         if (not defined $_[0]->{state} or not $_[0]->{state} eq 'B') {
