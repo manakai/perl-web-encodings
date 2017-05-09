@@ -25,6 +25,8 @@ Encoding Standard <https://encoding.spec.whatwg.org/>.
 
 HTML Standard <https://html.spec.whatwg.org/>.
 
+XMLHttpRequest Standard <https://xhr.spec.whatwg.org/>.
+
 Add XML declaration encoding sniffing
 <https://github.com/whatwg/html/pull/1752/files> (as of October 2016).
 
