@@ -44,7 +44,9 @@ local/perl-latest/pm/lib/perl5/JSON/PS.pm:
 
 ## ------ Build ------
 
-build: lib/Web/Encoding/_Defs.pm \
+build: build-main
+
+build-main: lib/Web/Encoding/_Defs.pm \
     lib/Web/Encoding/unicore/CombiningClass.pl \
     lib/Web/Encoding/unicore/Decomposition.pl \
     lib/Web/Encoding/unicore/CompositionExclusions.pl \
