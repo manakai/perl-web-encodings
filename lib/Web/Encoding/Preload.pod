@@ -1,0 +1,40 @@
+=head1 NAME
+
+Web::Encoding::Preload - Preloading encoding modules and data files
+
+=head1 SYNOPSIS
+
+  use Web::Encoding::Preload;
+  ...
+  use Web::Encoding;
+  warn decode_web_charset "big5", $bytes;
+
+=head1 DESCRIPTION
+
+The C<Web::Encoding::Preload> loads most modules and data files in the
+C<perl-web-encodings> package.
+
+As L<Web::Encoding> and other modules sometimes require large tables,
+they delay loading of some data files until they are accessed for the
+first time.  This is undesirable, however, for certain kinds of
+applications such as preforking Web application servers.  By C<use>ing
+this module, an application can explicitly request to load modules and
+data files at once.
+
+=head1 SEE ALSO
+
+L<Web::Encoding>.
+
+=head1 AUTHOR
+
+Wakaba <wakaba@suikawiki.org>.
+
+=head1 LICENSE
+
+Copyright 2017 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
+
