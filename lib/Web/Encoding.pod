@@ -28,6 +28,10 @@ which can be used to implement HTML parsers.
 Implementation of Unicode's string normalization algorithms, i.e. NFC,
 NFD, NFKC, and NFKD.
 
+=item L<Web::Encoding::Preload>
+
+Preloading encoding modules and data files.
+
 =back
 
 =head1 FUNCTIONS
@@ -208,17 +212,29 @@ replacement
 
 =head1 SPECIFICATIONS
 
-[ENCODING] Encoding Standard <https://encoding.spec.whatwg.org/>.
+=over 4
+
+=item ENCODING
+
+Encoding Standard <https://encoding.spec.whatwg.org/>.
 
 UTF-16 encoder
 <https://github.com/whatwg/encoding/commit/8360f775c8df145f649047c7d59c5ff733ade112>.
 
-[HTML] HTML Standard <https://html.spec.whatwg.org/>.
+=item HTML
 
-[DOM] DOM Standard <https://dom.spec.whatwg.org/>.
+HTML Standard <https://html.spec.whatwg.org/>.
+
+=item DOM
+
+DOM Standard <https://dom.spec.whatwg.org/>.
+
+=item ENCVALID
 
 Encoding Validation
 <https://wiki.suikawiki.org/n/Encoding%20Validation>.
+
+=back
 
 =head1 DEPENDENCY
 
