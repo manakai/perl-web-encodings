@@ -178,11 +178,11 @@ sub _gb4 ($$$$$$) {
       + $_[2] - 0x30;
 
   if (($pointer > 39419 and $pointer < 189000) or $pointer > 1237575) {
-    push @{$_[3]}, "\x{FFFD}", chr $_[0]->[1];
+    push @{$_[3]}, "\x{FFFD}";
     $_[5]->(type => 'encoding:unassigned', level => 'm', fatal => 1,
             index => $_[4],
             value => pack 'CCCC', $_[0]->[0], $_[0]->[1], $_[1], $_[2]);
-    return [$_[1], $_[2]];
+    return undef;
   }
 
   if ($pointer == 7457) {
@@ -602,7 +602,17 @@ sub _decode_gb18030 ($$$$) {
       }
       delete $_[0]->{lead_byte};
     }
-  } # lead_byte
+  } elsif (defined $_[0]->{lead_surrogate}) {
+    if ($_[1] eq '') {
+      if ($_[2]) { # final
+        push @s, "\x{FFFD}";
+        $_[3]->(type => 'multibyte:lone lead byte', level => 'm', fatal => 1,
+                index => $_[0]->{index} - 2,
+                value => pack 'CC', @{$_[0]->{lead_surrogate}});
+        delete $_[0]->{lead_surrogate};
+      }
+    }
+  } # lead_surrogate
 
   while ($_[1] =~ m{
     \G(?:
