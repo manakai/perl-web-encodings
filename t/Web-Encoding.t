@@ -221,7 +221,7 @@ for my $test (
   ['us-ascii' => 'windows-1252'],
   ['iso-2022-CN' => 'replacement'],
   ['x-user-Defined' => 'x-user-defined'],
-  ['replacement' => undef],
+  ['replacement' => 'replacement'],
   ['cesu-8' => undef],
 ) {
   test {

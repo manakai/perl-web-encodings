@@ -421,7 +421,8 @@ $Web::Encoding::_Defs = {
                                                             "hz-gb-2312" => {},
                                                             "iso-2022-cn" => {},
                                                             "iso-2022-cn-ext" => {},
-                                                            "iso-2022-kr" => {}
+                                                            "iso-2022-kr" => {},
+                                                            "replacement" => {}
                                                           },
                                               "name" => "replacement",
                                               "output" => "utf-8"
@@ -911,6 +912,7 @@ $Web::Encoding::_Defs = {
                                   "macintosh" => "macintosh",
                                   "ms932" => "shift_jis",
                                   "ms_kanji" => "shift_jis",
+                                  "replacement" => "replacement",
                                   "shift-jis" => "shift_jis",
                                   "shift_jis" => "shift_jis",
                                   "sjis" => "shift_jis",
