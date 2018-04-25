@@ -69,6 +69,7 @@ lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
 	  local $$/ = undef; #\
 	  $$data = json_bytes2perl (scalar <>); #\
 	  $$data->{encodings}->{"x-user-defined"}->{single_byte} = 1; #\
+	  $$data->{names} = ["utf-8", (grep { not $$_ eq "utf-8" and not $$_ eq "replacement" } sort { $$a cmp $$b } keys %{$$data->{encodings}}), "replacement"]; #\
 	  $$Data::Dumper::Sortkeys = 1; #\
 	  $$Data::Dumper::Useqq = 1; #\
 	  $$pm = Dumper $$data; #\

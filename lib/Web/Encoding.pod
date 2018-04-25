@@ -149,7 +149,7 @@ Any character not representable in the encoding is converted to an
 HTML decimal character reference for the character.
 
 This function can be used to implement the "encode" operation with
-error mode C<html> [ENCODING].
+error mode C<html> [ENCODING] [ENCODING16].
 
 =item $chars = decode_web_charset $key, $bytes
 
@@ -166,6 +166,11 @@ L<Web::Encoding::Decoder>:
   $decoder = Web::Encoding::Decoder->new_from_encoding_key ($key);
   $decoder->ignore_bom (1);
   return $decoder->bytes ($bytes) . $decoder->eof;
+
+=item [$name, $name, ...] = encoding_names
+
+Return the list of the encoding keys (i.e. the lowercase variants of
+the encoding names), as an array reference.
 
 =back
 
@@ -218,6 +223,8 @@ replacement
 
 Encoding Standard <https://encoding.spec.whatwg.org/>.
 
+=item ENCODING16
+
 UTF-16 encoder
 <https://github.com/whatwg/encoding/commit/8360f775c8df145f649047c7d59c5ff733ade112>.
 
@@ -246,7 +253,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2018 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

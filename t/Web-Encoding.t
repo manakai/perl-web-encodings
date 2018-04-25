@@ -323,11 +323,22 @@ for my $test (
   } n => 1, name => ['encoding_name_to_compat_name', $test->[1]];
 }
 
+test {
+  my $c = shift;
+
+  is ref encoding_names, 'ARRAY';
+  is encoding_names->[0], 'utf-8';
+  is encoding_names->[-1], 'replacement';
+  ok grep { $_ eq 'windows-1252' } @{+encoding_names};
+
+  done $c;
+} n => 4, name => 'encoding_names';
+
 run_tests;
 
 =head1 LICENSE
 
-Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2018 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

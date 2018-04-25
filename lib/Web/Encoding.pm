@@ -13,6 +13,7 @@ our @EXPORT = qw(
   encode_web_charset
   decode_web_charset
   is_ascii_compat_charset_name
+  encoding_names
 );
 
 sub import ($;@) {
@@ -416,11 +417,15 @@ sub locale_default_encoding_name ($) {
   return $Web::Encoding::_Defs->{locale_default}->{$locale}; # or undef
 } # locale_default_encoding_name
 
+sub encoding_names () {
+  return $Web::Encoding::_Defs->{names};
+} # encoding_names
+
 1;
 
 =head1 LICENSE
 
-Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2018 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
