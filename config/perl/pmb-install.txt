@@ -2,7 +2,7 @@ Algorithm::Diff~1.1903
 AnyEvent~7.14
 Capture::Tiny~0.48
 Carp~1.38
-Filter::Util::Call~1.58
+Filter::Util::Call~1.59
 Path::Class~0.37
 Path::Tiny~0.108
 Scalar::Util~1.50
