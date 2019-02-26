@@ -1,5 +1,5 @@
 Algorithm::Diff~1.1903
-AnyEvent~7.14
+AnyEvent~7.15
 Capture::Tiny~0.48
 Carp~1.50
 Filter::Util::Call~1.59
@@ -7,6 +7,6 @@ Path::Class~0.37
 Path::Tiny~0.108
 Scalar::Util~1.50
 Term::ANSIColor~4.06
-Test::Builder~1.302162
 Test::Differences~0.65
+Test::More~1.302162
 Text::Diff~1.45
