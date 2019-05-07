@@ -3918,6 +3918,7 @@
 32FC		<circle> 30F0
 32FD		<circle> 30F1
 32FE		<circle> 30F2
+32FF		<square> 4EE4 548C
 3300		<square> 30A2 30D1 30FC 30C8
 3301		<square> 30A2 30EB 30D5 30A1
 3302		<square> 30A2 30F3 30DA 30A2
