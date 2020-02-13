@@ -46,6 +46,7 @@ sub encode_web_utf8 ($) {
 sub _decode8 ($$$;$$) {
   # $states, $x, $final, $index_offset, $onerror
   my $x = defined $_[0]->{lead} ? (delete $_[0]->{lead}) . $_[1] : $_[1]; # string copy!
+  if ($x =~ /[^\x00-\x7F]/) {
   $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
        \xE0               [\xA0-\xBF][\x80-\xBF]|
@@ -85,6 +86,7 @@ sub _decode8 ($$$;$$) {
       qq{\xEF\xBF\xBD}; # U+FFFD
     }
   }gex;
+  }
   utf8::decode ($x);
   return $x;
 } # _decode8
