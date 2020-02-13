@@ -1,15 +1,18 @@
 all: build
 
+CURL = curl
+
 clean: clean-json-ps
 	rm -fr local/*.json local/*.txt lib/Web/Encoding/unicore/*.pl
 
 updatenightly: update-submodules dataautoupdate-commit
 
 update-submodules: local/bin/pmbp.pl
-	curl https://gist.githubusercontent.com/wakaba/34a71d3137a52abb562d/raw/gistfile1.txt | sh
+	$(CURL) https://gist.githubusercontent.com/wakaba/34a71d3137a52abb562d/raw/gistfile1.txt | sh
 	git add t_deps/modules t_deps/tests
 	perl local/bin/pmbp.pl --update
 	git add config
+	$(CURL) -sSLf https://raw.githubusercontent.com/wakaba/ciconfig/master/ciconfig | RUN_GIT=1 REMOVE_UNUSED=1 perl
 
 dataautoupdate-commit: clean build
 	git add lib
