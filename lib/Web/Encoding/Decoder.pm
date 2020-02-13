@@ -869,7 +869,8 @@ sub bytes ($$) {
   if ($key eq 'utf-8') {
     my $offset = $_[0]->{states}->{index}
                + (defined $_[0]->{states}->{lead} ? -length $_[0]->{states}->{lead} : 0);
-    my $decoded = [Web::Encoding::_decode8 $_[0]->{states}, $_[1], 0, $offset, $_[0]->_onerror];
+    my $decoded = [Web::Encoding::_decode8 ($_[0]->{states}, $_[1], 0, $offset, $_[0]->_onerror)];
+
     $_[0]->{states}->{index} += length $_[1];
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {
       if (@$decoded and length $decoded->[0]) {
@@ -952,7 +953,7 @@ sub eof ($) {
     $_[0]->{states}->{index} = 0 unless defined $_[0]->{states}->{index};
     my $offset = $_[0]->{states}->{index} + (defined $_[0]->{states}->{lead} ? -length $_[0]->{states}->{lead} : 0);
     ## Returns zero or more U+FFFD.
-    return [Web::Encoding::_decode8 $_[0]->{states}, '', 1, $offset, $_[0]->_onerror];
+    return [Web::Encoding::_decode8 ($_[0]->{states}, '', 1, $offset, $_[0]->_onerror)];
   } elsif ($key eq 'utf-16be') {
     my $decoded = _decode_16 $_[0]->{states}, $_[0]->_onerror, '', 1, 'n';
     if ($_[0]->{ignore_bom} and not $_[0]->{states}->{bom_seen}) {

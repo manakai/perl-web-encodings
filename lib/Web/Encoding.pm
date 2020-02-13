@@ -2,9 +2,10 @@ package Web::Encoding;
 use strict;
 use warnings;
 no warnings 'utf8';
-our $VERSION = '7.0';
+our $VERSION = '8.0';
 use Carp;
 use Web::Encoding::_Defs;
+use Web::Encoding::Decoder;
 
 our @EXPORT = qw(
   encode_web_utf8
@@ -97,6 +98,21 @@ sub decode_web_utf8 ($) {
     return '';
   } elsif (utf8::is_utf8 $_[0]) {
     croak "Cannot decode string with wide characters";
+  } elsif (1024 < length $_[0]) {
+    ## If the input is large enough, split it into chunks.  Splitting
+    ## itself does not improve performance, but ASCII-only chunks, if
+    ## any, would be optimized by splitted decoding.
+    my $decoder = Web::Encoding::Decoder->new_from_encoding_key ('utf-8');
+    my $decoded = [];
+    my $size = 256;
+    my $offset = 0;
+    my $length = length $_[0];
+    while ($offset < $length) {
+      push @$decoded, @{$decoder->bytes (substr $_[0], $offset, $size)};
+      $offset += $size;
+    }
+    push @$decoded, @{$decoder->eof};
+    return join '', @$decoded;
   } else {
     return _decode8
         ({},

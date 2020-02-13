@@ -11,6 +11,7 @@ for (qw(
   complete.html
   htmlspec.html
   era-defs.json
+  mimpou.txt
 )) {
   my $path = $data_path->child ($_);
 
