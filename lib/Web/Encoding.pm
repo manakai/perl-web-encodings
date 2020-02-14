@@ -47,47 +47,59 @@ sub encode_web_utf8 ($) {
 sub _decode8 ($$$;$$) {
   # $states, $x, $final, $index_offset, $onerror
   my $x = defined $_[0]->{lead} ? (delete $_[0]->{lead}) . $_[1] : $_[1]; # string copy!
-  if ($x =~ /[^\x00-\x7F]/) {
-  $x =~ s{
-      ([\xC2-\xDF]        [\x80-\xBF]|
+  my $pos_offset = 0;
+  pos ($x) = 0;
+  my $xlength = length $x;
+  while (pos ($x) < $xlength) {
+    if ($x =~ /\G[\x00-\x7F]+/gc) {
+      #
+    } elsif ($x =~ m{\G
+      (?:[\xC2-\xDF]        [\x80-\xBF]|
        \xE0               [\xA0-\xBF][\x80-\xBF]|
        [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
        \xED               [\x80-\x9F][\x80-\xBF]|
        \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
        [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
-       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])|
-
+       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF]){1,1000}
+    }gcx) {
+      #
+    } else {
+      my $pos = pos $x;
+      if ($x =~ m{\G
    ((?:[\xC2-\xDF]                                      |
        \xE0               [\xA0-\xBF]?                  |
        [\xE1-\xEC\xEE\xEF][\x80-\xBF]?                  |
        \xED               [\x80-\x9F]?                  |
        \xF0               (?:[\x90-\xBF][\x80-\xBF]?|)  |
        [\xF1-\xF3]        (?:[\x80-\xBF][\x80-\xBF]?|)  |
-       \xF4               (?:[\x80-\x8F][\x80-\xBF]?|))(\z)?)|
-
-      ([^\x00-\x7F])
-  }{
-    if (defined $1) {
-      $1;
-    } elsif (defined $2) {
-      if ($_[2] or not defined $3) {
-        my $length = length $2;
-        if ($_[4]) {
+       \xF4               (?:[\x80-\x8F][\x80-\xBF]?|))(\z)?)
+    }gcx) {
+          if ($_[2] or not defined $2) { # final or not at eof
+            my $length = length $1;
+            $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
+                    index => $_[3] + $pos - $pos_offset, value => $1) if $_[4];
+            substr ($x, $pos, $length) = qq{\xEF\xBF\xBD}; # U+FFFD
+            pos ($x) = $pos + 3;
+            $pos_offset += 3 - $length;
+            $xlength += 3 - $length;
+          } else { # at end of chunk
+            $_[0]->{lead} .= $1;
+            substr ($x, $pos) = '';
+            pos ($x) = $pos;
+            #$pos_offset -= length $1;
+            $xlength = $pos;
+          }
+        } else {
+          my $value = substr $x, $pos, 1;
+          substr ($x, $pos, 1) = qq{\xEF\xBF\xBD}; # U+FFFD
           $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
-                  index => $_[3] + $-[2], value => $2);
+                  index => $_[3] + $pos - $pos_offset, value => $value) if $_[4];
+          pos ($x) = $pos + 3;
+          $pos_offset += 2;
+          $xlength += 2;
         }
-        qq{\xEF\xBF\xBD}; # U+FFFD
-      } else {
-        $_[0]->{lead} .= $2;
-        '';
-      }
-    } else { # $4
-      $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
-              index => $_[3] + $-[4], value => $4) if $_[4];
-      qq{\xEF\xBF\xBD}; # U+FFFD
     }
-  }gex;
-  }
+  } # while
   utf8::decode ($x);
   return $x;
 } # _decode8
@@ -98,21 +110,6 @@ sub decode_web_utf8 ($) {
     return '';
   } elsif (utf8::is_utf8 $_[0]) {
     croak "Cannot decode string with wide characters";
-  } elsif (1024 < length $_[0]) {
-    ## If the input is large enough, split it into chunks.  Splitting
-    ## itself does not improve performance, but ASCII-only chunks, if
-    ## any, would be optimized by splitted decoding.
-    my $decoder = Web::Encoding::Decoder->new_from_encoding_key ('utf-8');
-    my $decoded = [];
-    my $size = 256;
-    my $offset = 0;
-    my $length = length $_[0];
-    while ($offset < $length) {
-      push @$decoded, @{$decoder->bytes (substr $_[0], $offset, $size)};
-      $offset += $size;
-    }
-    push @$decoded, @{$decoder->eof};
-    return join '', @$decoded;
   } else {
     return _decode8
         ({},
