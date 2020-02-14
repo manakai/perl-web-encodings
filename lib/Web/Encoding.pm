@@ -48,59 +48,6 @@ sub _decode8 ($$$;$$) {
   # $states, $x, $final, $index_offset, $onerror
   my $x = defined $_[0]->{lead} ? (delete $_[0]->{lead}) . $_[1] : $_[1]; # string copy!
   if ($x =~ /[^\x00-\x7F]/) {
-
-    pos ($x) = $-[0];
-    while (pos ($x) < length ($x)) {
-      if ($x =~ /\G[\x00-\x7F]+/gc) {
-        #
-      } elsif (
-  $x =~ m{\G
-      (?:[\xC2-\xDF]        [\x80-\xBF]|
-       \xE0               [\xA0-\xBF][\x80-\xBF]|
-       [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
-       \xED               [\x80-\x9F][\x80-\xBF]|
-       \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
-       [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
-       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF])
-       }gcx
-     ) {
-        #
-      } else {
-        $x =~ s{
-        \G
-   ((?:[\xC2-\xDF]                                      |
-       \xE0               [\xA0-\xBF]?                  |
-       [\xE1-\xEC\xEE\xEF][\x80-\xBF]?                  |
-       \xED               [\x80-\x9F]?                  |
-       \xF0               (?:[\x90-\xBF][\x80-\xBF]?|)  |
-       [\xF1-\xF3]        (?:[\x80-\xBF][\x80-\xBF]?|)  |
-       \xF4               (?:[\x80-\x8F][\x80-\xBF]?|))(\z)?)|
-        \G
-      ([^\x00-\x7F])
-  }{
-    if (defined $1) {
-      if ($_[2] or not defined $2) {
-        my $length = length $1;
-        if ($_[4]) {
-          $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
-                  index => $_[3] + $-[1], value => $1);
-        }
-        qq{\xEF\xBF\xBD}; # U+FFFD
-      } else {
-        $_[0]->{lead} .= $1;
-        '';
-      }
-    } else { # $3
-      $_[4]->(type => 'utf-8:bad bytes', level => 'm', fatal => 1,
-              index => $_[3] + $-[3], value => $3) if $_[4];
-      qq{\xEF\xBF\xBD}; # U+FFFD
-    }
-  }gex;
-      }
-} # while
-
-=pod
-
   $x =~ s{
       ([\xC2-\xDF]        [\x80-\xBF]|
        \xE0               [\xA0-\xBF][\x80-\xBF]|
@@ -140,9 +87,6 @@ sub _decode8 ($$$;$$) {
       qq{\xEF\xBF\xBD}; # U+FFFD
     }
   }gex;
-
-=cut
-
   }
   utf8::decode ($x);
   return $x;
