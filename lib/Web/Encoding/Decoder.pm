@@ -881,7 +881,7 @@ sub bytes ($$) {
       }
     }
     return $decoded;
-  } elsif (Web::Encoding::_is_single $key) {
+  } elsif (Web::Encoding::_is_single ($key)) {
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
     my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]->{key}});
@@ -994,7 +994,7 @@ sub eof ($) {
   } elsif ($key eq 'iso-2022-jp') {
     require Web::Encoding::_JIS;
     return _decode_iso2022jp $_[0]->{states}, '', 1, $_[0]->_onerror;
-  } elsif ($key eq 'replacement' or Web::Encoding::_is_single $key) {
+  } elsif ($key eq 'replacement' or Web::Encoding::_is_single ($key)) {
     return [];
   } else {
     croak "Bad encoding key |$key|";
