@@ -53,15 +53,19 @@ sub _decode8 ($$$;$$) {
   while (pos ($x) < $xlength) {
     if ($x =~ /\G[\x00-\x7F]+/gc) {
       #
-    } elsif ($x =~ m{\G
-      (?:[\xC2-\xDF]        [\x80-\xBF]|
-       \xE0               [\xA0-\xBF][\x80-\xBF]|
-       [\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF]|
-       \xED               [\x80-\x9F][\x80-\xBF]|
-       \xF0               [\x90-\xBF][\x80-\xBF][\x80-\xBF]|
-       [\xF1-\xF3]        [\x80-\xBF][\x80-\xBF][\x80-\xBF]|
-       \xF4               [\x80-\x8F][\x80-\xBF][\x80-\xBF]){1,1000}
-    }gcx) {
+    } elsif ($x =~ m{\G(?:[\xC2-\xDF][\x80-\xBF])+}gc) {
+      #
+    } elsif ($x =~ m{\G(?:\xE0[\xA0-\xBF][\x80-\xBF])+}gc) {
+      #
+    } elsif ($x =~ m{\G(?:[\xE1-\xEC\xEE\xEF][\x80-\xBF][\x80-\xBF])+}gc) {
+      #
+    } elsif ($x =~ m{\G(?:\xED[\x80-\x9F][\x80-\xBF])+}gc) {
+      #
+    } elsif ($x =~ m{\G(?:\xF0[\x90-\xBF][\x80-\xBF][\x80-\xBF])+}gc) {
+      #
+    } elsif ($x =~ m{\G(?:[\xF1-\xF3][\x80-\xBF][\x80-\xBF][\x80-\xBF])+}gc) {
+      #
+    } elsif ($x =~ m{\G(?:\xF4[\x80-\x8F][\x80-\xBF][\x80-\xBF])+}gc) {
       #
     } else {
       my $pos = pos $x;
@@ -440,7 +444,7 @@ sub encoding_names () {
 
 =head1 LICENSE
 
-Copyright 2011-2018 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2020 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

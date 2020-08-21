@@ -12,6 +12,7 @@ for (qw(
   htmlspec.html
   era-defs.json
   mimpou.txt
+  teams.json
 )) {
   my $path = $data_path->child ($_);
 
