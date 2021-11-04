@@ -90,7 +90,7 @@ $Web::Encoding::_Defs = {
                                          "html_decl_mapped" => "ibm866",
                                          "key" => "ibm866",
                                          "labels" => {
-                                                       866 => {},
+                                                       "866" => {},
                                                        "cp866" => {},
                                                        "csibm866" => {},
                                                        "ibm866" => {}
@@ -787,7 +787,7 @@ $Web::Encoding::_Defs = {
                        "replacement"
                      ],
           "supported_labels" => {
-                                  866 => "ibm866",
+                                  "866" => "ibm866",
                                   "ansi_x3.4-1968" => "windows-1252",
                                   "arabic" => "iso-8859-6",
                                   "ascii" => "windows-1252",
