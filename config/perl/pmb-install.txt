@@ -7,6 +7,6 @@ Path::Class~0.37
 Path::Tiny~0.120
 Scalar::Util~1.60
 Term::ANSIColor~5.01
-Test::Builder~1.302188
 Test::Differences~0.69
+Test::More~1.302188
 Text::Diff~1.45
