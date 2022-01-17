@@ -4,7 +4,7 @@ Capture::Tiny~0.48
 Carp~1.50
 Filter::Util::Call~1.60
 Path::Class~0.37
-Path::Tiny~0.120
+Path::Tiny~0.122
 Scalar::Util~1.60
 Term::ANSIColor~5.01
 Test::Differences~0.69
