@@ -7,7 +7,7 @@ Web::Encoding::UnivCharDet - Universal Detector implementation in Perl
   use Web::Encoding::UnivCharDet;
   
   $det = Web::Encoding::UnivCharDet->new;
-  $charset = $det->detect_byte_string;
+  $charset = $det->detect_byte_string ($bytes);
 
 =head1 DESCRIPTION
 
@@ -53,12 +53,12 @@ required.
 =head1 SPECIFICATIONS
 
 [HTML] HTML Standard
-<http://www.whatwg.org/specs/web-apps/current-work/#encoding-sniffing-algorithm>.
+<https://www.whatwg.org/specs/web-apps/current-work/#encoding-sniffing-algorithm>.
 
 The detector is expected to be used as part of the HTML encoding
 sniffing algorithm, as defined by the HTML Standard.
 
-[ENCODING] Encoding Standard <http://encoding.spec.whatwg.org/>.
+[ENCODING] Encoding Standard <https://encoding.spec.whatwg.org/>.
 
 The Encoding Standard defines how to decode the byte string using the
 detected encoding name.  (Note that C<ibm855> and C<x-euc-tw> is not
@@ -69,17 +69,17 @@ defined in the Encoding Standard at the time of writing.)
 [UNIVCHARDET] A composite approach to language/encoding detection,
 S. Li, K. Momoi. Netscape. In Proceedings of the 19th International
 Unicode Conference.
-<http://www.mozilla.org/projects/intl/UniversalCharsetDetection.html>.
+<https://www.mozilla.org/projects/intl/UniversalCharsetDetection.html>.
 
 [MOZILLAUNIVDET] universalchardet in Mozilla repository
-<http://hg.mozilla.org/mozilla-central/file/tip/extensions/universalchardet/>.
+<https://hg.mozilla.org/mozilla-central/file/tip/extensions/universalchardet/>.
 
 This implementation derives from Mozilla's C++ implementation as of
 May 1, 2013
-<http://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.tar.gz>.
+<https://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.tar.gz>.
 
 [SWUNIVERSALCHARDET] SuikaWiki:UniversalCharDet
-<http://suika.suikawiki.org/~wakaba/wiki/sw/n/UniversalCharDet> (In
+<https://suika.suikawiki.org/~wakaba/wiki/sw/n/UniversalCharDet> (In
 Japanese).
 
 =head1 AUTHOR
@@ -96,6 +96,6 @@ derives.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at <http://mozilla.org/MPL/2.0/>.
+file, You can obtain one at <https://mozilla.org/MPL/2.0/>.
 
 =cut
