@@ -165,7 +165,7 @@ L<Web::Encoding::Decoder>:
 
   $decoder = Web::Encoding::Decoder->new_from_encoding_key ($key);
   $decoder->ignore_bom (1);
-  return $decoder->bytes ($bytes) . $decoder->eof;
+  return join '', @{$decoder->bytes ($bytes)}, @{$decoder->eof};
 
 =item [$name, $name, ...] = encoding_names
 
