@@ -632,7 +632,7 @@ sub handle_data ($$) {
         for my $i (0..$#{$self->{probers}}) {
           local $_ = $self->{probers}->[$i];
           next unless $_;
-          my $st = $_->handle_data (substr $_[1], $start);
+          my $st = $_->handle_data ($_[1], $start, $pos + 1);
           if ($st eq 'found it') {
             $self->{best_guess} = $i;
             return $self->{state} = 'found it';
@@ -646,7 +646,7 @@ sub handle_data ($$) {
     for my $i (0..$#{$self->{probers}}) {
       local $_ = $self->{probers}->[$i];
       next unless $_;
-      my $st = $_->handle_data (substr $_[1], $start);
+      my $st = $_->handle_data ($_[1], $start);
       if ($st eq 'found it') {
         $self->{best_guess} = $i;
         return $self->{state} = 'found it';
@@ -714,9 +714,11 @@ sub reset {
 
 sub get_charset_name ($) { 'utf-8' }
 
-sub handle_data ($$) {
+sub handle_data ($$$;$) {
   my $self = $_[0];
-  for my $i (0..((length $_[1]) - 1)) {
+  my $start_pos = $_[2] || 0;
+  my $limit_pos = $_[3] // length $_[1];
+  for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
@@ -769,17 +771,19 @@ sub reset ($) {
   $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
 } # reset
 
-sub handle_data ($$) {
+sub handle_data ($$$;$) {
   my $self = $_[0];
-  for my $i (0..((length $_[1]) - 1)) {
+  my $start_pos = $_[2] || 0;
+  my $limit_pos = $_[3] // length $_[1];
+  for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
       last;
     } elsif ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
-      if ($i == 0) {
-        substr ($self->{last_char}, 1, 0) = substr $_[1], 0, 1;
+      if ($i == $start_pos) {
+        substr ($self->{last_char}, 1, 0) = substr $_[1], $start_pos, 1;
         $self->{distribution_analyser}->handle_one_char ($self->{last_char}, 0, $char_len);
       } else {
         $self->{distribution_analyser}->handle_one_char ($_[1], $i-1, $char_len);
@@ -787,7 +791,7 @@ sub handle_data ($$) {
     }
   }
 
-  substr ($self->{last_char}, 0, 1) = substr $_[1], -1;
+  substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
     if ($self->{distribution_analyser}->got_enough_data and
@@ -860,17 +864,19 @@ sub reset ($) {
 
 sub get_charset_name ($) { 'euc-jp' }
 
-sub handle_data ($$) {
+sub handle_data ($$$;$) {
   my $self = $_[0];
-  for my $i (0..((length $_[1]) - 1)) {
+  my $start_pos = $_[2] || 0;
+  my $limit_pos = $_[3] // length $_[1];
+  for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
       last;
     } elsif ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
-      if ($i == 0) {
-        (substr $self->{last_char}, 1, 1) = substr $_[1], 0, 1;
+      if ($i == $start_pos) {
+        (substr $self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
         $self->{context_analyser}->handle_one_char
             ($self->{last_char}, 0, $char_len);
         $self->{distribution_analyser}->handle_one_char
@@ -884,7 +890,7 @@ sub handle_data ($$) {
     }
   }
 
-  substr ($self->{last_char}, 0, 1) = substr $_[1], -1, 1;
+  substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
     if ($self->{context_analyser}->got_enough_data and
@@ -929,17 +935,19 @@ sub reset ($) {
 
 sub get_charset_name ($) { 'shift_jis' }
 
-sub handle_data ($$) {
+sub handle_data ($$$;$) {
   my $self = $_[0];
-  for my $i (0..((length $_[1]) - 1)) {
+  my $start_pos = $_[2] || 0;
+  my $limit_pos = $_[3] // length $_[1];
+  for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
       last;
     } elsif ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
-      if ($i == 0) {
-        substr ($self->{last_char}, 1, 1) = substr $_[1], 0, 1;
+      if ($i == $start_pos) {
+        substr ($self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
         $self->{context_analyser}->handle_one_char
             ($self->{last_char}, 2-$char_len, $char_len);
         $self->{distribution_analyser}->handle_one_char
@@ -953,7 +961,7 @@ sub handle_data ($$) {
     }
   }
 
-  substr ($self->{last_char}, 0, 1) = substr $_[1], -1;
+  substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
   
   if ($self->{state} eq 'detecting') {
     if ($self->{context_analyser}->got_enough_data and
