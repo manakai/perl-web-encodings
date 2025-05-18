@@ -717,7 +717,7 @@ sub get_charset_name ($) { 'utf-8' }
 sub handle_data ($$$;$) {
   my $self = $_[0];
   my $start_pos = $_[2] || 0;
-  my $limit_pos = $_[3] // length $_[1];
+  my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
@@ -774,7 +774,7 @@ sub reset ($) {
 sub handle_data ($$$;$) {
   my $self = $_[0];
   my $start_pos = $_[2] || 0;
-  my $limit_pos = $_[3] // length $_[1];
+  my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
@@ -867,7 +867,7 @@ sub get_charset_name ($) { 'euc-jp' }
 sub handle_data ($$$;$) {
   my $self = $_[0];
   my $start_pos = $_[2] || 0;
-  my $limit_pos = $_[3] // length $_[1];
+  my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
@@ -938,7 +938,7 @@ sub get_charset_name ($) { 'shift_jis' }
 sub handle_data ($$$;$) {
   my $self = $_[0];
   my $start_pos = $_[2] || 0;
-  my $limit_pos = $_[3] // length $_[1];
+  my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
