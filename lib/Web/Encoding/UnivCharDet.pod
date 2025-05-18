@@ -33,8 +33,8 @@ returns a encoding name, which is one of followings:
 
   utf-8 utf-16be utf-16le iso-2022-cn big5 x-euc-tw gb18030 hz-gb-2312
   iso-2022-jp shift_jis euc-jp iso-2022-kr euc-kr iso-8859-5 koi8-r
-  windows-1251 x-mac-cyrillic ibm866 ibm855 iso-8859-7 windows-1253
-  iso-8859-8 windows-1255 windows-1252
+  windows-1251 x-mac-cyrillic ibm866 ibm855 iso-8859-7 tis-620
+  windows-1253 iso-8859-8 windows-1255 windows-1252
 
 Returned encoding names are in lowercase.
 
@@ -69,14 +69,13 @@ defined in the Encoding Standard at the time of writing.)
 [UNIVCHARDET] A composite approach to language/encoding detection,
 S. Li, K. Momoi. Netscape. In Proceedings of the 19th International
 Unicode Conference.
-<https://www.mozilla.org/projects/intl/UniversalCharsetDetection.html>.
+<https://www-archive.mozilla.org/projects/intl/universalcharsetdetection>.
 
-[MOZILLAUNIVDET] universalchardet in Mozilla repository
-<https://hg.mozilla.org/mozilla-central/file/tip/extensions/universalchardet/>.
+[MOZILLAUNIVDET] universalchardet in Mozilla repository.
 
 This implementation derives from Mozilla's C++ implementation as of
 May 1, 2013
-<https://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.tar.gz>.
+<https://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.zip>.
 
 [SWUNIVERSALCHARDET] SuikaWiki:UniversalCharDet
 <https://suika.suikawiki.org/~wakaba/wiki/sw/n/UniversalCharDet> (In
