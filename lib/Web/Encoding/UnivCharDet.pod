@@ -23,18 +23,38 @@ Following methods are available:
 
 =item $det = Web::Encoding::UnivCharDet->new
 
+=item $det = Web::Encoding::UnivCharDet->new (NAME => VALUE, ...)
+
 Return a new instance of the universal detector.
+
+Zero or more named parameters can be specified.
+
+If C<utf32> parameter is set to a true value, the UTF-32 BOM sniffing
+is enabled.  Otherwise, it is disabled.
 
 =item $charset = $det->detect_byte_string ($bytes)
 
 Return the detected encoding name of the given byte string.  If it
 can't detect the encoding, the method returns C<undef>.  Otherwise it
-returns a encoding name, which is one of followings:
+returns an encoding label.
+
+In the default configurations, one of the following encoding labels
+are returned:
 
   utf-8 utf-16be utf-16le iso-2022-cn big5 x-euc-tw gb18030 hz-gb-2312
   iso-2022-jp shift_jis euc-jp iso-2022-kr euc-kr iso-8859-5 koi8-r
   windows-1251 x-mac-cyrillic ibm866 ibm855 iso-8859-7 tis-620
   windows-1253 iso-8859-8 windows-1255 windows-1252
+
+Note that C<x-euc-tw> and C<ibm855> are not supported by the Encoding
+Standard.
+
+If the UTF-32 BOM sniffing is enabled, one of the following encoding
+labels might also be returned:
+
+  utf-32be utf-32le x-iso-10646-ucs-4-3412 x-iso-10646-ucs-4-2143
+
+Note that they are not supported by the Encoding Standard.
 
 Returned encoding names are in lowercase.
 

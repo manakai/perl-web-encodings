@@ -45,11 +45,31 @@ for my $test (@$tests) {
   } n => scalar @{$test->[2]}, name => [$test->[0]];
 }
 
+test {
+  my $c = shift;
+  
+  my $det = Web::Encoding::UnivCharDet->new;
+  is $det->detect_byte_string ("\xFF\xFE\x00\x00"), 'utf-16le';
+  is $det->detect_byte_string ("\x00\x00\xFF\xFE"), 'windows-1252';
+
+  done $c;
+} name => 'no utf32 flag', n => 2;
+
+test {
+  my $c = shift;
+  
+  my $det = Web::Encoding::UnivCharDet->new (utf32 => 1);
+  is $det->detect_byte_string ("\xFF\xFE\x00\x00"), 'utf-32le';
+  is $det->detect_byte_string ("\x00\x00\xFF\xFE"), 'x-iso-10646-ucs-4-2143';
+
+  done $c;
+} name => 'with utf32 flag', n => 2;
+
 run_tests;
 
 =head1 LICENSE
 
-Copyright 2013-2014 Wakaba <wakaba@suikawiki.org>.
+Copyright 2013-2015 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

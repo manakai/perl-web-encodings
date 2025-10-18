@@ -4,9 +4,13 @@ use warnings;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
 
-sub new ($) {
-  my $self = bless {}, $_[0];
+sub new ($;%) {
+  my $self = bless {}, shift;
+  my %args = @_;
+  
   $self->{filter} = {ja => 1, zh_hant => 1, zh_hans => 1, ko => 1, non_cjk => 1};
+  $self->{filter}->{utf32} = 1 if $args{utf32};
+  
   return $self;
 } # new
 
@@ -18,7 +22,9 @@ sub _detector ($) {
     $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED () if $_[0]->{filter}->{zh_hans};
     $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN () if $_[0]->{filter}->{ko};
     $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK () if $_[0]->{filter}->{non_cjk};
-    Web::Encoding::UnivCharDet::UniversalDetector->new ($filter);
+    my $x = Web::Encoding::UnivCharDet::UniversalDetector->new ($filter);
+    $x->{utf32} = 1 if $_[0]->{filter}->{utf32};
+    $x;
   };
 } # _detector
 
@@ -80,6 +86,19 @@ sub handle_data ($$) {
       $self->{detected_charset} = 'utf-16be';
     } elsif ($_[1] =~ /^\xFF\xFE/) {
       $self->{detected_charset} = 'utf-16le';
+    }
+
+    if ($self->{utf32}) {
+      ## <https://github.com/mozilla/gecko-dev/commit/68332f717f14e8f2467ca4f2c521ed8fe6eff71d>
+      if ($_[1] =~ /^\xFE\xFF\x00\x00/) {
+        $self->{detected_charset} = 'x-iso-10646-ucs-4-3412';
+      } elsif ($_[1] =~ /^\x00\x00\xFE\xFF/) {
+        $self->{detected_charset} = 'utf-32be';
+      } elsif ($_[1] =~ /^\x00\x00\xFF\xFE/) {
+        $self->{detected_charset} = 'x-iso-10646-ucs-4-2143';
+      } elsif ($_[1] =~ /^\xFF\xFE\x00\x00/) {
+        $self->{detected_charset} = 'utf-32le';
+      } 
     }
 
     if ($self->{detected_charset}) {
