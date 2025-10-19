@@ -53,17 +53,17 @@ test {
   is $det->detect_byte_string ("\x00\x00\xFF\xFE"), 'windows-1252';
 
   done $c;
-} name => 'no utf32 flag', n => 2;
+} name => 'no utf flag', n => 2;
 
 test {
   my $c = shift;
   
-  my $det = Web::Encoding::UnivCharDet->new (utf32 => 1);
+  my $det = Web::Encoding::UnivCharDet->new (utf => 1);
   is $det->detect_byte_string ("\xFF\xFE\x00\x00"), 'utf-32le';
   is $det->detect_byte_string ("\x00\x00\xFF\xFE"), 'x-iso-10646-ucs-4-2143';
 
   done $c;
-} name => 'with utf32 flag', n => 2;
+} name => 'with utf flag', n => 2;
 
 run_tests;
 

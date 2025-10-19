@@ -9,7 +9,7 @@ sub new ($;%) {
   my %args = @_;
   
   $self->{filter} = {ja => 1, zh_hant => 1, zh_hans => 1, ko => 1, non_cjk => 1};
-  $self->{filter}->{utf32} = 1 if $args{utf32};
+  $self->{filter}->{utf} = 1 if $args{utf};
   
   return $self;
 } # new
@@ -23,7 +23,7 @@ sub _detector ($) {
     $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN () if $_[0]->{filter}->{ko};
     $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK () if $_[0]->{filter}->{non_cjk};
     my $x = Web::Encoding::UnivCharDet::UniversalDetector->new ($filter);
-    $x->{utf32} = 1 if $_[0]->{filter}->{utf32};
+    $x->{utf} = 1 if $_[0]->{filter}->{utf};
     $x;
   };
 } # _detector
@@ -48,11 +48,11 @@ sub _dump ($) {
 package Web::Encoding::UnivCharDet::UniversalDetector;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::CharsetProber;
+use Web::Encoding::UnivCharDet::UTFCharsetProber;
 
 sub new ($$) {
   my $self = bless {
     lang_filter => $_[1],
-    charset_probers => [],
   }, $_[0];
   $self->reset;
   return $self;
@@ -68,8 +68,9 @@ sub reset ($) {
   $self->{got_data} = undef;
   $self->{input_state} = 'pure ascii';
   $self->{last_char} = 0x00;
-  $self->{esc_charset_prober}->reset if $self->{esc_charset_prober};
-  $_->reset for grep { $_ } @{$self->{charset_probers}};
+  $self->{charset_probers} = [];
+  delete $self->{esc_charset_prober};
+  delete $self->{utf1632_prober};
 } # reset
 
 sub handle_data ($$) {
@@ -88,7 +89,7 @@ sub handle_data ($$) {
       $self->{detected_charset} = 'utf-16le';
     }
 
-    if ($self->{utf32}) {
+    if ($self->{utf}) {
       ## <https://github.com/mozilla/gecko-dev/commit/68332f717f14e8f2467ca4f2c521ed8fe6eff71d>
       if ($_[1] =~ /^\xFE\xFF\x00\x00/) {
         $self->{detected_charset} = 'x-iso-10646-ucs-4-3412';
@@ -107,16 +108,20 @@ sub handle_data ($$) {
     }
   } # start
 
-  for my $i (0..((length $_[1]) - 1)) {
+  my $length = length $_[1];
+  my $zero = 0;
+  for my $i (0..($length - 1)) {
     my $c = ord substr $_[1], $i, 1;
+    $zero++ if $c == 0x00;
     if ($c & 0x80 and $c != 0xA0) {
       if ($self->{input_state} ne 'high byte') {
         $self->{input_state} = 'high byte';
-        delete $self->{esc_charset_prober} if $self->{esc_charset_prober};
+        delete $self->{esc_charset_prober};
+        delete $self->{utf1632_prober};
 
         $self->{charset_probers}->[0]
             ||= Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup->new
-                ($self->{lang_filter});
+                    ($self->{lang_filter});
         $self->{charset_probers}->[1]
             ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
             if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
@@ -133,26 +138,46 @@ sub handle_data ($$) {
     }
   } # $i
 
-  if ($self->{input_state} eq 'esc ascii') {
-    $self->{esc_charset_prober}
-        ||= Web::Encoding::UnivCharDet::CharsetProber::ESC->new
-            ($self->{lang_filter});
-    my $st = $self->{esc_charset_prober}->handle_data ($_[1]);
-    if ($st eq 'found it') {
-      $self->{done} = 1;
-      $self->{detected_charset} = $self->{esc_charset_prober}->get_charset_name;
+  if ($self->{utf} and $zero) {
+    if ($zero / ($length || 1) > 0.1) { # random threshold
+      $self->{charset_probers} = [];
     }
-  } elsif ($self->{input_state} eq 'high byte') {
-    for (grep { $_ } @{$self->{charset_probers}}) {
-      my $st = $_->handle_data ($_[1]);
+    $self->{utf1632_prober} ||= Web::Encoding::UnivCharDet::UTFCharsetProber->new;
+  }
+  if (defined $self->{utf1632_prober}) {
+    {
+      my $st = $self->{utf1632_prober}->handle_data ($_[1]);
       if ($st eq 'found it') {
         $self->{done} = 1;
-        $self->{detected_charset} = $_->get_charset_name;
+        $self->{detected_charset} = $self->{utf1632_prober}->get_charset_name; # non-undef when found
         return 1;
       }
     }
   }
 
+  if ($self->{input_state} eq 'esc ascii') {
+    $self->{esc_charset_prober}
+        ||= Web::Encoding::UnivCharDet::CharsetProber::ESC->new
+                ($self->{lang_filter});
+    {
+      my $st = $self->{esc_charset_prober}->handle_data ($_[1]);
+      if ($st eq 'found it') {
+        $self->{done} = 1;
+        $self->{detected_charset} = $self->{esc_charset_prober}->get_charset_name; # non-undef when found
+        return 1;
+      }
+    }
+  } elsif ($self->{input_state} eq 'high byte') {
+    for (grep { defined $_ } @{$self->{charset_probers}}) {
+      my $st = $_->handle_data ($_[1]);
+      if ($st eq 'found it') {
+        $self->{done} = 1;
+        $self->{detected_charset} = $_->get_charset_name; # non-undef when found
+        return 1;
+      }
+    }
+  }
+  
   return 1;
 } # handle_data
 
@@ -160,16 +185,20 @@ sub data_end ($) {
   my $self = $_[0];
   return unless $self->{got_data};
 
-  if ($self->{detected_charset}) {
+  if (defined $self->{detected_charset}) {
     $self->{done} = 1;
     $self->{reported} = $self->{detected_charset};
     return;
   }
 
+  if (defined $self->{utf1632_prober}) {
+    $self->{reported} = $self->{utf1632_prober}->get_charset_name; # or undef
+  }
+
   if ($self->{input_state} eq 'high byte') {
     my $max_prober_confidence = 0.0;
     my $max_prober;
-    for (grep { $_ } @{$self->{charset_probers}}) {
+    for (grep { defined $_ } @{$self->{charset_probers}}) {
       my $prober_confidence = $_->get_confidence;
       if ($prober_confidence > $max_prober_confidence) {
         $max_prober_confidence = $prober_confidence;
@@ -177,7 +206,7 @@ sub data_end ($) {
       }
     }
     if ($max_prober_confidence > Web::Encoding::UnivCharDet::Defs::MINIMUM_THRESHOLD) {
-      $self->{reported} = $max_prober->get_charset_name;
+      $self->{reported} = $max_prober->get_charset_name; # or undef (but unlikely?)
     }
   }
 } # data_end
@@ -187,7 +216,13 @@ sub get_reported_charset ($) {
 } # get_reported_charset
 
 sub dump_status ($) {
-  $_->dump_status for grep { $_ } @{$_[0]->{charset_probers}};
+  my $self = $_[0];
+  print "Input state: $self->{input_state}\n";
+  $_->dump_status for grep { defined $_ }
+      @{$self->{charset_probers}},
+      $self->{esc_charset_prober},
+      $self->{utf1632_prober};
+  print "Reported: @{[$self->{reported} // '']}\n";
 } # dump_status
 
 1;

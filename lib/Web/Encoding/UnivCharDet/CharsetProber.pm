@@ -75,6 +75,11 @@ sub filter_with_english_letters ($$) {
   return $new;
 } # filter_with_english_letters
 
+sub dump_status ($) {
+  my $self = $_[0];
+  printf "%s\n", ref $self;
+} # dump_status
+
 package Web::Encoding::UnivCharDet::CharsetProber::Latin1;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
@@ -156,7 +161,8 @@ sub handle_data ($$) {
   my $new_buf1 = $self->filter_with_english_letters ($_[1]);
 
   for my $i (0..((length $new_buf1) - 1)) {
-    my $char_class = $Latin1_CharToClass->[ord substr $new_buf1, $i, 1];
+    my $c = ord substr $new_buf1, $i, 1;
+    my $char_class = $Latin1_CharToClass->[$c];
     my $freq = $Latin1ClassModel->[$self->{last_char_class}*CLASS_NUM + $char_class];
     if ($freq == 0) {
       $self->{state} = 'not me';
@@ -557,9 +563,11 @@ package Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub new ($$) {
-  my $self = bless {}, $_[0];
-  my $filter = $_[1];
+sub new ($$;%) {
+  my $self = bless {}, shift;
+  my $filter = shift;
+  my %args = @_;
+  
   $self->{probers} = [
     Web::Encoding::UnivCharDet::CharsetProber::UTF8->new,
     $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
@@ -587,6 +595,7 @@ sub new ($$) {
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
         : undef,
   ];
+
   $self->reset;
   return $self;
 } # new

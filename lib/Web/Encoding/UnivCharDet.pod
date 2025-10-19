@@ -29,8 +29,8 @@ Return a new instance of the universal detector.
 
 Zero or more named parameters can be specified.
 
-If C<utf32> parameter is set to a true value, the UTF-32 BOM sniffing
-is enabled.  Otherwise, it is disabled.
+If C<utf> parameter is set to a true value, the UTF-32 and UTF-16
+detection is enabled.  Otherwise, it is disabled.
 
 =item $charset = $det->detect_byte_string ($bytes)
 
@@ -47,14 +47,18 @@ are returned:
   windows-1253 iso-8859-8 windows-1255 windows-1252
 
 Note that C<x-euc-tw> and C<ibm855> are not supported by the Encoding
-Standard.
+Standard.  Encoding labels C<iso-2022-cn>, C<hz-gb-2312>, and
+C<iso-2022-kr> are supported but associated with the replacement
+encoding.
 
-If the UTF-32 BOM sniffing is enabled, one of the following encoding
-labels might also be returned:
+If the UTF-32 and UTF-16 detection is enabled, one of the following
+encoding labels might also be returned:
 
   utf-32be utf-32le x-iso-10646-ucs-4-3412 x-iso-10646-ucs-4-2143
+  utf-16be utf-16le
 
-Note that they are not supported by the Encoding Standard.
+Note that labels other than C<utf-16be> and C<utf-16le> are not
+supported by the Encoding Standard.
 
 Returned encoding names are in lowercase.
 
@@ -91,15 +95,19 @@ S. Li, K. Momoi. Netscape. In Proceedings of the 19th International
 Unicode Conference.
 <https://www-archive.mozilla.org/projects/intl/universalcharsetdetection>.
 
-[MOZILLAUNIVDET] universalchardet in Mozilla repository.
-
-This implementation derives from Mozilla's C++ implementation as of
-May 1, 2013
+[MOZILLAUNIVDET] universalchardet in Mozilla repository.  This
+implementation derives from Mozilla's C++ implementation as of May 1,
+2013
 <https://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.zip>.
 
+[MOZILLAUNIVDETBOM]
+<https://github.com/mozilla/gecko-dev/commit/68332f717f14e8f2467ca4f2c521ed8fe6eff71d>.
+
+[CHARDET] Chardet: The Universal Character Encoding Detector,
+<https://github.com/chardet/chardet>.
+
 [SWUNIVERSALCHARDET] SuikaWiki:UniversalCharDet
-<https://suika.suikawiki.org/~wakaba/wiki/sw/n/UniversalCharDet> (In
-Japanese).
+<https://wiki.suikawiki.org/n/UniversalCharDet>.
 
 =head1 AUTHOR
 
@@ -108,13 +116,16 @@ Wakaba <wakaba@suikawiki.org>.
 =head1 ACKNOWLEDGEMENTS
 
 Thanks to the authors and contributors of Mozilla's original universal
-detector implementation [MOZILLAUNIVDET], from which the Perl port
-derives.
+detector implementation [MOZILLAUNIVDET] and its variants
+[MOZILLAUNIVDETBOM] [CHARDET], from which the Perl port derives.
 
 =head1 LICENSE
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at <https://mozilla.org/MPL/2.0/>.
+
+Note that some of files are licensed with different terms.  See their
+documentations.
 
 =cut
