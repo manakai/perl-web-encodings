@@ -3,6 +3,7 @@ use strict;
 use warnings;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
+use Web::Encoding::UnivCharDet::Defs2;
 use Web::Encoding::UnivCharDet::CodingStateMachine;
 use Web::Encoding::UnivCharDet::CharDistribAnalysis;
 use Web::Encoding::UnivCharDet::ContextAnalysis;
@@ -766,7 +767,8 @@ our $VERSION = '1.0';
 sub new ($$) {
   my $self = bless {}, $_[0];
   $self->{is_preferred_lang} = $_[1];
-  $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new ($self->_smmodel);
+  $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new
+      ($self->_smmodel);
   $self->reset;
   return $self;
 } # new
@@ -778,6 +780,7 @@ sub reset ($) {
   $self->{last_char} = "\x00\x00";
   $self->{distribution_analyser} = $self->_distrib_analyser->new;
   $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
+  $self->{distribution_analyser}->{_parent} = ref $self;
 } # reset
 
 sub handle_data ($$$;$) {
@@ -843,7 +846,8 @@ package Web::Encoding::UnivCharDet::CharsetProber::EUCKR;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
 our $VERSION = '1.0';
 
-sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCKRSMModel }
+sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::CP949SMModel }
+#sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCKRSMModel }
 sub _distrib_analyser ($) { 'Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCKR' }
 sub get_charset_name ($) { 'euc-kr' }
 
@@ -869,6 +873,7 @@ sub reset ($) {
   $self->{distribution_analyser} = Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCJP->new;
   $self->{context_analyser}->reset ($self->{is_preferred_lang});
   $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
+  $self->{distribution_analyser}->{_parent} = ref $self;
 } # reset
 
 sub get_charset_name ($) { 'euc-jp' }
@@ -940,6 +945,7 @@ sub reset ($) {
   $self->{distribution_analyser} = Web::Encoding::UnivCharDet::CharDistribAnalysis::SJIS->new;
   $self->{context_analyser}->reset ($self->{is_preferred_lang});
   $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
+  $self->{distribution_analyser}->{_parent} = ref $self;
 } # reset
 
 sub get_charset_name ($) { 'shift_jis' }

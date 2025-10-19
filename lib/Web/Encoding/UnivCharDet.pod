@@ -106,6 +106,9 @@ implementation derives from Mozilla's C++ implementation as of May 1,
 [CHARDET] Chardet: The Universal Character Encoding Detector,
 <https://github.com/chardet/chardet>.
 
+[CHARADE13] Support CP949, fixes #10
+<https://github.com/sv24-archive/charade/pull/13/files>.
+
 [SWUNIVERSALCHARDET] SuikaWiki:UniversalCharDet
 <https://wiki.suikawiki.org/n/UniversalCharDet>.
 
@@ -117,7 +120,8 @@ Wakaba <wakaba@suikawiki.org>.
 
 Thanks to the authors and contributors of Mozilla's original universal
 detector implementation [MOZILLAUNIVDET] and its variants
-[MOZILLAUNIVDETBOM] [CHARDET], from which the Perl port derives.
+[MOZILLAUNIVDETBOM] [CHARADE13] [CHARDET], from which the Perl port
+derives.
 
 =head1 LICENSE
 
