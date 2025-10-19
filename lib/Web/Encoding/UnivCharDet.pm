@@ -4,12 +4,10 @@ use warnings;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
 
-sub new ($;%) {
+sub new ($) {
   my $self = bless {}, shift;
-  my %args = @_;
   
   $self->{filter} = {ja => 1, zh_hant => 1, zh_hans => 1, ko => 1, non_cjk => 1};
-  $self->{filter}->{utf} = 1 if $args{utf};
   
   return $self;
 } # new
@@ -49,6 +47,7 @@ package Web::Encoding::UnivCharDet::UniversalDetector;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::CharsetProber;
 use Web::Encoding::UnivCharDet::UTFCharsetProber;
+use Web::Encoding::UnivCharDet::MacCharsetProber;
 
 sub new ($$) {
   my $self = bless {
@@ -71,6 +70,7 @@ sub reset ($) {
   $self->{charset_probers} = [];
   delete $self->{esc_charset_prober};
   delete $self->{utf1632_prober};
+  delete $self->{reported};
 } # reset
 
 sub handle_data ($$) {
@@ -127,6 +127,8 @@ sub handle_data ($$) {
             if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
         $self->{charset_probers}->[2]
             ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new;
+        $self->{charset_probers}->[3]
+            ||= Web::Encoding::UnivCharDet::MacCharsetProber::MacRoman->new;
       }
     } else {
       if ($self->{input_state} eq 'pure ascii' and

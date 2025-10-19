@@ -79,6 +79,7 @@ This module derived from
 # the Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
+#   Wakaba <wakaba@suikawiki.org>
 #   Mark Pilgrim - port to Python
 #
 # This library is free software; you can redistribute it and/or

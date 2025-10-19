@@ -265,6 +265,7 @@ as of 19 October Reiwa 7 (2025), i.e.
 ######################## BEGIN LICENSE BLOCK ########################
 #
 # Contributor(s):
+#   Wakaba <wakaba@suikawiki.org>
 #   Jason Zavaglia
 #
 # This library is free software; you can redistribute it and/or

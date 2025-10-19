@@ -23,14 +23,12 @@ Following methods are available:
 
 =item $det = Web::Encoding::UnivCharDet->new
 
-=item $det = Web::Encoding::UnivCharDet->new (NAME => VALUE, ...)
-
 Return a new instance of the universal detector.
 
-Zero or more named parameters can be specified.
+=item $det->filter->{utf} = Boolean (default: false)
 
-If C<utf> parameter is set to a true value, the UTF-32 and UTF-16
-detection is enabled.  Otherwise, it is disabled.
+If true, the UTF-32 and UTF-16 detection is enabled.  Otherwise, it is
+disabled.
 
 =item $charset = $det->detect_byte_string ($bytes)
 
@@ -44,7 +42,7 @@ are returned:
   utf-8 utf-16be utf-16le iso-2022-cn big5 x-euc-tw gb18030 hz-gb-2312
   iso-2022-jp shift_jis euc-jp iso-2022-kr euc-kr iso-8859-5 koi8-r
   windows-1251 x-mac-cyrillic ibm866 ibm855 iso-8859-7 tis-620
-  windows-1253 iso-8859-8 windows-1255 windows-1252
+  windows-1253 iso-8859-8 windows-1255 windows-1252 macintosh
 
 Note that C<x-euc-tw> and C<ibm855> are not supported by the Encoding
 Standard.  Encoding labels C<iso-2022-cn>, C<hz-gb-2312>, and
@@ -90,26 +88,31 @@ defined in the Encoding Standard at the time of writing.)
 
 =head1 SEE ALSO
 
-[UNIVCHARDET] A composite approach to language/encoding detection,
-S. Li, K. Momoi. Netscape. In Proceedings of the 19th International
-Unicode Conference.
+[UNIVCHARDET] "A composite approach to language/encoding detection",
+S. Li, K. Momoi, Proceedings of the 19th International Unicode
+Conference
 <https://www-archive.mozilla.org/projects/intl/universalcharsetdetection>.
 
 [MOZILLAUNIVDET] universalchardet in Mozilla repository.  This
-implementation derives from Mozilla's C++ implementation as of May 1,
+implementation derives from Mozilla's C++ implementation as of 1 May
 2013
 <https://hg.mozilla.org/mozilla-central/archive/c0e81c0222fc.zip>.
 
-[MOZILLAUNIVDETBOM]
+[MOZILLAUNIVDETBOM] "Make Universal Charset Autodetector recognise UTF
+by BOM", Alexey Chernyak, 3 Nov 2005
 <https://github.com/mozilla/gecko-dev/commit/68332f717f14e8f2467ca4f2c521ed8fe6eff71d>.
 
-[CHARDET] Chardet: The Universal Character Encoding Detector,
+[CHARDET] "Chardet: The Universal Character Encoding Detector"
 <https://github.com/chardet/chardet>.
 
-[CHARADE13] Support CP949, fixes #10
+[CHARDETMAC] "Added a prober for MacRoman encoding.", Rob Speer, 29
+Jun 2022
+<https://github.com/chardet/chardet/commit/c292b52a97e57c95429ef559af36845019b88b33>.
+
+[CHARADE13] "Support CP949, fixes #10", puzzlet, 25 Jan 2013
 <https://github.com/sv24-archive/charade/pull/13/files>.
 
-[SWUNIVERSALCHARDET] SuikaWiki:UniversalCharDet
+[SWUNIVERSALCHARDET] "UniversalCharDet", SuikaWiki authors
 <https://wiki.suikawiki.org/n/UniversalCharDet>.
 
 =head1 AUTHOR
@@ -120,8 +123,8 @@ Wakaba <wakaba@suikawiki.org>.
 
 Thanks to the authors and contributors of Mozilla's original universal
 detector implementation [MOZILLAUNIVDET] and its variants
-[MOZILLAUNIVDETBOM] [CHARADE13] [CHARDET], from which the Perl port
-derives.
+[MOZILLAUNIVDETBOM] [CHARADE13] [CHARDET] [CHARDETMAC], from which the
+Perl port derives.
 
 =head1 LICENSE
 
