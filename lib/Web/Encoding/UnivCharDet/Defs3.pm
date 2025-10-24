@@ -83,6 +83,48 @@ my $Windows_1252Portuguese_CharToOrderMap = [
   100, 41, 51, 27, 37, 30, 38,SYM, 48,101, 32, 47, 39,102,103,104, # FX */
 ];
 
+=pod
+
+my $MacRomanFrench_CharToOrderMap = [
+254, 254, 254, 254, 254, 254, 254, 254, 254, 254, CTR, 254, 254, 252, 254, 254,
+254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254,
+253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253,
+251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 253, 253, 253, 253, 253, 253,
+253, 2, 18, 11, 10, 0, 17, 16, 19, 3, 25, 27, 7, 13, 4, 9,
+12, 20, 6, 1, 5, 8, 15, 30, 21, 24, 28, 253, 253, 253, 253, 253,
+253, 2, 18, 11, 10, 0, 17, 16, 19, 3, 25, 27, 7, 13, 4, 9,
+12, 20, 6, 1, 5, 8, 15, 30, 21, 24, 28, 253, 253, 253, 253, 254,
+43, 48, 29, 14, 46, 39, 38, 41, 23, 33, 43, 51, 48, 29, 14, 22,
+26, 40, 42, 56, 32, 36, 46, 44, 49, 31, 39, 71, 50, 35, 37, 38,
+253, 253, 253, 253, 253, 253, 253, 55, 253, 253, 253, 253, 253, SYM, 45, 54,
+SYM, 253, SYM, SYM, 253, 52, SYM, SYM, SYM, SYM, SYM, 253, 253, SYM, 45, 54,
+253, 253, 253, SYM, 68, SYM, SYM, 253, 253, 253, 253, 23, 51, 69, 34, 34,
+253, 253, 253, 253, 253, 253, 253, SYM, 57, 57, SYM, 253, 253, 253, SYM, SYM,
+253, 253, 253, 253, 253, 33, 26, 41, 40, 22, 42, 32, 36, 56, 44, 31,
+SYM, 49, 50, 37, 35, SYM, 253, 253, 253, SYM, SYM, SYM, 253, SYM, SYM, SYM,
+];
+
+=cut
+
+my $MacRomanSpanish_CharToOrderMap = [
+254, 254, 254, 254, 254, 254, 254, 254, 254, 254, CTR, 254, 254, 252, 254, 254,
+254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254,
+253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253,
+251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 253, 253, 253, 253, 253, 253,
+253, 1, 14, 9, 8, 0, 18, 15, 20, 5, 24, 30, 7, 12, 3, 2,
+13, 22, 6, 4, 10, 11, 16, 31, 27, 17, 25, 253, 253, 253, 253, 253,
+253, 1, 14, 9, 8, 0, 18, 15, 20, 5, 24, 30, 7, 12, 3, 2,
+13, 22, 6, 4, 10, 11, 16, 31, 27, 17, 25, 253, 253, 253, 253, 254,
+40, 46, 38, 26, 28, 34, 32, 23, 36, 35, 40, 41, 46, 38, 26, 37,
+49, 48, 21, 53, 42, 47, 28, 19, 44, 57, 34, 54, 29, 52, 56, 32,
+253, 253, 253, 253, 253, 253, 253, 43, 253, 253, 253, 253, 253, SYM, 33, 59,
+SYM, 253, SYM, SYM, 253, 67, SYM, SYM, SYM, SYM, SYM, 253, 253, SYM, 33, 59,
+253, 253, 253, SYM, 65, SYM, SYM, 253, 253, 253, 253, 36, 41, 54, 55, 55,
+253, 253, 253, 253, 253, 253, 253, SYM, 68, 66, SYM, 253, 253, 253, SYM, SYM,
+253, 253, 253, 253, 253, 35, 49, 23, 48, 37, 21, 42, 47, 53, 19, 57,
+SYM, 44, 29, 56, 52, SYM, 253, 253, 253, SYM, SYM, SYM, 253, SYM, SYM, SYM,
+];
+
 my $FrenchLangModel = [
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,3,3,3,3,3,0,1,3,2,0,2,3,3,2,1,0,1,1,0,2,1,
   3,3,3,3,2,3,2,3,3,3,2,3,3,3,3,2,2,3,3,3,3,1,3,0,3,1,0,3,1,0,2,0,1,1,2,0,0,2,
@@ -275,7 +317,19 @@ sub Windows_1252PortugueseModel () { +{
 } }
 
 
-my $Iso_8859_2_CharToOrderMap = [
+sub MacRomanSpanishModel () { +{
+  char_to_order_map => $MacRomanSpanish_CharToOrderMap,
+  precedence_matrix => $SpanishLangModel,
+  freq_char_count => 33,
+  typical_positive_ratio => 0.9990026288941288,
+  keep_english_letter => 1,
+  charset_name => "macintosh",
+  debug_name => "MacRomanSpanishModel",
+} }
+
+=pod
+
+my $Iso_8859_2Hungarian_CharToOrderMap = [
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -294,7 +348,7 @@ my $Iso_8859_2_CharToOrderMap = [
    50, 43, 72, 24, 41, 27, 23,SYM, 53, 73, 30, 31, 29, 48, 56,SYM, # FX */
 ];
 
-my $Windows_1250_CharToOrderMap = [
+my $Windows_1250Hungarian_CharToOrderMap = [
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -347,6 +401,8 @@ my $HungarianLangModel = [
   1,2,3,3,3,3,3,2,2,1,3,0,1,3,1,2,3,2,0,1,1,0,3,0,0,1,2,0,0,0,0,0,
   3,1,2,3,3,3,3,3,1,0,3,0,1,1,1,2,1,3,0,2,0,1,3,0,0,2,1,0,1,0,1,0,
 ];
+
+=cut
 
 my $Iso_8859_2Croatian_CharToOrderMap = [
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
@@ -736,9 +792,10 @@ my $CzechLangModel = [
    0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
 ];
 
+=pod
 
 sub Iso_8859_2HungarianModel () { +{
-  char_to_order_map => $Iso_8859_2_CharToOrderMap,
+  char_to_order_map => $Iso_8859_2Hungarian_CharToOrderMap,
   precedence_matrix => $HungarianLangModel,
   freq_char_count => 32,
   typical_positive_ratio => 0.999000688384496,
@@ -749,7 +806,7 @@ sub Iso_8859_2HungarianModel () { +{
 } }
 
 sub Windows_1250HungarianModel () { +{
-  char_to_order_map => $Windows_1250_CharToOrderMap,
+  char_to_order_map => $Windows_1250Hungarian_CharToOrderMap,
   precedence_matrix => $HungarianLangModel,
   freq_char_count => 32,
   typical_positive_ratio => 0.999000688384496,
@@ -758,6 +815,8 @@ sub Windows_1250HungarianModel () { +{
   debug_name => "Windows_1250HungarianModel",
   debug_only => 0,
 } }
+
+=cut
 
 sub Iso_8859_2CroatianModel () { +{
   char_to_order_map => $Iso_8859_2Croatian_CharToOrderMap,

@@ -51,7 +51,6 @@ package Web::Encoding::UnivCharDet::UniversalDetector;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::CharsetProber;
 use Web::Encoding::UnivCharDet::UTFCharsetProber;
-use Web::Encoding::UnivCharDet::MacCharsetProber;
 
 sub new ($$) {
   my $self = bless {
@@ -132,8 +131,6 @@ sub handle_data ($$) {
         $self->{charset_probers}->[2]
             ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new
             unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
-        $self->{charset_probers}->[3]
-            ||= Web::Encoding::UnivCharDet::MacCharsetProber::MacRoman->new;
       }
     } else {
       if ($self->{input_state} eq 'pure ascii' and
