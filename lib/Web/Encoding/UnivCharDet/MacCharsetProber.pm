@@ -148,6 +148,13 @@ sub dump_status ($) {
       $self->get_confidence, $self->get_charset_name;
 } # dump_status
 
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => ref $self,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
+
 1;
 
 =head1 AUTHOR

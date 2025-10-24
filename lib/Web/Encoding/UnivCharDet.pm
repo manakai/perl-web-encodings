@@ -43,6 +43,10 @@ sub _dump ($) {
   $_[0]->_detector->dump_status;
 } # _dump
 
+sub _dump_for_json ($) {
+  $_[0]->_detector->dump_status_for_json;
+} # _dump_for_json
+
 package Web::Encoding::UnivCharDet::UniversalDetector;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::CharsetProber;
@@ -126,7 +130,8 @@ sub handle_data ($$) {
             ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
             if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
         $self->{charset_probers}->[2]
-            ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new;
+            ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new
+            unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
         $self->{charset_probers}->[3]
             ||= Web::Encoding::UnivCharDet::MacCharsetProber::MacRoman->new;
       }
@@ -226,6 +231,18 @@ sub dump_status ($) {
       $self->{utf1632_prober};
   print "Reported: @{[$self->{reported} // '']}\n";
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => ref $self,
+          input_state => $self->{input_state},
+          probers => [map { $_->dump_status_for_json }
+                      grep { defined $_ }
+                      @{$self->{charset_probers}},
+                      $self->{esc_charset_prober},
+                      $self->{utf1632_prober}],
+          reported => $self->{reported}};
+} # dump_status_for_json
 
 1;
 

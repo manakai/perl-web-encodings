@@ -4,6 +4,7 @@ use warnings;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
 use Web::Encoding::UnivCharDet::Defs2;
+use Web::Encoding::UnivCharDet::Defs3;
 use Web::Encoding::UnivCharDet::CodingStateMachine;
 use Web::Encoding::UnivCharDet::CharDistribAnalysis;
 use Web::Encoding::UnivCharDet::ContextAnalysis;
@@ -80,6 +81,11 @@ sub dump_status ($) {
   my $self = $_[0];
   printf "%s\n", ref $self;
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => ref $self};
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::Latin1;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
@@ -206,14 +212,29 @@ sub dump_status ($) {
       $self->get_confidence, $self->get_charset_name;
 } # dump_status
 
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => ref $self,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
+
 package Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
 sub new ($) {
   my $self = bless {}, $_[0];
+  $self->reset;
+  return $self;
+} # new
+
+sub reset ($) {
+  my $self = $_[0];
   $self->{probers} = [
+    Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+    Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
         Web::Encoding::UnivCharDet::Defs::Win1251Model,
         Web::Encoding::UnivCharDet::Defs::Koi8rModel,
         Web::Encoding::UnivCharDet::Defs::Latin5Model,
@@ -235,19 +256,11 @@ sub new ($) {
           (Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
   $hebprober->set_model_probers
       ($self->{probers}->[-2], $self->{probers}->[-1]);
-  $self->reset;
-  return $self;
-} # new
-
-sub reset ($) {
-  my $self = $_[0];
-  $self->{active_num} = 0;
-  for (@{$self->{probers}}) {
-    $_->reset;
-    $self->{active_num}++;
-  }
+  
+  $self->{active_num} = @{$self->{probers}};
   $self->{best_guess} = -1;
   $self->{state} = 'detecting';
+  delete $self->{latin};
 } # reset
 
 sub get_charset_name ($) {
@@ -268,18 +281,64 @@ sub handle_data ($$) {
   if (length $new_buf) {
     for my $i (0..$#{$self->{probers}}) {
       local $_ = $self->{probers}->[$i];
-      next unless $_;
+      next unless defined $_;
       my $st = $_->handle_data ($new_buf);
       if ($st eq 'found it') {
         $self->{best_guess} = $i;
-        $self->{state} = 'found it';
+        return $self->{state} = 'found it';
       } elsif ($st eq 'not me') {
         $self->{probers}->[$i] = undef;
         $self->{active_num}--;
         if ($self->{active_num} <= 0) {
-          $self->{state} = 'not me';
+          return $self->{state} = 'not me';
         }
       }
+    } # $i
+
+    if (not $self->{latin} and
+        ((defined $self->{probers}->[0] and
+          $self->{probers}->[0]->get_confidence > 0.3) or
+         (defined $self->{probers}->[1] and
+          $self->{probers}->[1]->get_confidence > 0.3))) {
+      $self->{latin} = 1;
+
+      my $old_prober_count = @{$self->{probers}};
+      my @new_prober = (
+        map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+        Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
+        Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
+        Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
+        Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
+        Web::Encoding::UnivCharDet::Defs::Iso_8859_2HungarianModel,
+        Web::Encoding::UnivCharDet::Defs::Iso_8859_2CroatianModel,
+        Web::Encoding::UnivCharDet::Defs::Iso_8859_2PolishModel,
+        Web::Encoding::UnivCharDet::Defs::Iso_8859_2CzechModell,
+        Web::Encoding::UnivCharDet::Defs::Windows_1250HungarianModel,
+        Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
+        Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
+        #Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel,
+
+        #Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
+        #Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
+      );
+      push @{$self->{probers}}, @new_prober;
+      $self->{active_num} += @new_prober;
+
+      for my $i ($old_prober_count..$#{$self->{probers}}) {
+        local $_ = $self->{probers}->[$i];
+        next unless defined $_;
+        my $st = $_->handle_data ($new_buf);
+        if ($st eq 'found it') {
+          $self->{best_guess} = $i;
+          return $self->{state} = 'found it';
+        } elsif ($st eq 'not me') {
+          $self->{probers}->[$i] = undef;
+          $self->{active_num}--;
+          if ($self->{active_num} <= 0) {
+            return $self->{state} = 'not me';
+          }
+        }
+      } # $i
     }
   }
   return $self->{state};
@@ -314,14 +373,26 @@ sub dump_status ($) {
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
     unless ($_) {
-      printf "  inactive: [%s] (i.e. confidence is too low).\n", $_; # ->get_charset_name
+      printf "  inactive: [%s] (i.e. confidence is too low).\n", $i; # $_->get_charset_name
     } else {
       $_->dump_status;
     }
   }
   printf " SBCS Group found best match [%s] confidence %f.\n",
-      $self->{probers}->[$self->{best_guess}]->get_charset_name, $cf;
+      $self->{probers}->[$self->{best_guess}]->get_charset_name, $cf
+      if $self->{best_guess} >= 0;
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  my $r = {type => ref $self,
+           confidence => $self->get_confidence,
+           probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}]};
+  if ($self->{best_guess} >= 0) {
+    $r->{best_guess} = $self->{probers}->[$self->{best_guess}]->get_charset_name;
+  }
+  return $r;
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::SBCS;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
@@ -334,7 +405,15 @@ sub NEGATIVE_SHORTCUT_THRESHOLD () { 0.05 }
 sub SYMBOL_CAT_ORDER () { 250 }
 sub NUMBER_OF_SEQ_CAT () { 4 }
 sub POSITIVE_CAT () { NUMBER_OF_SEQ_CAT - 1 }
+sub PROBABLE_CAT () { NUMBER_OF_SEQ_CAT - 2 }
+sub NEUTRAL_CAT () { NUMBER_OF_SEQ_CAT - 3 }
 sub NEGATIVE_CAT () { 0 }
+
+sub ILL () { 255 }
+sub CTR () { 254 }
+sub SYM () { 253 }
+sub RET () { 252 }
+sub NUM () { 251 }
 
 sub new ($$;$$) {
   my $self = bless {}, $_[0];
@@ -352,30 +431,46 @@ sub reset ($) {
   $self->{seq_counters}->[$_] = 0 for 0..(NUMBER_OF_SEQ_CAT - 1);
   $self->{total_seqs} = 0;
   $self->{total_char} = 0;
+  $self->{ctrl_char} = 0;
+  $self->{out_char} = 0;
   $self->{freq_char} = 0;
 } # reset
 
 sub handle_data ($$) {
   my $self = $_[0];
 
+  my $ss = $self->{model}->{freq_char_count} // SAMPLE_SIZE;
   for my $i (0..((length $_[1]) - 1)) {
     my $order = $self->{model}->{char_to_order_map}->[ord substr $_[1], $i, 1] || 0;
-    if ($order < SYMBOL_CAT_ORDER) {
-      $self->{total_char}++;
-    }
-    if ($order < SAMPLE_SIZE) {
+
+    $self->{total_char}++;
+    if ($order == ILL) {
+      $self->{state} = 'not me';
+      last;
+    } elsif ($order == CTR) {
+      $self->{ctrl_char}++;
+    } elsif ($order < $ss) {
       $self->{freq_char}++;
-      if ($self->{last_order} < SAMPLE_SIZE) {
+      if ($self->{last_order} < $ss) {
         $self->{total_seqs}++;
         unless ($self->{reversed}) {
           ++$self->{seq_counters}->[
-            $self->{model}->{precedence_matrix}->[$self->{last_order} * SAMPLE_SIZE + $order]
+            $self->{model}->{precedence_matrix}->[$self->{last_order} * $ss + $order]
           ];
         } else {
           ++$self->{seq_counters}->[
-            $self->{model}->{precedence_matrix}->[$order * SAMPLE_SIZE + $self->{last_order}]
+            $self->{model}->{precedence_matrix}->[$order * $ss + $self->{last_order}]
           ];
         }
+      } elsif ($self->{last_order} < SYMBOL_CAT_ORDER) {
+        $self->{seq_counters}->[NEGATIVE_CAT]++;
+        $self->{total_seqs}++;
+      }
+    } elsif ($order < SYMBOL_CAT_ORDER) {
+      $self->{out_char}++;
+      if ($self->{last_order} < SYMBOL_CAT_ORDER) {
+        $self->{seq_counters}->[NEGATIVE_CAT]++;
+        $self->{total_seqs}++;
       }
     }
     $self->{last_order} = $order;
@@ -406,9 +501,15 @@ sub get_confidence ($) {
     return 0.01;
   } else {
     if ($self->{total_seqs} > 0) {
-      my $r = 1.0 * $self->{seq_counters}->[POSITIVE_CAT] / $self->{total_seqs} / $self->{model}->{typical_positive_ratio};
+      my $positive_seqs = $self->{seq_counters}->[POSITIVE_CAT];
+      my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
+      my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
+
+      my $r = ($positive_seqs + $probable_seqs/4) / $self->{total_seqs} / $self->{model}->{typical_positive_ratio};
+      $r = $r * ($self->{total_char} - $self->{out_char} - $self->{ctrl_char}) / $self->{total_char};
       $r = $r * $self->{freq_char} / $self->{total_char};
       $r = 0.99 if $r >= 1.00;
+      $r *= 0.01 if $self->{model}->{debug_only};
       return $r;
     }
     return 0.01;
@@ -424,14 +525,28 @@ sub get_charset_name ($) {
 } # get_charset_name
 
 sub keep_english_letters ($) {
-  return $_[0]->{model}->{keep_english_letters};
+  return $_[0]->{model}->{keep_english_letter};
 } # keep_english_letters
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "  SBCS: %1.3f [%s]\n",
-      $self->get_confidence, $self->get_charset_name;
+  my $positive_seqs = $self->{seq_counters}->[POSITIVE_CAT];
+  my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
+  my $neutral_seqs = $self->{seq_counters}->[NEUTRAL_CAT];
+  my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
+  printf "  SBCS: %1.3f [%s] (%d %d %d %d)\n",
+      $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
+      $self->{model}->{debug_name} // $self->get_charset_name,
+      $positive_seqs, $probable_seqs, $neutral_seqs, $negative_seqs;
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->{model}->{debug_name} // $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
+          seq_counters => $self->{seq_counters}};
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::Hebrew;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
@@ -559,6 +674,14 @@ sub dump_status ($) {
       $self->{final_char_logical_score},
       $self->{final_char_visual_score};
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => ref $self,
+          probers => [map { $_->dump_status_for_json } grep { defined $_ } $self->{logical_prob}, $self->{visual_prob}],
+          logical => $self->{final_char_logical_score},
+          visual => $self->{final_char_visual_score}};
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
@@ -694,7 +817,7 @@ sub dump_status ($) {
   $self->get_confidence;
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
-    unless ($_) {
+    unless (defined $_) {
       printf "  MBCS inactive: [%s] (confidence is too low).\n", $ProberName[$i];
     } else {
       my $cf = $_->get_confidence;
@@ -702,6 +825,14 @@ sub dump_status ($) {
     }
   }
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence,
+          probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}]};
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::UTF8;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
@@ -760,6 +891,13 @@ sub get_confidence ($) {
   }
 } # get_confidence
 
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
+
 package Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
@@ -817,6 +955,13 @@ sub handle_data ($$$;$) {
 sub get_confidence ($) {
   return $_[0]->{distribution_analyser}->get_confidence;
 } # get_confidence
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::GB18030;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
@@ -923,6 +1068,13 @@ sub get_confidence ($) {
   return $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
 } # get_confidence
 
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
+
 package Web::Encoding::UnivCharDet::CharsetProber::SJIS;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
@@ -994,6 +1146,13 @@ sub get_confidence ($) {
   return $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
 } # get_confidence
 
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
+
 package Web::Encoding::UnivCharDet::CharsetProber::ESC;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
@@ -1052,6 +1211,13 @@ sub get_confidence ($) {
   return 0.99;
 } # get_confidence
 
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => $self->get_charset_name,
+          charset => $self->get_charset_name,
+          confidence => $self->get_confidence};
+} # dump_status_for_json
+
 1;
 
 =head1 LICENSE
@@ -1059,5 +1225,46 @@ sub get_confidence ($) {
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at <http://mozilla.org/MPL/2.0/>.
+
+Note that some of L<Web::Encoding::UnivCharDet::CharsetProber::SBCS>
+comes from <https://gitlab.freedesktop.org/uchardet/uchardet>'s
+|src/nsSBCharSetProber.cpp|, which has the following terms:
+
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Mozilla Universal charset detector code.
+ *
+ * The Initial Developer of the Original Code is
+ * Netscape Communications Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 2001
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *          Shy Shalom <shooshX@gmail.com>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
 
 =cut

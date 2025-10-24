@@ -696,9 +696,7 @@ sub Win1251BulgarianModel () { +{
   charset_name => "windows-1251",
 } }
 
-=pod 
-
-# Not implemented
+=pod
 
 my $Latin2_HungarianCharToOrderMap = [
 255,255,255,255,255,255,255,255,255,255,254,255,255,254,255,255,
@@ -875,6 +873,7 @@ sub Latin2HungarianModel () { +{
   typical_positive_ratio => 0.947368,
   keep_english_letter => 1,
   charset_name => "iso-8859-2",
+  debug_only => 1,
 } }
 
 sub Win1250HungarianModel { +{
@@ -883,6 +882,7 @@ sub Win1250HungarianModel { +{
   typical_positive_ratio => 0.947368,
   keep_english_letter => 1,
   charset_name => "windows-1250",
+  debug_only => 1,
 } }
 
 =cut
@@ -1614,6 +1614,8 @@ sub SJISSMModel () { +{
   char_len_table => $SJISCharLenTable,
   name => "shift_jis",
 } }
+
+
 
 my $UTF8_cls = [
 PCK4BITS( 1, 1, 1, 1, 1, 1, 1, 1),  # 00 - 07
