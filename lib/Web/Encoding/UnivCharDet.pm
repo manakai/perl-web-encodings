@@ -74,6 +74,9 @@ sub reset ($) {
   delete $self->{esc_charset_prober};
   delete $self->{utf1632_prober};
   delete $self->{reported};
+  #delete $self->{nbsp_found};
+  delete $self->{esc_found};
+  delete $self->{binary_found};
 } # reset
 
 sub handle_data ($$) {
@@ -116,6 +119,9 @@ sub handle_data ($$) {
   for my $i (0..($length - 1)) {
     my $c = ord substr $_[1], $i, 1;
     $zero++ if $c == 0x00;
+    #if ($c == 0xA0) {
+    #  $self->{nbsp_found} = 1;
+    #} elsif ($c & 0x80) {
     if ($c & 0x80 and $c != 0xA0) {
       if ($self->{input_state} ne 'high byte') {
         $self->{input_state} = 'high byte';
@@ -133,10 +139,18 @@ sub handle_data ($$) {
             unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
       }
     } else {
-      if ($self->{input_state} eq 'pure ascii' and
-          $c == 0x1B or
-          ($c == 0x7B and $self->{last_char} == 0x7E)) { # ~{
-        $self->{input_state} = 'esc ascii';
+      if ($self->{input_state} eq 'pure ascii') {
+        if ($c == 0x1B or $c == 0x0E or $c == 0x0F) {
+          $self->{input_state} = 'esc ascii';
+          $self->{esc_found} = 1;
+        } elsif ($c == 0x7B and $self->{last_char} == 0x7E) { # ~{
+          $self->{input_state} = 'esc ascii';
+        } elsif ((0x00 <= $c and $c <= 0x07) or
+                 (0x10 <= $c and $c <= 0x19) or
+                 (0x1C <= $c and $c <= 0x1F) or
+                 $c == 0x7F) {
+          $self->{binary_found} = 1;
+        }
       }
       $self->{last_char} = $c;
     }
@@ -211,6 +225,17 @@ sub data_end ($) {
     }
     if ($max_prober_confidence > Web::Encoding::UnivCharDet::Defs::MINIMUM_THRESHOLD) {
       $self->{reported} = $max_prober->get_charset_name; # or undef (but unlikely?)
+    }
+  } elsif ($self->{input_state} eq 'pure ascii' or
+           $self->{input_state} eq 'esc ascii') {
+    if ($self->{esc_found}) {
+      #
+    } elsif ($self->{binary_found}) {
+      #
+    #} elsif ($self->{nbsp_found}) {
+    #  $self->{reported} = 'windows-1252';
+    } else {
+      $self->{reported} = 'windows-1252'; # ascii
     }
   }
 } # data_end
