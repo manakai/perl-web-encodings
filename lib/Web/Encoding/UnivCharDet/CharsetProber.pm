@@ -235,18 +235,21 @@ sub reset ($) {
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
     $Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
+    $Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel, # [2]
     $Web::Encoding::UnivCharDet::Defs::Win1251Model,
     $Web::Encoding::UnivCharDet::Defs::Koi8rModel,
-    $Web::Encoding::UnivCharDet::Defs::Latin5Model,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5Model,
     $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
     $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
     $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
-    $Web::Encoding::UnivCharDet::Defs::Latin7Model,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_7Model,
     $Web::Encoding::UnivCharDet::Defs::Win1253Model,
-    $Web::Encoding::UnivCharDet::Defs::Latin5BulgarianModel,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
-    $Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel,
+    $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
   ];
   my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
   push @{$self->{probers}},
@@ -257,6 +260,7 @@ sub reset ($) {
           ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
   $hebprober->set_model_probers
       ($self->{probers}->[-2], $self->{probers}->[-1]);
+  $self->{inactive_probers} = [];
   
   $self->{active_num} = @{$self->{probers}};
   $self->{best_guess} = -1;
@@ -268,9 +272,9 @@ sub get_charset_name ($) {
   my $self = $_[0];
   if ($self->{best_guess} == -1) {
     $self->get_confidence;
-    if ($self->{best_guess} == -1) {
-      $self->{best_guess} = 0;
-    }
+  }
+  if ($self->{state} eq 'not me' and $self->{latin}) {
+    return 'windows-1252';
   }
   return $self->{probers}->[$self->{best_guess}]->get_charset_name;
 } # get_charset_name
@@ -288,7 +292,7 @@ sub handle_data ($$) {
         $self->{best_guess} = $i;
         return $self->{state} = 'found it';
       } elsif ($st eq 'not me') {
-        $self->{probers}->[$i] = undef;
+        push @{$self->{inactive_probers}}, delete $self->{probers}->[$i];
         $self->{active_num}--;
         if ($self->{active_num} <= 0) {
           return $self->{state} = 'not me';
@@ -300,8 +304,12 @@ sub handle_data ($$) {
         ((defined $self->{probers}->[0] and
           $self->{probers}->[0]->get_confidence > 0.3) or
          (defined $self->{probers}->[1] and
-          $self->{probers}->[1]->get_confidence > 0.3))) {
+          $self->{probers}->[1]->get_confidence > 0.3) or
+         (defined $self->{probers}->[2] and
+          $self->{probers}->[2]->get_confidence > 0.2))) {
       $self->{latin} = 1;
+      push @{$self->{inactive_probers}}, delete $self->{probers}->[0]
+          if defined $self->{probers}->[0]; # Latin1
 
       my $old_prober_count = @{$self->{probers}};
       my @new_prober = (
@@ -318,6 +326,20 @@ sub handle_data ($$) {
         $Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
         #$Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1257EstonianModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1257LithuanianModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1257LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10LithuanianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15EstonianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15FrenchModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_9TurkishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
 
         #$Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
         #$Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
@@ -333,7 +355,7 @@ sub handle_data ($$) {
           $self->{best_guess} = $i;
           return $self->{state} = 'found it';
         } elsif ($st eq 'not me') {
-          $self->{probers}->[$i] = undef;
+          push @{$self->{inactive_probers}}, delete $self->{probers}->[$i];
           $self->{active_num}--;
           if ($self->{active_num} <= 0) {
             return $self->{state} = 'not me';
@@ -354,6 +376,7 @@ sub get_confidence ($) {
     return 0.01;
   } else {
     my $best_conf = 0.0;
+    my $best_i = [];
     for my $i (0..$#{$self->{probers}}) {
       local $_ = $self->{probers}->[$i];
       next unless $_;
@@ -361,6 +384,23 @@ sub get_confidence ($) {
       if ($best_conf < $cf) {
         $best_conf = $cf;
         $self->{best_guess} = $i;
+        $best_i = [$i];
+      } elsif ($best_conf == $cf) {
+        push @$best_i, $i;
+      }
+    }
+    if (@$best_i > 1) {
+      my $cc = {};
+      my $cn = {};
+      for my $i (@$best_i) {
+        my $charset = $self->{probers}->[$i]->get_charset_name;
+        $cc->{$charset}++;
+        $cn->{$charset} //= $i;
+      }
+      my $charset = [sort { $cc->{$b} <=> $cc->{$a} || $a cmp $b } keys %$cc]->[0];
+      $self->{best_guess} = $cn->{$charset};
+      if ($best_conf < 0.21 and $self->{latin} and $charset eq 'windows-1252') {
+        $best_conf = 0.21;
       }
     }
     return $best_conf;
@@ -374,10 +414,14 @@ sub dump_status ($) {
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
     unless ($_) {
-      printf "  inactive: [%s] (i.e. confidence is too low).\n", $i; # $_->get_charset_name
+      #printf "  inactive: [%s] (i.e. confidence is too low).\n", $i; # $_->get_charset_name
     } else {
       $_->dump_status;
     }
+  }
+  for (@{$self->{inactive_probers}}) {
+    print "[inactive]";
+    $_->dump_status;
   }
   printf " SBCS Group found best match [%s] confidence %f.\n",
       $self->{probers}->[$self->{best_guess}]->get_charset_name, $cf
@@ -388,7 +432,8 @@ sub dump_status_for_json ($) {
   my $self = $_[0];
   my $r = {type => ref $self,
            confidence => $self->get_confidence,
-           probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}]};
+           probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}],
+           inactive_probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{inactive_probers}}]};
   if ($self->{best_guess} >= 0) {
     $r->{best_guess} = $self->{probers}->[$self->{best_guess}]->get_charset_name;
   }
@@ -507,9 +552,12 @@ sub get_confidence ($) {
     if ($self->{total_seqs} > 0) {
       my $positive_seqs = $self->{seq_counters}->[POSITIVE_CAT];
       my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
+      my $neutral_seqs = $self->{seq_counters}->[NEUTRAL_CAT];
       my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
 
-      my $r = ($positive_seqs + $probable_seqs/4) / $self->{total_seqs} / $self->{model}->{typical_positive_ratio};
+      my $r = ($positive_seqs + $probable_seqs/4)
+          / (($self->{total_seqs} - $neutral_seqs) || 1)
+          / $self->{model}->{typical_positive_ratio};
       $r = $r * ($self->{total_char} - $self->{out_char} - $self->{ctrl_char}) / $self->{total_char};
       $r = $r * $self->{freq_char} / $self->{total_char};
       $r = 0.99 if $r >= 1.00;

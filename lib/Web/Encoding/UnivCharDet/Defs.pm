@@ -67,7 +67,7 @@ my $win1251_CharToOrderMap = pack 'C*',
   9,  7,  6, 14, 39, 26, 28, 22, 25, 29, 54, 18, 17, 30, 27, 16,
 ;
 
-my $latin5_CharToOrderMap = pack 'C*', 
+my $Iso_8859_5_CharToOrderMap = pack 'C*', 
 255,255,255,255,255,255,255,255,255,255,254,255,255,254,255,255,
 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 +253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,
@@ -290,8 +290,8 @@ our $Win1251Model = {
   charset_name => "windows-1251",
 };
 
-our $Latin5Model = {
-  char_to_order_map => $latin5_CharToOrderMap,
+our $Iso_8859_5Model = {
+  char_to_order_map => $Iso_8859_5_CharToOrderMap,
   precedence_matrix => $RussianLangModel,
   typical_positive_ratio => 0.976601,
   keep_english_letter => 0,
@@ -324,7 +324,7 @@ our $Ibm855Model = {
 
 # ------
 
-my $Latin7_CharToOrderMap = pack 'C*', 
+my $Iso_8859_7_CharToOrderMap = pack 'C*', 
 255,255,255,255,255,255,255,255,255,255,254,255,255,254,255,255,
 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 +253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,
@@ -493,8 +493,8 @@ my $GreekLangModel = pack 'C*',
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 ;
 
-our $Latin7Model = {
-  char_to_order_map => $Latin7_CharToOrderMap,
+our $Iso_8859_7Model = {
+  char_to_order_map => $Iso_8859_7_CharToOrderMap,
   precedence_matrix => $GreekLangModel,
   typical_positive_ratio => 0.982851,
   keep_english_letter => 0,
@@ -511,7 +511,7 @@ our $Win1253Model = {
 
 # ------
 
-my $Latin5_BulgarianCharToOrderMap = pack 'C*', 
+my $Iso_8859_5_BulgarianCharToOrderMap = pack 'C*', 
 255,255,255,255,255,255,255,255,255,255,254,255,255,254,255,255,
 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 +253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,
@@ -680,8 +680,8 @@ my $BulgarianLangModel = pack 'C*',
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
 ;
 
-our $Latin5BulgarianModel = {
-  char_to_order_map => $Latin5_BulgarianCharToOrderMap,
+our $Iso_8859_5BulgarianModel = {
+  char_to_order_map => $Iso_8859_5_BulgarianCharToOrderMap,
   precedence_matrix => $BulgarianLangModel,
   typical_positive_ratio => 0.969392,
   keep_english_letter => 0,
