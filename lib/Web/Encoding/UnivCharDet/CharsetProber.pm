@@ -234,26 +234,27 @@ sub reset ($) {
   $self->{probers} = [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-    Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
-        Web::Encoding::UnivCharDet::Defs::Win1251Model,
-        Web::Encoding::UnivCharDet::Defs::Koi8rModel,
-        Web::Encoding::UnivCharDet::Defs::Latin5Model,
-        Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
-        Web::Encoding::UnivCharDet::Defs::Ibm866Model,
-        Web::Encoding::UnivCharDet::Defs::Ibm855Model,
-        Web::Encoding::UnivCharDet::Defs::Latin7Model,
-        Web::Encoding::UnivCharDet::Defs::Win1253Model,
-        Web::Encoding::UnivCharDet::Defs::Latin5BulgarianModel,
-        Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
-        Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
+    $Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
+    $Web::Encoding::UnivCharDet::Defs::Win1251Model,
+    $Web::Encoding::UnivCharDet::Defs::Koi8rModel,
+    $Web::Encoding::UnivCharDet::Defs::Latin5Model,
+    $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
+    $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
+    $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
+    $Web::Encoding::UnivCharDet::Defs::Latin7Model,
+    $Web::Encoding::UnivCharDet::Defs::Win1253Model,
+    $Web::Encoding::UnivCharDet::Defs::Latin5BulgarianModel,
+    $Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
+    $Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
+    $Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel,
   ];
   my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
   push @{$self->{probers}},
       $hebprober,
       Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-          (Web::Encoding::UnivCharDet::Defs::Win1255Model, 0, $hebprober), # logical
+          ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 0, $hebprober), # logical
       Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-          (Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
+          ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
   $hebprober->set_model_probers
       ($self->{probers}->[-2], $self->{probers}->[-1]);
   
@@ -305,22 +306,21 @@ sub handle_data ($$) {
       my $old_prober_count = @{$self->{probers}};
       my @new_prober = (
         map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-        Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
-        Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
-        Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
-        Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
-        #Web::Encoding::UnivCharDet::Defs::Iso_8859_2HungarianModel,
-        Web::Encoding::UnivCharDet::Defs::Iso_8859_2CroatianModel,
-        Web::Encoding::UnivCharDet::Defs::Iso_8859_2PolishModel,
-        Web::Encoding::UnivCharDet::Defs::Iso_8859_2CzechModell,
-        #Web::Encoding::UnivCharDet::Defs::Windows_1250HungarianModel,
-        Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
-        Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
-        #Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel,
-        Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
+        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_2HungarianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CroatianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2PolishModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CzechModell,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1250HungarianModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel,
 
-        #Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
-        #Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
       );
       push @{$self->{probers}}, @new_prober;
       $self->{active_num} += @new_prober;
@@ -418,7 +418,7 @@ sub NUM () { 251 }
 
 sub new ($$;$$) {
   my $self = bless {}, $_[0];
-  $self->{model} = $_[1];
+  $self->{model} = $_[1] // die "No model";
   $self->{reversed} = $_[2];
   $self->{name_prober} = $_[3];
   $self->reset;
@@ -442,7 +442,8 @@ sub handle_data ($$) {
 
   my $ss = $self->{model}->{freq_char_count} // SAMPLE_SIZE;
   for my $i (0..((length $_[1]) - 1)) {
-    my $order = $self->{model}->{char_to_order_map}->[ord substr $_[1], $i, 1] || 0;
+    my $order = (ord substr $self->{model}->{char_to_order_map},
+                         (ord substr $_[1], $i, 1), 1) || 0;
 
     $self->{total_char}++;
     if ($order == ILL) {
@@ -456,11 +457,13 @@ sub handle_data ($$) {
         $self->{total_seqs}++;
         unless ($self->{reversed}) {
           ++$self->{seq_counters}->[
-            $self->{model}->{precedence_matrix}->[$self->{last_order} * $ss + $order]
+            ord substr $self->{model}->{precedence_matrix},
+                    ($self->{last_order} * $ss + $order), 1
           ];
         } else {
           ++$self->{seq_counters}->[
-            $self->{model}->{precedence_matrix}->[$order * $ss + $self->{last_order}]
+            ord substr $self->{model}->{precedence_matrix},
+                    ($order * $ss + $self->{last_order}), 1
           ];
         }
       } elsif ($self->{last_order} < SYMBOL_CAT_ORDER) {

@@ -10,7 +10,7 @@ sub SYM () { 253 }
 sub RET () { 252 }
 sub NUM () { 251 }
 
-my $Windows_1252French_CharToOrderMap = [
+my $Windows_1252French_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -27,8 +27,8 @@ my $Windows_1252French_CharToOrderMap = [
    59, 46, 49, 44, 31, 69, 39,SYM, 54, 35, 50, 37, 38, 58, 70, 55, # DX */
    23, 41, 33, 51, 43, 48, 45, 29, 22, 14, 26, 40, 56, 42, 32, 36, # EX */
    59, 46, 49, 44, 31, 71, 39,SYM, 54, 35, 50, 37, 38, 58, 72, 57, # FX */
-];
-my $Windows_1252German_CharToOrderMap = [
+;
+my $Windows_1252German_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -45,8 +45,8 @@ my $Windows_1252German_CharToOrderMap = [
    36, 42, 50, 33, 44, 57, 24,SYM, 47, 56, 38, 53, 23, 49, 46, 27, # DX */
    41, 31, 40, 35, 22, 52, 43, 37, 34, 30, 51, 45, 60, 32, 48, 59, # EX */
    36, 42, 50, 33, 44, 57, 24,SYM, 47, 56, 38, 53, 23, 49, 46, 64, # FX */
-];
-my $Windows_1252Spanish_CharToOrderMap = [
+;
+my $Windows_1252Spanish_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -63,8 +63,8 @@ my $Windows_1252Spanish_CharToOrderMap = [
    51, 28, 44, 19, 57, 54, 34,SYM, 59, 52, 29, 56, 32, 45, 58, 43, # DX */
    36, 23, 35, 41, 40, 46, 33, 38, 37, 26, 49, 48, 53, 21, 42, 47, # EX */
    51, 28, 44, 19, 57, 54, 34,SYM, 59, 52, 29, 56, 32, 45, 58, 68, # FX */
-];
-my $Windows_1252Portuguese_CharToOrderMap = [
+;
+my $Windows_1252Portuguese_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -81,11 +81,11 @@ my $Windows_1252Portuguese_CharToOrderMap = [
    94, 41, 51, 27, 37, 30, 38,SYM, 48, 95, 32, 47, 39, 96, 97, 50, # DX */
    36, 24, 35, 19, 40, 45, 44, 20, 42, 22, 29, 46, 98, 23, 43, 99, # EX */
   100, 41, 51, 27, 37, 30, 38,SYM, 48,101, 32, 47, 39,102,103,104, # FX */
-];
+;
 
 =pod
 
-my $MacRomanFrench_CharToOrderMap = [
+my $MacRomanFrench_CharToOrderMap = pack 'C*', 
 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, CTR, 254, 254, 252, 254, 254,
 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254,
 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253,
@@ -102,11 +102,11 @@ SYM, 253, SYM, SYM, 253, 52, SYM, SYM, SYM, SYM, SYM, 253, 253, SYM, 45, 54,
 253, 253, 253, 253, 253, 253, 253, SYM, 57, 57, SYM, 253, 253, 253, SYM, SYM,
 253, 253, 253, 253, 253, 33, 26, 41, 40, 22, 42, 32, 36, 56, 44, 31,
 SYM, 49, 50, 37, 35, SYM, 253, 253, 253, SYM, SYM, SYM, 253, SYM, SYM, SYM,
-];
+;
 
 =cut
 
-my $MacRomanSpanish_CharToOrderMap = [
+my $MacRomanSpanish_CharToOrderMap = pack 'C*', 
 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, CTR, 254, 254, 252, 254, 254,
 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254, 254,
 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253,
@@ -123,9 +123,9 @@ SYM, 253, SYM, SYM, 253, 67, SYM, SYM, SYM, SYM, SYM, 253, 253, SYM, 33, 59,
 253, 253, 253, 253, 253, 253, 253, SYM, 68, 66, SYM, 253, 253, 253, SYM, SYM,
 253, 253, 253, 253, 253, 35, 49, 23, 48, 37, 21, 42, 47, 53, 19, 57,
 SYM, 44, 29, 56, 52, SYM, 253, 253, 253, SYM, SYM, SYM, 253, SYM, SYM, SYM,
-];
+;
 
-my $FrenchLangModel = [
+my $FrenchLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,3,3,3,3,3,0,1,3,2,0,2,3,3,2,1,0,1,1,0,2,1,
   3,3,3,3,2,3,2,3,3,3,2,3,3,3,3,2,2,3,3,3,3,1,3,0,3,1,0,3,1,0,2,0,1,1,2,0,0,2,
   3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,0,3,3,0,3,3,3,3,1,3,1,0,0,3,1,
@@ -164,9 +164,9 @@ my $FrenchLangModel = [
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   2,2,1,0,2,2,1,1,1,1,3,2,1,1,1,1,1,1,1,0,2,0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,
   0,1,0,0,1,3,2,2,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-];
+;
 
-my $GermanLangModel = [
+my $GermanLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,1,2,3,3,3,3,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,0,0,2,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,3,1,1,2,2,2,3,3,2,
@@ -197,9 +197,9 @@ my $GermanLangModel = [
   3,2,3,2,2,3,1,1,2,2,3,2,0,1,2,3,2,1,1,1,1,1,0,0,0,0,0,0,0,1,
   3,1,3,1,1,3,2,1,1,2,1,0,2,1,1,1,2,1,1,1,3,1,0,0,0,1,1,0,1,0,
   1,0,1,2,1,0,2,1,1,3,1,0,1,0,1,0,0,1,1,0,1,1,0,0,0,0,0,0,0,1,
-];
+;
 
-my $SpanishLangModel = [
+my $SpanishLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,1,2,2,0,
   3,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,3,1,3,3,2,2,3,3,3,2,0,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,3,2,3,1,3,3,2,3,2,0,3,2,0,
@@ -233,9 +233,9 @@ my $SpanishLangModel = [
   3,3,3,2,2,3,2,2,1,2,1,2,3,1,1,1,1,2,1,1,2,1,0,1,1,0,1,0,0,1,2,1,0,
   3,3,2,1,1,3,1,1,1,0,1,1,1,1,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,1,1,1,
   3,0,0,1,1,2,1,1,0,1,1,0,0,0,1,0,1,0,0,0,1,2,0,0,0,1,1,0,0,0,1,0,0,
-];
+;
 
-my $PortugueseLangModel = [
+my $PortugueseLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,2,3,0,3,3,1,3,1,0,3,3,3,2,1,0,1,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,0,3,1,3,3,3,3,0,1,3,2,3,3,1,0,1,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,2,3,3,3,2,3,1,0,3,0,2,3,0,0,0,
@@ -274,9 +274,9 @@ my $PortugueseLangModel = [
   0,0,0,0,0,0,0,3,1,3,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,
   0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,1,0,2,0,1,1,3,1,3,0,0,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-];
+;
 
-sub Windows_1252FrenchModel () { +{
+our $Windows_1252FrenchModel = {
   char_to_order_map => $Windows_1252French_CharToOrderMap,
   precedence_matrix => $FrenchLangModel,
   freq_char_count => 38,
@@ -284,9 +284,9 @@ sub Windows_1252FrenchModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Win1252FrenchModel",
-} }
+};
 
-sub Windows_1252GermanModel () { +{
+our $Windows_1252GermanModel = {
   char_to_order_map => $Windows_1252German_CharToOrderMap,
   precedence_matrix => $GermanLangModel,
   freq_char_count => 30,
@@ -294,9 +294,9 @@ sub Windows_1252GermanModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Windows_1252GermanModel",
-} }
+};
 
-sub Windows_1252SpanishModel () { +{
+our $Windows_1252SpanishModel = {
   char_to_order_map => $Windows_1252Spanish_CharToOrderMap,
   precedence_matrix => $SpanishLangModel,
   freq_char_count => 33,
@@ -304,9 +304,9 @@ sub Windows_1252SpanishModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Windows_1252SpanishModel",
-} }
+};
 
-sub Windows_1252PortugueseModel () { +{
+our $Windows_1252PortugueseModel = {
   char_to_order_map => $Windows_1252Portuguese_CharToOrderMap,
   precedence_matrix => $PortugueseLangModel,
   freq_char_count => 38,
@@ -314,10 +314,10 @@ sub Windows_1252PortugueseModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Windows_1252PortugueseModel",
-} }
+};
 
 
-sub MacRomanSpanishModel () { +{
+our $MacRomanSpanishModel = {
   char_to_order_map => $MacRomanSpanish_CharToOrderMap,
   precedence_matrix => $SpanishLangModel,
   freq_char_count => 33,
@@ -325,11 +325,11 @@ sub MacRomanSpanishModel () { +{
   keep_english_letter => 1,
   charset_name => "macintosh",
   debug_name => "MacRomanSpanishModel",
-} }
+};
 
 =pod
 
-my $Iso_8859_2Hungarian_CharToOrderMap = [
+my $Iso_8859_2Hungarian_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -346,9 +346,9 @@ my $Iso_8859_2Hungarian_CharToOrderMap = [
    50, 43, 67, 24, 41, 27, 23,SYM, 53, 68, 30, 31, 29, 48, 56, 39, # DX */
    69, 11, 44, 42, 36, 70, 40, 35, 45, 12, 55, 49, 57, 28, 47, 71, # EX */
    50, 43, 72, 24, 41, 27, 23,SYM, 53, 73, 30, 31, 29, 48, 56,SYM, # FX */
-];
+;
 
-my $Windows_1250Hungarian_CharToOrderMap = [
+my $Windows_1250Hungarian_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -365,9 +365,9 @@ my $Windows_1250Hungarian_CharToOrderMap = [
    50, 43, 81, 24, 41, 27, 23,SYM, 53, 82, 30, 31, 29, 48, 56, 39, # DX */
    83, 11, 44, 42, 36, 84, 40, 35, 45, 12, 55, 49, 57, 28, 47, 85, # EX */
    50, 43, 86, 24, 41, 27, 23,SYM, 53, 87, 30, 31, 29, 48, 56,SYM, # FX */
-];
+;
 
-my $HungarianLangModel = [
+my $HungarianLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,3,2,3,3,0,2,1,0,0,
   3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,3,3,3,3,3,3,3,3,1,1,3,3,0,2,1,2,1,
   3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
@@ -400,11 +400,11 @@ my $HungarianLangModel = [
   1,2,3,3,3,3,3,3,0,0,3,0,0,3,2,1,2,2,0,2,1,0,1,0,0,0,1,0,0,0,0,0,
   1,2,3,3,3,3,3,2,2,1,3,0,1,3,1,2,3,2,0,1,1,0,3,0,0,1,2,0,0,0,0,0,
   3,1,2,3,3,3,3,3,1,0,3,0,1,1,1,2,1,3,0,2,0,1,3,0,0,2,1,0,1,0,1,0,
-];
+;
 
 =cut
 
-my $Iso_8859_2Croatian_CharToOrderMap = [
+my $Iso_8859_2Croatian_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -421,9 +421,9 @@ my $Iso_8859_2Croatian_CharToOrderMap = [
    26, 73, 74, 38, 75, 51, 32,SYM, 76, 50, 42, 77, 33, 78, 79, 45, # DX */
    80, 39, 37, 81, 36, 82, 24, 44, 20, 31, 83, 84, 85, 86, 87, 88, # EX */
    26, 89, 90, 38, 91, 51, 32,SYM, 92, 50, 42, 93, 33, 94, 95,SYM, # FX */
-];
+;
 
-my $Windows_1250Croatian_CharToOrderMap = [
+my $Windows_1250Croatian_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -440,9 +440,9 @@ my $Windows_1250Croatian_CharToOrderMap = [
    26,189,190, 38,191, 51, 32,SYM,192, 50, 42,193, 33,194,195, 45, # DX */
   196, 39, 37,197, 36,198, 24, 44, 20, 31,199,200,201,202,203,204, # EX */
    26,205,206, 38,207, 51, 32,SYM,208, 50, 42,209, 33,210,211,SYM, # FX */
-];
+;
 
-my $Ibm852Croatian_CharToOrderMap = [
+my $Ibm852Croatian_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -459,9 +459,9 @@ my $Ibm852Croatian_CharToOrderMap = [
    26, 26,233,234,235,236,237,238,239,SYM,SYM,SYM,SYM,240, 50,SYM, # DX */
    38, 45,241,242,243,244, 22, 22,245, 42,246,247,248,249,249,SYM, # EX */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,249,249,249,SYM,SYM, # FX */
-];
+;
 
-my $Mac_CentraleuropeCroatian_CharToOrderMap = [
+my $Mac_CentraleuropeCroatian_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -478,9 +478,9 @@ my $Mac_CentraleuropeCroatian_CharToOrderMap = [
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, 43,249,249,249,SYM,SYM,249,249, # DX */
   249, 22,SYM,SYM, 22,249,249, 39,249,249,249, 25, 25, 48, 38,249, # EX */
    48, 50, 42, 50,249,249,249,249,249,249,249, 41, 53, 41,249,SYM, # FX */
-];
+;
 
-my $CroatianLangModel = [
+my $CroatianLangModel = pack 'C*', 
   2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,2,1,
   3,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,0,1,2,1,
   3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,2,1,
@@ -512,9 +512,9 @@ my $CroatianLangModel = [
   2,3,2,2,1,1,1,3,1,1,1,1,1,1,1,1,0,0,1,0,0,2,0,1,0,0,0,1,2,0,0,
   1,2,1,0,0,1,0,1,0,1,0,0,1,1,0,1,0,1,0,0,0,1,0,1,0,0,0,1,1,1,0,
   0,1,0,0,0,2,0,1,0,2,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-];
+;
 
-my $Iso_8859_2Polish_CharToOrderMap = [
+my $Iso_8859_2Polish_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -531,9 +531,9 @@ my $Iso_8859_2Polish_CharToOrderMap = [
    72, 29, 73, 25, 59, 65, 38,SYM, 70, 88, 51, 89, 35, 69, 79, 44, # DX */
    90, 39, 62, 53, 40, 91, 30, 45, 48, 36, 23, 61, 54, 42, 74, 92, # EX */
    72, 29, 73, 25, 59, 65, 38,SYM, 70, 93, 51, 94, 35, 69, 79,SYM, # FX */
-];
+;
 
-my $Windows_1250Polish_CharToOrderMap = [
+my $Windows_1250Polish_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -550,9 +550,9 @@ my $Windows_1250Polish_CharToOrderMap = [
    72, 29, 73, 25, 59, 65, 38,SYM, 70,120, 51,121, 35, 69, 79, 44, # DX */
   122, 39, 62, 53, 40,123, 30, 45, 48, 36, 23, 61, 54, 42, 74,124, # EX */
    72, 29, 73, 25, 59, 65, 38,SYM, 70,125, 51,126, 35, 69, 79,SYM, # FX */
-];
+;
 
-my $Ibm852Polish_CharToOrderMap = [
+my $Ibm852Polish_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -569,9 +569,9 @@ my $Ibm852Polish_CharToOrderMap = [
    72, 72,134, 61,135, 73, 42, 74, 54,SYM,SYM,SYM,SYM, 79,136,SYM, # DX */
    25, 44, 59, 29, 29, 73, 43, 43,137, 51,138,139, 69, 69, 79,SYM, # EX */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,140, 70, 70,SYM,SYM, # FX */
-];
+;
 
-my $Mac_CentraleuropePolish_CharToOrderMap = [
+my $Mac_CentraleuropePolish_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -588,9 +588,9 @@ my $Mac_CentraleuropePolish_CharToOrderMap = [
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, 34,154,155, 70,SYM,SYM, 70,156, # DX */
   157, 43,SYM,SYM, 43, 27, 27, 39,158,159, 42, 50, 50, 41, 25, 59, # EX */
    41,160, 51,161,162,163,164,165, 69, 69, 80, 26, 19, 26,166,SYM, # FX */
-];
+;
 
-my $PolishLangModel = [
+my $PolishLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,3,3,3,3,3,3,2,3,0,0,1,2,
   3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,1,0,0,1,1,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,3,3,3,3,3,3,2,2,0,0,0,1,
@@ -629,9 +629,9 @@ my $PolishLangModel = [
   0,0,0,1,2,2,0,0,1,2,1,1,0,1,1,1,0,1,1,0,1,1,2,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,
   1,1,1,1,1,2,1,0,1,1,2,0,0,1,1,2,0,1,0,0,1,1,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,
   1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,
-];
+;
 
-my $Iso_8859_2Czech_CharToOrderMap = [
+my $Iso_8859_2Czech_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -648,9 +648,9 @@ my $Iso_8859_2Czech_CharToOrderMap = [
    76, 50, 36, 38, 47, 64, 42,SYM, 25, 31, 33, 68, 41, 27, 77, 56, # DX */
    78, 19, 62, 61, 43, 79, 49, 45, 26, 24, 60, 63, 23, 14, 58, 39, # EX */
    80, 50, 36, 38, 47, 64, 42,SYM, 25, 31, 33, 68, 41, 27, 81,SYM, # FX */
-];
+;
 
-my $Windows_1250Czech_CharToOrderMap = [
+my $Windows_1250Czech_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -667,9 +667,9 @@ my $Windows_1250Czech_CharToOrderMap = [
    86, 50, 36, 38, 47, 64, 42,SYM, 25, 31, 33, 68, 41, 27, 87, 56, # DX */
    88, 19, 62, 61, 43, 89, 49, 45, 26, 24, 60, 63, 23, 14, 58, 39, # EX */
    90, 50, 36, 38, 47, 64, 42,SYM, 25, 31, 33, 68, 41, 27, 91,SYM, # FX */
-];
+;
 
-my $Ibm852Czech_CharToOrderMap = [
+my $Ibm852Czech_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -686,9 +686,9 @@ my $Ibm852Czech_CharToOrderMap = [
    96, 97, 39, 63, 39, 36, 14, 58, 23,SYM,SYM,SYM,SYM, 98, 31,SYM, # DX */
    38, 56, 47, 50, 50, 36, 29, 29, 99, 33,100, 68, 27, 27,101,SYM, # EX */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, 68, 25, 25,SYM,SYM, # FX */
-];
+;
 
-my $Mac_CentraleuropeCzech_CharToOrderMap = [
+my $Mac_CentraleuropeCzech_CharToOrderMap = pack 'C*', 
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR, # 0X */
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 1X */
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, # 2X */
@@ -705,9 +705,9 @@ my $Mac_CentraleuropeCzech_CharToOrderMap = [
   SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, 57,109,110, 25,SYM,SYM, 25,111, # DX */
   112, 29,SYM,SYM, 29, 51, 51, 19, 37, 37, 14, 28, 28, 69, 38, 47, # EX */
    69, 31, 33, 31, 68, 68,113,114, 27, 27, 67, 66, 48, 66,115,SYM, # FX */
-];
+;
 
-my $CzechLangModel = [
+my $CzechLangModel = pack 'C*', 
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,3,3,3,3,1,
    3,3,3,0,1,3,3,0,3,3,3,0,3,1,3,3,2,2,0,1,1,
   3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,3,3,3,
@@ -790,11 +790,11 @@ my $CzechLangModel = [
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,1,0,1,0,1,0,0,3,1,0,0,1,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
-];
+;
 
 =pod
 
-sub Iso_8859_2HungarianModel () { +{
+our $Iso_8859_2HungarianModel = {
   char_to_order_map => $Iso_8859_2Hungarian_CharToOrderMap,
   precedence_matrix => $HungarianLangModel,
   freq_char_count => 32,
@@ -803,9 +803,9 @@ sub Iso_8859_2HungarianModel () { +{
   charset_name => "iso-8859-2",
   debug_name => "Iso_8859_2HungarianModel",
   debug_only => 0,
-} }
+};
 
-sub Windows_1250HungarianModel () { +{
+our $Windows_1250HungarianModel = {
   char_to_order_map => $Windows_1250Hungarian_CharToOrderMap,
   precedence_matrix => $HungarianLangModel,
   freq_char_count => 32,
@@ -814,11 +814,11 @@ sub Windows_1250HungarianModel () { +{
   charset_name => "windows-1250",
   debug_name => "Windows_1250HungarianModel",
   debug_only => 0,
-} }
+};
 
 =cut
 
-sub Iso_8859_2CroatianModel () { +{
+our $Iso_8859_2CroatianModel = {
   char_to_order_map => $Iso_8859_2Croatian_CharToOrderMap,
   precedence_matrix => $CroatianLangModel,
   freq_char_count => 31,
@@ -826,9 +826,9 @@ sub Iso_8859_2CroatianModel () { +{
   keep_english_letter => 1,
   charset_name => "iso-8859-2",
   debug_name => "Iso_8859_2CroatianModel",
-} }
+};
 
-sub Windows_1250CroatianModel () { +{
+our $Windows_1250CroatianModel = {
   char_to_order_map => $Windows_1250Croatian_CharToOrderMap,
   precedence_matrix => $CroatianLangModel,
   freq_char_count => 31,
@@ -836,9 +836,9 @@ sub Windows_1250CroatianModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1250",
   debug_name => "Windows_1250CroatianModel",
-} }
+};
 
-sub Ibm852CroatianModel () { +{
+our $Ibm852CroatianModel = {
   char_to_order_map => $Ibm852Croatian_CharToOrderMap,
   precedence_matrix => $CroatianLangModel,
   freq_char_count => 31,
@@ -846,9 +846,9 @@ sub Ibm852CroatianModel () { +{
   keep_english_letter => 1,
   charset_name => "ibm852",
   debug_name => "Ibm852CroatianModel",
-} }
+};
 
-sub Mac_CentraleuropeCroatianModel () { +{
+our $Mac_CentraleuropeCroatianModel = {
   char_to_order_map => $Mac_CentraleuropeCroatian_CharToOrderMap,
   precedence_matrix => $CroatianLangModel,
   freq_char_count => 31,
@@ -856,9 +856,9 @@ sub Mac_CentraleuropeCroatianModel () { +{
   keep_english_letter => 1,
   charset_name => "x-mac-ce",
   debug_name => "Mac_CentraleuropeCroatianModel",
-} }
+};
 
-sub Iso_8859_2PolishModel () { +{
+our $Iso_8859_2PolishModel = {
   char_to_order_map => $Iso_8859_2Polish_CharToOrderMap,
   precedence_matrix => $PolishLangModel,
   freq_char_count => 38,
@@ -866,9 +866,9 @@ sub Iso_8859_2PolishModel () { +{
   keep_english_letter => 1,
   charset_name => "iso-8859-2",
   debug_name => "Iso_8859_2PolishModel",
-} }
+};
 
-sub Windows_1250PolishModel () { +{
+our $Windows_1250PolishModel = {
   char_to_order_map => $Windows_1250Polish_CharToOrderMap,
   precedence_matrix => $PolishLangModel,
   freq_char_count => 38,
@@ -876,9 +876,9 @@ sub Windows_1250PolishModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1250",
   debug_name => "Windows_1250PolishModel",
-} }
+};
 
-sub Ibm852PolishModel () { +{
+our $Ibm852PolishModel = {
   char_to_order_map => $Ibm852Polish_CharToOrderMap,
   precedence_matrix => $PolishLangModel,
   freq_char_count => 38,
@@ -886,9 +886,9 @@ sub Ibm852PolishModel () { +{
   keep_english_letter => 1,
   charset_name => "ibm852",
   debug_name => "Ibm852PolishModel",
-} }
+};
 
-sub Mac_CentraleuropePolishModel () { +{
+our $Mac_CentraleuropePolishModel = {
   char_to_order_map => $Mac_CentraleuropePolish_CharToOrderMap,
   precedence_matrix => $PolishLangModel,
   freq_char_count => 38,
@@ -896,9 +896,9 @@ sub Mac_CentraleuropePolishModel () { +{
   keep_english_letter => 1,
   charset_name => "x-mac-ce",
   debug_name => "Mac_CentraleuropePolishModel",
-} }
+};
 
-sub Iso_8859_2CzechModell () { +{
+our $Iso_8859_2CzechModell = {
   char_to_order_map => $Iso_8859_2Czech_CharToOrderMap,
   precedence_matrix => $CzechLangModel,
   freq_char_count => 41,
@@ -906,9 +906,9 @@ sub Iso_8859_2CzechModell () { +{
   keep_english_letter => 1,
   charset_name => "iso-8859-2",
   debug_name => "Iso_8859_2CzechModell",
-} }
+};
 
-sub Windows_1250CzechModel () { +{
+our $Windows_1250CzechModel = {
   char_to_order_map => $Windows_1250Czech_CharToOrderMap,
   precedence_matrix => $CzechLangModel,
   freq_char_count => 41,
@@ -916,9 +916,9 @@ sub Windows_1250CzechModel () { +{
   keep_english_letter => 1,
   charset_name => "windows-1250",
   debug_name => "Windows_1250CzechModel",
-} }
+};
 
-sub Ibm852CzechModel () { +{
+our $Ibm852CzechModel = {
   char_to_order_map => $Ibm852Czech_CharToOrderMap,
   precedence_matrix => $CzechLangModel,
   freq_char_count => 41,
@@ -926,9 +926,9 @@ sub Ibm852CzechModel () { +{
   keep_english_letter => 1,
   charset_name => "ibm852",
   debug_name => "Ibm852CzechModel",
-} }
+};
 
-sub Mac_CentraleuropeCzechModel () { +{
+our $Mac_CentraleuropeCzechModel = {
   char_to_order_map => $Mac_CentraleuropeCzech_CharToOrderMap,
   precedence_matrix => $CzechLangModel,
   freq_char_count => 41,
@@ -936,7 +936,7 @@ sub Mac_CentraleuropeCzechModel () { +{
   keep_english_letter => 1,
   charset_name => "x-mac-ce",
   debug_name => "Mac_CentraleuropeCzechModel",
-} }
+};
 
 1;
 
