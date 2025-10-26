@@ -224,7 +224,7 @@ sub data_end ($) {
       }
     }
     if ($max_prober_confidence > Web::Encoding::UnivCharDet::Defs::MINIMUM_THRESHOLD) {
-      $self->{reported} = $max_prober->get_charset_name; # or undef (but unlikely?)
+      $self->{reported} = $max_prober->get_charset_name; # or undef
     }
   } elsif ($self->{input_state} eq 'pure ascii' or
            $self->{input_state} eq 'esc ascii') {

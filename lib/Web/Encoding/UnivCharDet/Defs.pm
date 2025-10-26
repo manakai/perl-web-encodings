@@ -324,6 +324,8 @@ our $Ibm855Model = {
 
 # ------
 
+=pod
+
 my $Iso_8859_7_CharToOrderMap = pack 'C*', 
 255,255,255,255,255,255,255,255,255,255,254,255,255,254,255,255,
 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
@@ -493,13 +495,13 @@ my $GreekLangModel = pack 'C*',
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 ;
 
-our $Iso_8859_7Model = {
-  char_to_order_map => $Iso_8859_7_CharToOrderMap,
-  precedence_matrix => $GreekLangModel,
-  typical_positive_ratio => 0.982851,
-  keep_english_letter => 0,
-  charset_name => "iso-8859-7",
-};
+#our $Iso_8859_7Model = {
+#  char_to_order_map => $Iso_8859_7_CharToOrderMap,
+#  precedence_matrix => $GreekLangModel,
+#  typical_positive_ratio => 0.982851,
+#  keep_english_letter => 0,
+#  charset_name => "iso-8859-7",
+#};
 
 our $Win1253Model = {
   char_to_order_map => $win1253_CharToOrderMap,
@@ -508,6 +510,8 @@ our $Win1253Model = {
   keep_english_letter => 0,
   charset_name => "windows-1253",
 };
+
+=cut
 
 # ------
 

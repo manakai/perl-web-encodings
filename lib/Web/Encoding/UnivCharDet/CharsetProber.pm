@@ -8,6 +8,7 @@ use Web::Encoding::UnivCharDet::Defs3;
 use Web::Encoding::UnivCharDet::CodingStateMachine;
 use Web::Encoding::UnivCharDet::CharDistribAnalysis;
 use Web::Encoding::UnivCharDet::ContextAnalysis;
+use Web::Encoding::UnivCharDet::JohabCharsetProber;
 
 sub get_state ($) {
   return $_[0]->{state};
@@ -242,14 +243,20 @@ sub reset ($) {
     $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
     $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
     $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_7Model,
-    $Web::Encoding::UnivCharDet::Defs::Win1253Model,
+    $Web::Encoding::UnivCharDet::Defs::Windows_1253GreekModel,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_7GreekModel,
+    #$Web::Encoding::UnivCharDet::Defs::Iso_8859_7Model,
+    #$Web::Encoding::UnivCharDet::Defs::Win1253Model,
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
     $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
     $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
+    $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
+    $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+    $Web::Encoding::UnivCharDet::Defs::Cp737GreekModel,
+    $Web::Encoding::UnivCharDet::Defs::Ibm862HebrewModel,
   ];
   my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
   push @{$self->{probers}},
@@ -275,6 +282,8 @@ sub get_charset_name ($) {
   }
   if ($self->{state} eq 'not me' and $self->{latin}) {
     return 'windows-1252';
+  } elsif ($self->{best_guess} == -1) {
+    return undef;
   }
   return $self->{probers}->[$self->{best_guess}]->get_charset_name;
 } # get_charset_name
@@ -340,6 +349,10 @@ sub handle_data ($$) {
         #$Web::Encoding::UnivCharDet::Defs::Iso_8859_9TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
+        $Web::Encoding::UnivCharDet::Defs::Mac_CentraleuropeCzechModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm852CzechModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm852PolishModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm865DanishModel,
 
         #$Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
         #$Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
@@ -401,6 +414,8 @@ sub get_confidence ($) {
       $self->{best_guess} = $cn->{$charset};
       if ($best_conf < 0.21 and $self->{latin} and $charset eq 'windows-1252') {
         $best_conf = 0.21;
+      } elsif ($best_conf <= 0.01) {
+        $self->{best_guess} = -1;
       }
     }
     return $best_conf;
@@ -770,6 +785,10 @@ sub new ($$;%) {
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCTW->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
         : undef,
+    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+        ? Web::Encoding::UnivCharDet::JohabCharsetProber->new
+              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
+        : undef,
   ];
 
   $self->reset;
@@ -863,7 +882,7 @@ sub get_confidence ($) {
   return $best_conf;
 } # get_confidence
 
-my @ProberName = qw(UTF8 SJIS EUCJP GB18030 EUCKR Big5 EUCTW);
+my @ProberName = qw(UTF8 SJIS EUCJP GB18030 EUCKR Big5 EUCTW Johab);
 sub dump_status ($) {
   my $self = $_[0];
   $self->get_confidence;
@@ -872,8 +891,8 @@ sub dump_status ($) {
     unless (defined $_) {
       printf "  MBCS inactive: [%s] (confidence is too low).\n", $ProberName[$i];
     } else {
-      my $cf = $_->get_confidence;
-      printf "  MBCS %1.3f: [%s]\n", $cf, $ProberName[$i];
+      print "  ";
+      $_->dump_status;
     }
   }
 } # dump_status
@@ -943,6 +962,14 @@ sub get_confidence ($) {
   }
 } # get_confidence
 
+sub dump_status ($) {
+  my $self = $_[0];
+  printf "[%s] %s (%s)\n",
+      $self->get_confidence,
+      $self->get_charset_name,
+      $self->{state};
+} # dump_status
+
 sub dump_status_for_json ($) {
   my $self = $_[0];
   return {type => $self->get_charset_name,
@@ -1007,6 +1034,14 @@ sub handle_data ($$$;$) {
 sub get_confidence ($) {
   return $_[0]->{distribution_analyser}->get_confidence;
 } # get_confidence
+
+sub dump_status ($) {
+  my $self = $_[0];
+  printf "[%s] %s (%s)\n",
+      $self->get_confidence,
+      $self->get_charset_name,
+      $self->{state};
+} # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
@@ -1120,6 +1155,14 @@ sub get_confidence ($) {
   return $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
 } # get_confidence
 
+sub dump_status ($) {
+  my $self = $_[0];
+  printf "[%s] %s (%s)\n",
+      $self->get_confidence,
+      $self->get_charset_name,
+      $self->{state};
+} # dump_status
+
 sub dump_status_for_json ($) {
   my $self = $_[0];
   return {type => $self->get_charset_name,
@@ -1198,6 +1241,14 @@ sub get_confidence ($) {
   return $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
 } # get_confidence
 
+sub dump_status ($) {
+  my $self = $_[0];
+  printf "[%s] %s (%s)\n",
+      $self->get_confidence,
+      $self->get_charset_name,
+      $self->{state};
+} # dump_status
+
 sub dump_status_for_json ($) {
   my $self = $_[0];
   return {type => $self->get_charset_name,
@@ -1262,6 +1313,14 @@ sub get_charset_name ($) {
 sub get_confidence ($) {
   return 0.99;
 } # get_confidence
+
+sub dump_status ($) {
+  my $self = $_[0];
+  printf "[%s] %s (%s)\n",
+      $self->get_confidence,
+      $self->get_charset_name,
+      $self->{state};
+} # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
