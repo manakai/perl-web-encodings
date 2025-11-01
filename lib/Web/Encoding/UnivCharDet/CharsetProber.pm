@@ -14,6 +14,15 @@ sub get_state ($) {
   return $_[0]->{state};
 } # get_state
 
+sub set_resolve_latin1_refs ($$) {
+  my $self = $_[0];
+  if ($self->{resolve_latin1_refs} = $_[1]) {
+    for (grep { defined $_ } @{$self->{probers} or []}) {
+      $_->set_resolve_latin1_refs ($self->{resolve_latin1_refs});
+    }
+  }
+} # set_resolve_latin1_refs
+
 sub filter_without_english_letters ($$) {
   my $meet_msb = 0;
   my $prev = 0;
@@ -809,6 +818,7 @@ sub reset ($) {
   $self->{best_guess} = -1;
   $self->{state} = 'detecting';
   $self->{keep_next} = 0;
+  delete $self->{resolve_latin1_refs};
 } # reset
 
 sub get_charset_name ($) {
@@ -889,6 +899,10 @@ my @ProberName = qw(UTF8 SJIS EUCJP GB18030 EUCKR Big5 EUCTW Johab);
 sub dump_status ($) {
   my $self = $_[0];
   $self->get_confidence;
+  printf " MBCS [%s] %s [%s]\n",
+      $self->get_charset_name,
+      $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
+      $self->get_confidence;
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
     unless (defined $_) {
@@ -904,6 +918,7 @@ sub dump_status_for_json ($) {
   my $self = $_[0];
   return {type => $self->get_charset_name,
           charset => $self->get_charset_name,
+          htmlrefs => !!$self->{resolve_latin1_refs},
           confidence => $self->get_confidence,
           probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}]};
 } # dump_status_for_json
@@ -1008,21 +1023,22 @@ sub handle_data ($$$;$) {
   my $start_pos = $_[2] || 0;
   my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
-    my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
+    my $c = substr $_[1], $i, 1;
+    my $coding_state = $self->{coding_sm}->next_state ($c);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
       last;
     } elsif ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
-        substr ($self->{last_char}, 1, 0) = substr $_[1], $start_pos, 1;
+        substr ($self->{last_char}, 1, 0) = $c;
         $self->{distribution_analyser}->handle_one_char ($self->{last_char}, 0, $char_len);
       } else {
         $self->{distribution_analyser}->handle_one_char ($_[1], $i-1, $char_len);
       }
     }
   }
-
+  
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
@@ -1040,7 +1056,7 @@ sub get_confidence ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%s)\n",
+  printf "MBCS: %s [%s] (%s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state};
@@ -1350,6 +1366,10 @@ sub reset ($) {
                       $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
                       $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
                       $Web::Encoding::UnivCharDet::Defs::VietStateInitial];
+  $self->{before_ref} = [$Web::Encoding::UnivCharDet::Defs::VietStateInitial,
+                         $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
+                         $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
+                         $Web::Encoding::UnivCharDet::Defs::VietStateInitial];
   $self->{nonascii} = [0, 0, 0, 0];
   $self->{words} = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
   $self->{notme} = [0, 0, 0, 0];
@@ -1361,6 +1381,8 @@ sub reset ($) {
     $Web::Encoding::UnivCharDet::Defs::Vn3VietnameseModel,
   ];
   $self->{current} = ['', '', '', ''];
+  $self->{ref} = ['', '', '', ''];
+  delete $self->{resolve_latin1_refs};
 } # reset
 
 my $Tables = [
@@ -1374,28 +1396,30 @@ sub handle_data ($$) {
   return $self->{state} unless $self->{state} eq 'detecting';
   
   for my $i (0..((length $_[1]) - 1)) {
-    my $cc = (ord substr $_[1], $i, 1);
-    for (@$Tables) {
+    my $cc0 = (ord substr $_[1], $i, 1);
+    TBL: for (@$Tables) {
       my $charset = $_->[0];
       next if $self->{notme}->[$charset];
-      
-      my $cls = ord substr $_->[1], $cc, 1;
-      
+
+      my $cc = $cc0;
       my $os = $self->{vstates}->[$charset];
-      my $ns = ord substr $Web::Encoding::UnivCharDet::Defs::VietStateTable,
-          ($self->{vstates}->[$charset] * $Web::Encoding::UnivCharDet::Defs::VietStateInputs + $cls);
-      $self->{vstates}->[$charset] = $ns;
+      THIS: {
+        my $cls = ord substr $_->[1], $cc, 1;
+        
+        my $ns = ord substr $Web::Encoding::UnivCharDet::Defs::VietStateTable,
+            ($os * $Web::Encoding::UnivCharDet::Defs::VietStateInputs + $cls);
+        $self->{vstates}->[$charset] = $ns;
 
-      if ((0x20 <= $cc and $cc <= 0x7E) or (0x09 <= $cc and $cc <= 0x0D)) {
-        #
-      } else {
-        $self->{nonascii}->[$charset]++;
-      }
+        if ((0x20 <= $cc and $cc <= 0x7E) or (0x09 <= $cc and $cc <= 0x0D)) {
+          #
+        } else {
+          $self->{nonascii}->[$charset]++;
+        }
 
-      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_WORD_START ($os, $ns)) {
-        $self->{nonascii}->[$charset] = 0;
-        $self->{current}->[$charset] = pack 'C', $cc;
-      }
+        if (Web::Encoding::UnivCharDet::Defs::IS_VIET_WORD_START ($os, $ns)) {
+          $self->{nonascii}->[$charset] = 0;
+          $self->{current}->[$charset] = pack 'C', $cc;
+        }
       if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD_END ($os, $ns)) {
         if ($self->{nonascii}->[$charset]) {
           $self->{words}->[$charset]->[1]++;
@@ -1411,14 +1435,44 @@ sub handle_data ($$) {
           $self->{words}->[$charset]->[2]++;
         }
       }
-      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_NOTME ($os, $ns)) {
-        $self->{notme}->[$charset] = 1;
-        next;
-      }
-      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD ($ns)) {
-        $self->{current}->[$charset] .= pack 'C', $cc;
-      }
-    }
+        if (Web::Encoding::UnivCharDet::Defs::IS_VIET_NOTME ($os, $ns)) {
+          $self->{notme}->[$charset] = 1;
+          next TBL;
+        }
+        if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD ($ns)) {
+          $self->{current}->[$charset] .= pack 'C', $cc;
+        }
+
+        if ($self->{resolve_latin1_refs}) {
+          if (not Web::Encoding::UnivCharDet::Defs::IS_VIET_REF ($os) and
+              Web::Encoding::UnivCharDet::Defs::IS_VIET_REF ($ns)) { # &
+            $self->{before_ref}->[$charset] = $os;
+            $self->{ref}->[$charset] = '';
+          } elsif (Web::Encoding::UnivCharDet::Defs::IS_VIET_REF ($os)) {
+            if (Web::Encoding::UnivCharDet::Defs::IS_VIET_REF ($ns)) {
+              if (10 < length $self->{ref}->[$charset]) {
+                $self->{ref}->[$charset] = '';
+              } else {
+                $self->{ref}->[$charset] .= pack 'C', $cc;
+              }
+            } else { # ;
+              my $dd;
+              if ($self->{ref}->[$charset] =~ /^#([0-9]+)$/) {
+                $dd = $1 if 0x80 <= $1 and $1 <= 0xFF;
+              } else {
+                $dd = $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$self->{ref}->[$charset]}; # or undef
+              }
+              
+              if (defined $dd) {
+                $cc = 0+$dd;
+                $os = $self->{before_ref}->[$charset];
+                redo THIS;
+              }
+            }
+          }
+        } # resolve_latin1_refs
+      } # THIS
+    } # TBL
   }
 
   my $selected = [grep { $_ == 0 } @{$self->{notme}}];
@@ -1522,9 +1576,10 @@ sub get_confidence ($;$) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf " Viet: %s [%s] (%s)\n",
+  printf " Viet: %s [%s] %s (%s)\n",
       $self->get_confidence,
       $self->get_charset_name // '',
+      $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
       $self->{state};
   for my $charset (0..3) {
     printf "  %s [%s] (%d %d %d %d / %d)\n",
@@ -1543,6 +1598,7 @@ sub dump_status_for_json ($) {
   return {type => ref $self,
           charset => $self->get_charset_name // '',
           confidence => $self->get_confidence,
+          htmlrefs => !!$self->{resolve_latin1_refs},
           probers => [
             {type => 'viscii', charset => 'viscii',
              confidence => $self->get_confidence (0)},

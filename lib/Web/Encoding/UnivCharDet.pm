@@ -77,6 +77,10 @@ sub reset ($) {
   #delete $self->{nbsp_found};
   delete $self->{esc_found};
   delete $self->{binary_found};
+  $self->{win1250_refs} = 0;
+  $self->{win1252_refs} = 0;
+  $self->{unicode_refs} = 0;
+  delete $self->{resolve_latin1_refs};
 } # reset
 
 sub handle_data ($$) {
@@ -116,6 +120,7 @@ sub handle_data ($$) {
 
   my $length = length $_[1];
   my $zero = 0;
+  my $high = 0;
   for my $i (0..($length - 1)) {
     my $c = ord substr $_[1], $i, 1;
     $zero++ if $c == 0x00;
@@ -125,22 +130,12 @@ sub handle_data ($$) {
     if ($c & 0x80 and $c != 0xA0) {
       if ($self->{input_state} ne 'high byte') {
         $self->{input_state} = 'high byte';
-        delete $self->{esc_charset_prober};
-        delete $self->{utf1632_prober};
-
-        $self->{charset_probers}->[0]
-            ||= Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup->new
-                    ($self->{lang_filter});
-        $self->{charset_probers}->[1]
-            ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
-            if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
-        $self->{charset_probers}->[2]
-            ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new
-            unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
-        $self->{charset_probers}->[3]
-            ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
-            if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+        $high = 1;
       }
+      delete $self->{amp};
+    } elsif ($c == 0x26) {
+      $self->{amp} = '';
+      $self->{last_char} = $c;
     } else {
       if ($self->{input_state} eq 'pure ascii') {
         if ($c == 0x1B or $c == 0x0E or $c == 0x0F) {
@@ -154,11 +149,88 @@ sub handle_data ($$) {
                  $c == 0x7F) {
           $self->{binary_found} = 1;
         }
+        $self->{last_char} = $c;
       }
-      $self->{last_char} = $c;
+      if (defined $self->{amp}) {
+        if ($c == 0x3B) {
+          if (defined $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$self->{amp}}) {
+            $self->{win1252_refs}++;
+            if ($self->{amp} =~ /^#([0-9]+)$/ and
+                $Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$1}) {
+              $self->{win1250_refs}++;
+            }
+          } elsif ($self->{amp} =~ /^#([0-9]+)$/) {
+            my $cc = $1;
+            if ($cc > 0xFF) {
+              if ($Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$cc}) {
+                $self->{win1250_refs}++;
+              } else {
+                $self->{unicode_refs}++;
+              }
+            } elsif (0x80 <= $cc) {
+              if ($Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$cc}) {
+                $self->{win1250_refs}++;
+              }
+              $self->{win1252_refs}++;
+            }
+          }
+          delete $self->{amp};
+        } elsif ($c == 0x23 and $self->{amp} eq '') { # &#
+          $self->{amp} .= chr $c;
+        } elsif (10 < length $self->{amp}) {
+          delete $self->{amp};
+        } elsif (0x30 <= $c and $c <= 0x39) {
+          $self->{amp} .= chr $c;
+        } elsif (0x41 <= $c and $c <= 0x5A) {
+          $self->{amp} .= chr $c;
+        } elsif (0x61 <= $c and $c <= 0x7A) {
+          $self->{amp} .= chr $c;
+        } else {
+          delete $self->{amp};
+        }
+      }
     }
   } # $i
 
+  if ($self->{input_state} eq 'pure ascii' and
+      $self->{unicode_refs} < 10 and
+      $self->{win1250_refs} + $self->{win1252_refs} > 10) {
+    $self->{input_state} = 'high byte';
+    $high = 1;
+  }
+
+  if ($high) {
+    delete $self->{esc_charset_prober};
+    delete $self->{utf1632_prober};
+
+    $self->{charset_probers}->[0]
+        ||= Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup->new
+            ($self->{lang_filter});
+    $self->{charset_probers}->[1]
+        ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
+        if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+    $self->{charset_probers}->[2]
+        ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new
+        unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+    $self->{charset_probers}->[3]
+        ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
+        if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+  } # $high
+
+  if ($self->{win1252_refs} > 10 and $self->{unicode_refs} < 10) {
+    for (grep { defined $_ } @{$self->{charset_probers}}) {
+      $_->set_resolve_latin1_refs (1);
+    }
+    $self->{resolve_latin1_refs} = 'windows-1252';
+  #} elsif ($self->{win1250_refs} > 10 and $self->{unicode_refs} < 10) {
+  #  for (grep { defined $_ } @{$self->{charset_probers}}) {
+  #    $_->set_resolve_latin1_refs (1);
+  #  }
+  #  $self->{resolve_latin1_refs} = 'windows-1250';
+  } else {
+    delete $self->{resolve_latin1_refs};
+  }
+  
   if ($self->{utf} and $zero) {
     if ($zero / ($length || 1) > 0.1) { # random threshold
       $self->{charset_probers} = [];
@@ -189,12 +261,51 @@ sub handle_data ($$) {
       }
     }
   } elsif ($self->{input_state} eq 'high byte') {
-    for (grep { defined $_ } @{$self->{charset_probers}}) {
-      my $st = $_->handle_data ($_[1]);
-      if ($st eq 'found it') {
-        $self->{done} = 1;
-        $self->{detected_charset} = $_->get_charset_name; # non-undef when found
-        return 1;
+    if (defined $self->{resolve_latin1_refs}) {
+      my $x = $_[1];
+      if ($self->{resolve_latin1_refs} eq 'windows-1252') {
+        $x =~ s{&#(12[89]|1[3-9][0-9]|2[0-4][0-9]|25[0-5]);}{pack 'C', $1}ge;
+        $x =~ s{&([A-Za-z0-9]+);}{
+          if (defined $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$1}) {
+            chr $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$1};
+          } else {
+            ('&'.$1.';');
+          }
+        }ge;
+      #} elsif ($self->{resolve_latin1_refs} eq 'windows-1250') {
+      #  $x =~ s{&#([0-9]+);}{
+      #    my $cc = $Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$1};
+      #    if (defined $cc) {
+      #      pack 'C', $cc;
+      #    } else {
+      #      '&' . $1 . ';';
+      #    }
+      #  }ge;
+      }
+      for (grep { defined $_ } @{$self->{charset_probers}}[0,1]) {
+        my $st = $_->handle_data ($x);
+        if ($st eq 'found it') {
+          $self->{done} = 1;
+          $self->{detected_charset} = $_->get_charset_name; # non-undef when found
+          return 1;
+        }
+      }
+      for (grep { defined $_ } @{$self->{charset_probers}}[2,3]) {
+        my $st = $_->handle_data ($_[1]);
+        if ($st eq 'found it') {
+          $self->{done} = 1;
+          $self->{detected_charset} = $_->get_charset_name; # non-undef when found
+          return 1;
+        }
+      }
+    } else {
+      for (grep { defined $_ } @{$self->{charset_probers}}) {
+        my $st = $_->handle_data ($_[1]);
+        if ($st eq 'found it') {
+          $self->{done} = 1;
+          $self->{detected_charset} = $_->get_charset_name; # non-undef when found
+          return 1;
+        }
       }
     }
   }
@@ -249,7 +360,11 @@ sub get_reported_charset ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  print "Input state: $self->{input_state}\n";
+  printf "[%s] %s (%d %d %d) %s\n",
+      $self->{reported} // '',
+      $self->{resolve_latin1_refs} ? 'htmlrefs:'.$self->{resolve_latin1_refs} : '',
+      $self->{win1250_refs}, $self->{win1250_refs}, $self->{unicode_refs},
+      $self->{input_state};
   $_->dump_status for grep { defined $_ }
       @{$self->{charset_probers}},
       $self->{esc_charset_prober},
@@ -266,6 +381,7 @@ sub dump_status_for_json ($) {
                       @{$self->{charset_probers}},
                       $self->{esc_charset_prober},
                       $self->{utf1632_prober}],
+          htmlrefs => $self->{resolve_latin1_refs},
           reported => $self->{reported}};
 } # dump_status_for_json
 
