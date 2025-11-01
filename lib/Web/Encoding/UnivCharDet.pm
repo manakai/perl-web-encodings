@@ -137,6 +137,9 @@ sub handle_data ($$) {
         $self->{charset_probers}->[2]
             ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new
             unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+        $self->{charset_probers}->[3]
+            ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
+            if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
       }
     } else {
       if ($self->{input_state} eq 'pure ascii') {

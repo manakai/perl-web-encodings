@@ -250,7 +250,6 @@ sub reset ($) {
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
-    $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
     $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
@@ -348,7 +347,7 @@ sub handle_data ($$) {
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
         #$Web::Encoding::UnivCharDet::Defs::Iso_8859_9TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
         $Web::Encoding::UnivCharDet::Defs::Mac_CentraleuropeCzechModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm852CzechModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm852PolishModel,
@@ -407,15 +406,19 @@ sub get_confidence ($) {
       my $cn = {};
       for my $i (@$best_i) {
         my $charset = $self->{probers}->[$i]->get_charset_name;
-        $cc->{$charset}++;
-        $cn->{$charset} //= $i;
+        if (defined $charset) {
+          $cc->{$charset}++;
+          $cn->{$charset} //= $i;
+        }
       }
       my $charset = [sort { $cc->{$b} <=> $cc->{$a} || $a cmp $b } keys %$cc]->[0];
-      $self->{best_guess} = $cn->{$charset};
-      if ($best_conf < 0.21 and $self->{latin} and $charset eq 'windows-1252') {
-        $best_conf = 0.21;
-      } elsif ($best_conf <= 0.01) {
-        $self->{best_guess} = -1;
+      if (defined $charset) {
+        $self->{best_guess} = $cn->{$charset};
+        if ($best_conf < 0.21 and $self->{latin} and $charset eq 'windows-1252') {
+          $best_conf = 0.21;
+        } elsif ($best_conf <= 0.01) {
+          $self->{best_guess} = -1;
+        }
       }
     }
     return $best_conf;
@@ -1307,7 +1310,7 @@ sub handle_data ($$) {
 } # handle_data
 
 sub get_charset_name ($) {
-  return $_[0]->{detected_charset};
+  return $_[0]->{detected_charset}; # or undef
 } # get_charset_name
 
 sub get_confidence ($) {
@@ -1316,17 +1319,241 @@ sub get_confidence ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%s)\n",
+  printf "  ESC: %s [%s] (%s)\n",
       $self->get_confidence,
-      $self->get_charset_name,
+      $self->get_charset_name // '',
       $self->{state};
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
+  return {type => ref $self,
           charset => $self->get_charset_name,
           confidence => $self->get_confidence};
+} # dump_status_for_json
+
+package Web::Encoding::UnivCharDet::CharsetProber::Vietnamese;
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
+our $VERSION = '1.0';
+
+sub new ($$) {
+  my $self = bless {}, $_[0];
+  $self->reset;
+  return $self;
+} # new
+
+sub reset ($) {
+  my $self = $_[0];
+  $self->{state} = 'detecting';
+  delete $self->{detected_charset};
+  $self->{vstates} = [$Web::Encoding::UnivCharDet::Defs::VietStateInitial,
+                      $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
+                      $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
+                      $Web::Encoding::UnivCharDet::Defs::VietStateInitial];
+  $self->{nonascii} = [0, 0, 0, 0];
+  $self->{words} = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
+  $self->{notme} = [0, 0, 0, 0];
+  $self->{probers} = [  
+    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+    $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::VniVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::VpsVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::Vn3VietnameseModel,
+  ];
+  $self->{current} = ['', '', '', ''];
+} # reset
+
+my $Tables = [
+  [0, $Web::Encoding::UnivCharDet::Defs::VISCIIClassTable],
+  [1, $Web::Encoding::UnivCharDet::Defs::VNIClassTable],
+  [2, $Web::Encoding::UnivCharDet::Defs::VPSClassTable],
+  [3, $Web::Encoding::UnivCharDet::Defs::VN3ClassTable],
+];
+sub handle_data ($$) {
+  my $self = $_[0];
+  return $self->{state} unless $self->{state} eq 'detecting';
+  
+  for my $i (0..((length $_[1]) - 1)) {
+    my $cc = (ord substr $_[1], $i, 1);
+    for (@$Tables) {
+      my $charset = $_->[0];
+      next if $self->{notme}->[$charset];
+      
+      my $cls = ord substr $_->[1], $cc, 1;
+      
+      my $os = $self->{vstates}->[$charset];
+      my $ns = ord substr $Web::Encoding::UnivCharDet::Defs::VietStateTable,
+          ($self->{vstates}->[$charset] * $Web::Encoding::UnivCharDet::Defs::VietStateInputs + $cls);
+      $self->{vstates}->[$charset] = $ns;
+
+      if ((0x20 <= $cc and $cc <= 0x7E) or (0x09 <= $cc and $cc <= 0x0D)) {
+        #
+      } else {
+        $self->{nonascii}->[$charset]++;
+      }
+
+      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_WORD_START ($os, $ns)) {
+        $self->{nonascii}->[$charset] = 0;
+        $self->{current}->[$charset] = pack 'C', $cc;
+      }
+      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD_END ($os, $ns)) {
+        if ($self->{nonascii}->[$charset]) {
+          $self->{words}->[$charset]->[1]++;
+        } else {
+          $self->{words}->[$charset]->[0]++;
+        }
+        $self->{probers}->[$charset]->handle_data ($self->{current}->[$charset]);
+      }
+      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_FWORD_END ($os, $ns)) {
+        if ($self->{nonascii}->[$charset]) {
+          $self->{words}->[$charset]->[3]++;
+        } else {
+          $self->{words}->[$charset]->[2]++;
+        }
+      }
+      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_NOTME ($os, $ns)) {
+        $self->{notme}->[$charset] = 1;
+        next;
+      }
+      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD ($ns)) {
+        $self->{current}->[$charset] .= pack 'C', $cc;
+      }
+    }
+  }
+
+  my $selected = [grep { $_ == 0 } @{$self->{notme}}];
+  if (@$selected == 0) {
+    $self->{state} = 'not me';
+  } elsif (@$selected == 1) {
+    if ($self->get_confidence > 0.8) {
+      $self->{state} = 'found it';
+    }
+  }
+  
+  return $self->{state};
+} # handle_data
+
+sub get_charset_name ($) {
+  my $self = $_[0];
+  $self->get_confidence if not defined $self->{detected_charset};
+  
+  return $self->{detected_charset}; # or undef
+} # get_charset_name
+
+sub get_confidence ($;$) {
+  my $self = $_[0];
+  if ($self->{state} eq 'not me' and not defined $_[1]) {
+    $self->{detected_charset} = undef;
+    return 0.01;
+  }
+
+  my @answer;
+  for my $charset (defined $_[1] ? ($_[1]) : (0..3)) {
+    next if $self->{notme}->[$charset];
+
+    my ($A1, $A2, $A3, $A4) = @{$self->{words}->[$charset]};
+    if ($A2 == 0 and $A4 == 0) { # ASCII only
+      if ($A1 > 0) {
+        my $conf = $self->{probers}->[$charset]->get_confidence;
+        if ($conf > 0.9) {
+          push @answer, [$charset, $conf, $A4];
+        }
+      }
+      next;
+    }
+    my $F = 0;
+    my $T = $A1 + $A2 + $A3 + $A4;
+    next if $T == 0;
+
+    my $score;
+    {
+      if ($T < 10) {
+        if ($A2 >= 1) {
+          $score = 0.95;
+        } elsif ($A1 >= 3) {
+          $score = 0.8;
+        } else {
+          $score = 0.5;
+        }
+        last;
+      }
+      
+      my $v_ratio    = ($A1 + $A2) / ($T + 1e-6);
+      my $v_strength = ($A2 * 2 + $A1 * 0.5) / ($T + 1e-6);
+      my $penalty    = 0.5 * ($A4 / ($T + 1e-6)) + 0.3 * ($F / ($T + 1e-6));
+      my $raw = $v_ratio * (0.6 + 0.4 * $v_strength) - $penalty;
+      #$raw += 0.15 if $A2 >= 1 && $v_ratio < 0.2;
+
+      #my $conf = 1 - exp(-0.05 * ($A1 + $A2));
+      #$raw *= $conf;
+      
+      $score = 1 / (1 + exp(-5 * ($raw - 0.1)));
+      $score = 0 if $score < 0;
+      $score = 1 if $score > 1;
+
+      last;
+    }
+
+    push @answer, [$charset, $score, $A4];
+  }
+  @answer = sort { $b->[1] <=> $a->[1] } @answer;
+  if (@answer > 1 and not $answer[0]->[0] == 1) { # != vni
+    if ($answer[0]->[2] == 0) {
+      @answer = grep { $_->[2] == 0 } @answer;
+    }
+    @answer = grep { ($answer[0]->[1] - $_->[1]) < 0.1 } @answer;
+    if (@answer > 1) {
+      for (@answer) {
+        my $sc = $self->{probers}->[$_->[0]]->{seq_counters};
+        $_->[3] = $sc->[Web::Encoding::UnivCharDet::CharsetProber::SBCS::POSITIVE_CAT] - $sc->[Web::Encoding::UnivCharDet::CharsetProber::SBCS::NEGATIVE_CAT]/($sc->[Web::Encoding::UnivCharDet::CharsetProber::SBCS::POSITIVE_CAT]+0.1)*4;
+        #$_->[4] = $self->{probers}->[$_->[0]]->get_confidence;
+      }
+      @answer = sort { $b->[3] <=> $a->[3] } @answer;
+    }
+  }
+  unless (defined $_[1]) {
+    my $ans = @answer ? ['viscii', 'x-viet-vni', 'x-viet-vps', 'x-viet-tcvn']->[$answer[0]->[0]] : undef;
+    $self->{detected_charset} = $ans; # or undef
+  }
+  
+  my $c = $answer[0]->[1]; # or undef;
+  return $c || 0.01;
+} # get_confidence
+
+sub dump_status ($) {
+  my $self = $_[0];
+  printf " Viet: %s [%s] (%s)\n",
+      $self->get_confidence,
+      $self->get_charset_name // '',
+      $self->{state};
+  for my $charset (0..3) {
+    printf "  %s [%s] (%d %d %d %d / %d)\n",
+        $self->get_confidence ($charset),
+        ['viscii', 'x-viet-vni', 'x-viet-vps', 'x-viet-tcvn']->[$charset],
+        @{$self->{words}->[$charset]},
+        $self->{vstates}->[$charset];
+  }
+  for (@{$self->{probers}}) {
+    $_->dump_status;
+  }
+} # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {type => ref $self,
+          charset => $self->get_charset_name // '',
+          confidence => $self->get_confidence,
+          probers => [
+            {type => 'viscii', charset => 'viscii',
+             confidence => $self->get_confidence (0)},
+            {type => 'vni', charset => 'x-viet-vni',
+             confidence => $self->get_confidence (1)},
+            {type => 'vps', charset => 'x-viet-vps',
+             confidence => $self->get_confidence (2)},
+            {type => 'vn3', charset => 'x-viet-tcvn',
+             confidence => $self->get_confidence (3)},
+            map { $_->dump_status_for_json } @{$self->{probers}},
+          ]};
 } # dump_status_for_json
 
 1;

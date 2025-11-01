@@ -3411,6 +3411,199 @@ sub jp2CharContext () { [
 [ 0,4,0,3,0,3,0,3,0,3,5,5,3,3,3,3,4,3,4,3,3,3,4,4,4,3,3,3,3,4,3,5,3,3,1,3,2,4,5,5,5,5,4,3,4,5,5,3,2,2,3,3,3,3,2,3,3,1,2,3,2,4,3,3,3,4,0,4,0,2,0,4,3,2,2,1,2,0,3,0,0,4,1,],
 ] } # jp2CharContext
 
+
+{
+  # (?:b|c|ch|d|đ|g|gh|gi|h|k|kh|l|m|n|ng|ngh|nh|p|ph|q|qu|r|s|t|th|tr|v|x)?
+  # (?:c|ch|k|m|n|ng|nh|p|t)?
+  #my $c0;
+  #my $c1;
+  my $c2 = 0;
+  my $d0 = 1; # n
+  my $d1 = 2; # c g k p t
+  my $d2 = 3; # d h m
+  my $e0 = 4; # a i u e o y
+  my $e1 = 5;
+  my $f0 = 6; # f j w z
+  my $SP = my $SY = 7;
+  my $IL = my $CT = 8;
+  my $QT = 9;
+  my $AP = 10;
+  my $LT = 11;
+  my $GT = 12;
+  my $AM = 13;
+  my $SC = 14;
+  my $NM = 15;
+  my $SL = 16;
+  my $QR = 17;
+our $VietStateInputs = 18;
+our $VietStateInitial = 0;
+our $VietStateTable = pack 'C*',
+  # $c0 $c1 $c2 $d0 $d1 $d2 $e0 $e1 $f0 dlm ill$QT$AP$LT$GT$AM$SC$NM$SL$QR
+  
+  #0 initial
+             3,  1,  2,  3,  4, 12, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #1 VC0
+             3, 13,  2,  3,  4, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #2 VC1
+             3, 13, 13,  3,  4, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #3 VC2
+            13, 13, 13, 13,  4, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #4 VE0 0
+            13,  6,  7,  8,  9,  5, 13,  0, 14, 0, 5,18, 0,15, 0,13, 0, 5,
+  #5 VE1 0
+            13,  6,  7,  8,  9,  5, 13,  0, 14, 0, 5,18, 0,15, 0,13, 0, 5,
+  #6 VD0 
+            13, 13,  7,  8, 13, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #7 VD1
+            13, 13, 13,  8, 13, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #8 VD2
+            13, 13, 13, 13, 13, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #9 VE0 1
+            13,  6,  7,  8, 11, 10, 13,  0, 14, 0,10,18, 0,15, 0,13, 0,10,
+  #10 VE1 1
+            13,  6,  7,  8, 11, 10, 13,  0, 14, 0,10,18, 0,15, 0,13, 0,10,
+  #11 VE0 2
+            13,  6,  7,  8, 13, 12, 13,  0, 14, 0,12,18, 0,15, 0,13, 0,12,
+  #12 VE1 2
+            13,  6,  7,  8, 13, 12, 13,  0, 14, 0,12,18, 0,15, 0,13, 0,12,
+  #13 nonviet
+            13, 13, 13, 13, 13, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+  #14 illegal
+            14, 14, 14, 14, 14, 14, 14, 14, 14,14,14,14,14,14,14,14,14,14,
+  #15 amp
+            15, 15, 15, 15, 15, 12, 15,  0, 14, 0, 0,18, 0,15, 0,15, 0, 0,
+  #16
+            19, 19, 19, 19, 19, 12, 19,  0, 14, 0, 0,18, 0,15, 0,16, 0, 0,
+  #17
+            19, 19, 19, 19, 19, 12, 19,  0, 14, 0, 0,18, 0,15, 0,16, 0, 0,
+  #18 tago
+            19, 19, 19, 19, 19, 14, 19,  0, 14, 0, 0,18, 0,15, 0,16,18, 0,
+  #19 tag
+            19, 19, 19, 19, 19, 19, 19,  0, 14,20,21,19, 0,19,19,19,19,19,
+  #20 quot
+            20, 20, 20, 20, 20, 20, 20, 20, 14,19,20,20,20,20,20,20,20,20,
+  #21 apos
+            21, 21, 21, 21, 21, 21, 21, 21, 14,21,19,21,21,21,21,21,21,21,
+
+  # $c0 $c1 $c2 $d0 $d1 $d2 $e0 $e1 $f0 dlm ill$QT$AP$LT$GT$AM$SC$NM$SL$QR
+;
+sub IS_VIET_WORD_START ($$) { (
+  not (
+    (1 <= $_[0] and $_[0] <= 4) or $_[0] == 13
+  )
+  and 
+  (
+    (1 <= $_[1] and $_[1] <= 4) or $_[1] == 13
+  )
+) }
+sub IS_VIET_VWORD ($) { (1 <= $_[0] and $_[0] <= 12) }
+sub IS_VIET_VWORD_END ($$) { (
+  (
+    (4 <= $_[0] and $_[0] <= 12)
+  )
+  and not
+  (
+    (1 <= $_[1] and $_[1] <= 13)
+  )
+) }
+sub IS_VIET_FWORD_END ($$) { (
+  (
+    $_[0] == 13
+  )
+  and not
+  (
+    (1 <= $_[1] and $_[1] <= 13)
+  )
+) }
+sub IS_VIET_NOTME ($$) { (
+  not (
+    $_[0] == 14
+  )
+  and 
+  (
+    $_[1] == 14
+  )
+) }
+
+our $VISCIIClassTable = pack 'C*',
+  $CT,$CT,$e0,$CT,$CT,$e0,$e0,$CT,$CT,$SP,$SP,$SP,$SP,$SP,$CT,$CT,
+  $CT,$CT,$CT,$CT,$e0,$CT,$CT,$CT,$CT,$e0,$SP,$SY,$CT,$CT,$e0,$CT,
+  $SP,$SY,$QT,$SY,$SY,$SY,$AM,$AP,$QR,$SY,$SY,$QR,$SY,$SY,$QR,$SL,
+  $NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$SY,$SC,$LT,$SY,$GT,$QR,
+  #     a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$QR,$SY,
+  $QR,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$QR,$CT,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $c2,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $c2,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+;
+our $VNIClassTable = pack 'C*',
+  $CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$SP,$SP,$SP,$SP,$SP,$CT,$CT,
+  $CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$SP,$SY,$CT,$CT,$CT,$CT,
+  $SP,$SY,$QT,$SY,$SY,$SY,$AM,$AP,$SY,$SY,$SY,$SY,$SY,$SY,$SY,$SL,
+  $NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$SY,$SC,$LT,$SY,$GT,$SY,
+  #     a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$SY,$SY,
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$SY,$CT,
+  $IL,$IL,$f0,$SY,$f0,$SY,$SY,$SY,$IL,$SY,$e1,$SY,$e1,$IL,$IL,$IL,
+  $IL,$SY,$SY,$SY,$SY,$IL,$SY,$SY,$IL,$SY,$e1,$SY,$e1,$f0,$IL,$e0,
+  $SP,$SY,$SY,$SY,$SY,$SY,$SY,$e1,$SY,$SY,$SY,$SY,$f0,$SY,$SY,$SY,
+  $SY,$SY,$SY,$SY,$e1,$SY,$SY,$e1,$e1,$SY,$SY,$SY,$SY,$SY,$SY,$SY,
+  $e1,$e1,$e1,$e1,$e1,$e1,$e0,$f0,$e1,$e1,$e1,$e1,$e0,$e0,$e0,$e1,
+  $e0,$c2,$e0,$e0,$e0,$e1,$e0,$SY,$e1,$e1,$e1,$e1,$e1,$e0,$f0,$f0,
+  $e1,$e1,$e1,$e1,$e1,$e1,$e0,$f0,$e1,$e1,$e1,$e1,$e0,$e0,$e0,$e1,
+  $e0,$c2,$e0,$e0,$e0,$e1,$e0,$SY,$e1,$e1,$e1,$e1,$e1,$e0,$f0,$e0,
+;
+our $VPSClassTable = pack 'C*',
+  $CT,$CT,$e0,$e0,$e0,$e0,$e0,$CT,$CT,$SP,$SP,$SP,$SP,$SP,$CT,$CT,
+  $e0,$e0,$e0,$e0,$e0,$e0,$CT,$CT,$CT,$e0,$SP,$SY,$e0,$e0,$CT,$CT,
+  $SP,$SY,$QT,$SY,$SY,$SY,$AM,$AP,$SY,$SY,$SY,$SY,$SY,$SY,$SY,$SL,
+  $NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$SY,$SC,$LT,$SY,$GT,$SY,
+  #     a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$SY,$SY,
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$SY,$CT,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$IL,$IL,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $IL,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$c2,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$IL,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$IL,$e0,$e0,$e0,$e0,$e0,$e0,$IL,$e0,
+  $e0,$c2,$e0,$e0,$e0,$e0,$IL,$e0,$e0,$e0,$e0,$e0,$IL,$e0,$e0,$e0,
+;
+our $VN3ClassTable = pack 'C*',
+  $CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$SP,$SP,$SP,$SP,$SP,$CT,$CT,
+  $CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$SP,$SY,$CT,$CT,$CT,$CT,
+  $SP,$SY,$QT,$SY,$SY,$SY,$AM,$AP,$SY,$SY,$SY,$SY,$SY,$SY,$SY,$SL,
+  $NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$NM,$SY,$SC,$LT,$SY,$GT,$SY,
+  #     a   b   c   d   e   f   g   h   i   j   k   l   m   n   o
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$SY,$SY,
+  $SY,$e0,$c2,$d1,$d2,$e0,$f0,$d1,$d2,$e0,$f0,$d1,$c2,$d2,$d0,$e0,
+  $d1,$c2,$c2,$c2,$d1,$e0,$c2,$f0,$c2,$e0,$f0,$SY,$SY,$SY,$SY,$CT,
+  $CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,
+  $CT,$CT,$CT,$CT,$SY,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,$CT,
+  $SP,$e0,$e0,$e0,$e0,$e0,$e0,$c2,$e0,$e0,$e0,$e0,$e0,$e0,$c2,$IL,
+  $IL,$IL,$IL,$IL,$IL,$e0,$e0,$e0,$e0,$e0,$IL,$e0,$e0,$e0,$e0,$IL,
+  $IL,$IL,$IL,$IL,$IL,$IL,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$IL,$e0,$e0,
+  $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$IL,$IL,$IL,$e0,$e0,$e0,$e0,
+  $IL,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,
+  $IL,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0,$IL,
+;
+
+}
+
 1;
 
 =head1 LICENSE
