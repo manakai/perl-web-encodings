@@ -37,9 +37,10 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
       is $sniffer->encoding, $test->{encoding}->[1]->[0];
       is $sniffer->confident ? 'certain' : 'tentative', $test->{confidence}->[1]->[0];
       is $sniffer->source, $test->{source}->[1]->[0];
+      is $sniffer->font_encoding, $test->{font}->[1]->[0];
 
       done $c;
-    } n => 3, name => [$file_name, $test->{name}->[0] || $test->{data}->[0]];
+    } n => 4, name => [$file_name, $test->{name}->[0] || $test->{data}->[0]];
   };
 } # $test_file_path
 

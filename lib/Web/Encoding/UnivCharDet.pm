@@ -64,7 +64,6 @@ sub reset ($) {
   my $self = $_[0];
   $self->{done} = 0;
   $self->{best_guess} = -1;
-  $self->{in_tag} = 0;
   $self->{start} = 1;
   $self->{detected_charset} = undef;
   $self->{got_data} = undef;
@@ -74,13 +73,14 @@ sub reset ($) {
   delete $self->{esc_charset_prober};
   delete $self->{utf1632_prober};
   delete $self->{reported};
-  #delete $self->{nbsp_found};
+  delete $self->{nbsp_found};
   delete $self->{esc_found};
   delete $self->{binary_found};
   $self->{win1250_refs} = 0;
   $self->{win1252_refs} = 0;
   $self->{unicode_refs} = 0;
   delete $self->{resolve_latin1_refs};
+  delete $self->{amp};
 } # reset
 
 sub handle_data ($$) {
@@ -124,10 +124,9 @@ sub handle_data ($$) {
   for my $i (0..($length - 1)) {
     my $c = ord substr $_[1], $i, 1;
     $zero++ if $c == 0x00;
-    #if ($c == 0xA0) {
-    #  $self->{nbsp_found} = 1;
-    #} elsif ($c & 0x80) {
-    if ($c & 0x80 and $c != 0xA0) {
+    if ($c == 0xA0) {
+      $self->{nbsp_found} = 1;
+    } elsif ($c & 0x80) {
       if ($self->{input_state} ne 'high byte') {
         $self->{input_state} = 'high byte';
         $high = 1;
@@ -151,6 +150,7 @@ sub handle_data ($$) {
         }
         $self->{last_char} = $c;
       }
+      
       if (defined $self->{amp}) {
         if ($c == 0x3B) {
           if (defined $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$self->{amp}}) {
@@ -188,7 +188,7 @@ sub handle_data ($$) {
         } else {
           delete $self->{amp};
         }
-      }
+      } # amp
     }
   } # $i
 
@@ -346,10 +346,10 @@ sub data_end ($) {
       #
     } elsif ($self->{binary_found}) {
       #
-    #} elsif ($self->{nbsp_found}) {
-    #  $self->{reported} = 'windows-1252';
+    } elsif ($self->{nbsp_found}) {
+      $self->{reported} = 'windows-1252';
     } else {
-      $self->{reported} = 'windows-1252'; # ascii
+      $self->{reported} = 'ascii';
     }
   }
 } # data_end
