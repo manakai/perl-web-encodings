@@ -233,9 +233,11 @@ package Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub new ($) {
-  my $self = bless {}, $_[0];
+sub new ($;%) {
+  my $self = bless {}, shift;
+  my %args = @_;
   $self->reset;
+  $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
   return $self;
 } # new
 
@@ -770,40 +772,63 @@ sub new ($$;%) {
   my $self = bless {}, shift;
   my $filter = shift;
   my %args = @_;
-  
-  $self->{probers} = [
-    Web::Encoding::UnivCharDet::CharsetProber::UTF8->new,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
-        ? Web::Encoding::UnivCharDet::CharsetProber::SJIS->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE)
-        : undef,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
-        ? Web::Encoding::UnivCharDet::CharsetProber::EUCJP->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE)
-        : undef,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
+
+  if ($args{set_resolve_latin1_refs}) {
+    $self->{probers} = [
+      undef,
+      undef,
+      undef,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
         ? Web::Encoding::UnivCharDet::CharsetProber::GB18030->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED)
         : undef,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCKR->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
         : undef,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
         ? Web::Encoding::UnivCharDet::CharsetProber::Big5->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
         : undef,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
+      undef,
+      undef,
+    ];
+  } else {
+    $self->{probers} = [
+      Web::Encoding::UnivCharDet::CharsetProber::UTF8->new,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
+        ? Web::Encoding::UnivCharDet::CharsetProber::SJIS->new
+              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE)
+        : undef,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
+        ? Web::Encoding::UnivCharDet::CharsetProber::EUCJP->new
+              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE)
+        : undef,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
+        ? Web::Encoding::UnivCharDet::CharsetProber::GB18030->new
+              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED)
+        : undef,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+        ? Web::Encoding::UnivCharDet::CharsetProber::EUCKR->new
+              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
+        : undef,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
+        ? Web::Encoding::UnivCharDet::CharsetProber::Big5->new
+              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
+        : undef,
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCTW->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
         : undef,
-    $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
         ? Web::Encoding::UnivCharDet::JohabCharsetProber->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
         : undef,
-  ];
+    ];
+  }
 
   $self->reset;
+  $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
   return $self;
 } # new
 
@@ -1352,9 +1377,11 @@ package Web::Encoding::UnivCharDet::CharsetProber::Vietnamese;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub new ($$) {
-  my $self = bless {}, $_[0];
+sub new ($;%) {
+  my $self = bless {}, shift;
+  my %args = @_;
   $self->reset;
+  $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
   return $self;
 } # new
 
@@ -1475,11 +1502,12 @@ sub handle_data ($$) {
     } # TBL
   }
 
-  my $selected = [grep { $_ == 0 } @{$self->{notme}}];
+  my $selected = [grep { $self->{notme}->[$_] == 0 } 0..$#{$self->{notme}}];
   if (@$selected == 0) {
     $self->{state} = 'not me';
   } elsif (@$selected == 1) {
-    if ($self->get_confidence > 0.8) {
+    if ($self->get_confidence > 0.8 and
+        $self->{words}->[$selected->[0]]->[3] == 0) {
       $self->{state} = 'found it';
     }
   }
@@ -1510,7 +1538,8 @@ sub get_confidence ($;$) {
       if ($A1 > 0) {
         my $conf = $self->{probers}->[$charset]->get_confidence;
         if ($conf > 0.9) {
-          push @answer, [$charset, $conf, $A4];
+          ## Words are ASCII-only but there are non-ASCII punctuations
+          push @answer, [$charset, 0.6, $A4];
         }
       }
       next;
@@ -1540,6 +1569,15 @@ sub get_confidence ($;$) {
 
       #my $conf = 1 - exp(-0.05 * ($A1 + $A2));
       #$raw *= $conf;
+
+      #my $bad_ratio = ($A3 + $A4) / ($T + 1e-6);
+      #my $foreign_penalty_base = 1 / (1 + exp(-12 * ($bad_ratio - 0.35)));
+      #my $length_factor = 1 - exp(-0.3 * $T);  
+      #my $a2_factor = 1 / (1 + exp(-2 * ($A2 - 1))); 
+      #my $foreign_penalty = $foreign_penalty_base
+      #                * $length_factor
+      #                * (1 - 0.5 * $a2_factor);
+      #$raw -= 0.6 * $foreign_penalty;
       
       $score = 1 / (1 + exp(-5 * ($raw - 0.1)));
       $score = 0 if $score < 0;

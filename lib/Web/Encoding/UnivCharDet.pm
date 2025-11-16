@@ -65,7 +65,8 @@ sub reset ($) {
   $self->{done} = 0;
   $self->{best_guess} = -1;
   $self->{start} = 1;
-  $self->{detected_charset} = undef;
+  delete $self->{detected_charset};
+  delete $self->{font_charset};
   $self->{got_data} = undef;
   $self->{input_state} = 'pure ascii';
   $self->{last_char} = 0x00;
@@ -218,17 +219,25 @@ sub handle_data ($$) {
   } # $high
 
   if ($self->{win1252_refs} > 10 and $self->{unicode_refs} < 10) {
-    for (grep { defined $_ } @{$self->{charset_probers}}) {
-      $_->set_resolve_latin1_refs (1);
+    $self->{charset_probers}->[4]
+        ||= Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup->new
+                ($self->{lang_filter}, resolve_latin1_refs => 1);
+    if ($self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK) {
+      $self->{charset_probers}->[5]
+          ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
+                  (resolve_latin1_refs => 1);
+    }
+    if ($self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK) {
+      $self->{charset_probers}->[6]
+          ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
+                  (resolve_latin1_refs => 1);
     }
     $self->{resolve_latin1_refs} = 'windows-1252';
-  #} elsif ($self->{win1250_refs} > 10 and $self->{unicode_refs} < 10) {
-  #  for (grep { defined $_ } @{$self->{charset_probers}}) {
-  #    $_->set_resolve_latin1_refs (1);
-  #  }
-  #  $self->{resolve_latin1_refs} = 'windows-1250';
   } else {
     delete $self->{resolve_latin1_refs};
+    delete $self->{charset_probers}->[4];
+    delete $self->{charset_probers}->[5];
+    delete $self->{charset_probers}->[6];
   }
   
   if ($self->{utf} and $zero) {
@@ -272,29 +281,21 @@ sub handle_data ($$) {
             ('&'.$1.';');
           }
         }ge;
-      #} elsif ($self->{resolve_latin1_refs} eq 'windows-1250') {
-      #  $x =~ s{&#([0-9]+);}{
-      #    my $cc = $Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$1};
-      #    if (defined $cc) {
-      #      pack 'C', $cc;
-      #    } else {
-      #      '&' . $1 . ';';
-      #    }
-      #  }ge;
       }
-      for (grep { defined $_ } @{$self->{charset_probers}}[0,1]) {
-        my $st = $_->handle_data ($x);
+      for (grep { defined $_ } @{$self->{charset_probers}}[0..3]) {
+        my $st = $_->handle_data ($_[1]);
         if ($st eq 'found it') {
           $self->{done} = 1;
           $self->{detected_charset} = $_->get_charset_name; # non-undef when found
           return 1;
         }
       }
-      for (grep { defined $_ } @{$self->{charset_probers}}[2,3]) {
-        my $st = $_->handle_data ($_[1]);
+      for (grep { defined $_ } @{$self->{charset_probers}}[4..6]) {
+        my $st = $_->handle_data ($x);
         if ($st eq 'found it') {
           $self->{done} = 1;
-          $self->{detected_charset} = $_->get_charset_name; # non-undef when found
+          $self->{detected_charset} = 'windows-1252';
+          $self->{font_charset} = $_->get_charset_name; # non-undef when found
           return 1;
         }
       }
@@ -338,7 +339,16 @@ sub data_end ($) {
       }
     }
     if ($max_prober_confidence > Web::Encoding::UnivCharDet::Defs::MINIMUM_THRESHOLD) {
-      $self->{reported} = $max_prober->get_charset_name; # or undef
+      if ($max_prober->{resolve_latin1_refs}) {
+        $self->{reported} = 'windows-1252';
+        $self->{font_charset} = $max_prober->get_charset_name; # or undef
+        if (not defined $self->{font_charset} or
+            $self->{font_charset} eq 'windows-1252') {
+          delete $self->{font_charset};
+        }
+      } else {
+        $self->{reported} = $max_prober->get_charset_name; # or undef
+      }
     }
   } elsif ($self->{input_state} eq 'pure ascii' or
            $self->{input_state} eq 'esc ascii') {
@@ -358,18 +368,22 @@ sub get_reported_charset ($) {
   return $_[0]->{reported};
 } # get_reported_charset
 
+sub get_reported_font_charset ($) {
+  return $_[0]->{font_charset};
+} # get_reported_font_charset
+
 sub dump_status ($) {
   my $self = $_[0];
   printf "[%s] %s (%d %d %d) %s\n",
       $self->{reported} // '',
-      $self->{resolve_latin1_refs} ? 'htmlrefs:'.$self->{resolve_latin1_refs} : '',
+      defined $self->{font_charset} ? 'html:'.$self->{font_charset} : '',
       $self->{win1250_refs}, $self->{win1250_refs}, $self->{unicode_refs},
       $self->{input_state};
   $_->dump_status for grep { defined $_ }
       @{$self->{charset_probers}},
       $self->{esc_charset_prober},
       $self->{utf1632_prober};
-  print "Reported: @{[$self->{reported} // '']}\n";
+  print "Reported: @{[$self->{reported} // '']} @{[defined $self->{font_charset} ? 'html:'.$self->{font_charset} : '']}\n";
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -381,7 +395,7 @@ sub dump_status_for_json ($) {
                       @{$self->{charset_probers}},
                       $self->{esc_charset_prober},
                       $self->{utf1632_prober}],
-          htmlrefs => $self->{resolve_latin1_refs},
+          font_charset => $self->{font_charset},
           reported => $self->{reported}};
 } # dump_status_for_json
 
