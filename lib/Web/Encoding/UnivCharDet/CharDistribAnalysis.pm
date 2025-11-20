@@ -45,21 +45,51 @@ sub get_order ($$$) { -1 }
 
 sub get_confidence ($) {
   my $self = $_[0];
-  if ($self->{total_chars} <= 0 or
-      $self->{freq_chars} <= $self->{data_threshold}) {
+  if ($self->{total_chars} <= 0 #or
+      #$self->{freq_chars} <= $self->{data_threshold}
+  ) {
     return SURE_NO;
   } elsif ($self->{total_chars} != $self->{freq_chars}) {
     my $r = $self->{freq_chars} / (($self->{total_chars} - $self->{freq_chars}) * $self->{typical_distribution_ratio});
-    if ($r < SURE_YES) {
+    if ($r < 0.98) {
       return $r;
+    } else {
+      my $x = $r - 0.98;
+      my $adjusted = 0.98 + (1 - exp(-5 * $x)) * (0.99 - 0.98);
+      $adjusted = 0.99 if $adjusted > 0.99;
+      return $adjusted;
     }
+  } else {
+    return SURE_YES;
   }
-  return SURE_YES;
 } # get_confidence
+
+sub got_min_data ($) {
+  return not ($_[0]->{freq_chars} <= $_[0]->{data_threshold});
+} # got_min_data
 
 sub got_enough_data ($) {
   return $_[0]->{total_chars} > ENOUGH_DATA_THRESHOLD;
 } # got_enough_data
+
+sub _dump_status ($) {
+  my $self = $_[0];
+  return sprintf "%d / %d (%s %s)",
+      $self->{freq_chars},
+      $self->{total_chars},
+      $self->got_min_data ? 'min' : '',
+      $self->got_enough_data ? 'enough' : '';
+} # _dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {
+    freq_chars => $self->{freq_chars},
+    total_chars => $self->{total_chars},
+    got_min_data => !! $self->got_min_data,
+    got_enought_data => !! $self->got_enough_data,
+  };
+} # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCTW;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharDistribAnalysis);

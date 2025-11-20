@@ -23,6 +23,8 @@ sub reset ($) {
   $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
   $self->{distribution_analyser}->{_parent} = ref $self;
   $self->{last_char} = "\x00\x00";
+  $self->{current_word_length} = 0;
+  $self->{avg_word_length} = 0;
 } # reset
 
 sub get_charset_name ($) { 'x-johab' }
@@ -34,19 +36,27 @@ sub handle_data ($$$;$) {
   for my $i ($start_pos..($limit_pos - 1)) {
     my $c = ord substr $_[1], $i, 1;
     my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
-    if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe or #) {
-    #  $self->{state} = 'found it';
-    #  last;
-    #} elsif (
-      $coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
+    # eItsMe is used for other purpose.
+    if ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
+      my $is_sep = 0;
       if ($i == $start_pos) {
         (substr $self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
         $self->{distribution_analyser}->handle_one_char
             ($self->{last_char}, 0, $char_len);
+        $is_sep = 1 unless $self->{last_char} =~ /^[\x84-\xD3]/;
       } else {
         $self->{distribution_analyser}->handle_one_char
             ($_[1], $i-1, $char_len);
+        $is_sep = 1 unless substr ($_[1], $i-1, $char_len) =~ /^[\x84-\xD3]/;
+      }
+      if ($is_sep) {
+        if ($self->{current_word_length}) {
+          $self->{avg_word_length} = 0.9 * $self->{avg_word_length} + 0.1 * $self->{current_word_length};
+          $self->{current_word_length} = 0;
+        }
+      } else {
+        $self->{current_word_length}++;
       }
     }
   }
@@ -54,8 +64,10 @@ sub handle_data ($$$;$) {
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
-    if ($self->{distribution_analyser}->got_enough_data and
-        $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
+    if ($self->{coding_sm}->{error_count}) {
+      #
+    } elsif ($self->{distribution_analyser}->got_enough_data and
+             $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
   }
@@ -65,22 +77,51 @@ sub handle_data ($$$;$) {
 
 sub get_confidence ($) {
   my $self = $_[0];
-  return $self->{distribution_analyser}->get_confidence;
+  my $conf = $self->{distribution_analyser}->get_confidence;
+  if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
+    $conf = 0.5;
+  }
+
+  {
+    my $avg = $self->{avg_word_length};
+    my $mu  = 3.0;
+    my $sigma = 1.0;
+    my $diff = $avg - $mu;
+    my $score = exp( - ($diff * $diff) / (2 * $sigma * $sigma) );
+
+    my $factor = 0.7 + 0.3 * $score;
+    $conf *= $factor;
+    $conf = 0.1 if $conf < 0.1;
+  }
+  
+  return $conf;
 } # get_confidence
+
+sub got_min_data ($) {
+  return $_[0]->{distribution_analyser}->got_min_data;
+} # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%s)\n",
+  printf "%s [%s] (%s, %s, %s, l=%d)\n",
       $self->get_confidence,
       $self->get_charset_name,
-      $self->{state};
+      $self->{state},
+      $self->{coding_sm}->_dump_status,
+      $self->{distribution_analyser}->_dump_status,
+      $self->{avg_word_length};
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
-          charset => $self->get_charset_name,
-          confidence => $self->get_confidence};
+  return {
+    type => $self->get_charset_name,
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+    avg_word_length => $self->{avg_word_length},
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharDistribAnalysis::Johab;

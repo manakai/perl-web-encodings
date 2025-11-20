@@ -3,7 +3,6 @@ use strict;
 use warnings;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
-use Web::Encoding::UnivCharDet::Defs2;
 use Web::Encoding::UnivCharDet::Defs3;
 use Web::Encoding::UnivCharDet::CodingStateMachine;
 use Web::Encoding::UnivCharDet::CharDistribAnalysis;
@@ -218,7 +217,7 @@ sub get_confidence ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf " Latin1Prober: %1.3f [%s]\n",
+  printf "  Latin1Prober: %1.3f [%s]\n",
       $self->get_confidence, $self->get_charset_name;
 } # dump_status
 
@@ -236,14 +235,20 @@ our $VERSION = '1.0';
 sub new ($;%) {
   my $self = bless {}, shift;
   my %args = @_;
-  $self->reset;
+  $self->reset ($args{resolve_latin1_refs});
   $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
   return $self;
 } # new
 
-sub reset ($) {
+sub reset ($;$) {
   my $self = $_[0];
-  $self->{probers} = [
+  my $refs = $_[1];
+  $self->{probers} = $refs ? [
+    Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
+    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+    $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
+    $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+  ] : [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
     $Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
@@ -268,15 +273,17 @@ sub reset ($) {
     $Web::Encoding::UnivCharDet::Defs::Cp737GreekModel,
     $Web::Encoding::UnivCharDet::Defs::Ibm862HebrewModel,
   ];
-  my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
-  push @{$self->{probers}},
-      $hebprober,
-      Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-          ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 0, $hebprober), # logical
-      Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-          ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
-  $hebprober->set_model_probers
-      ($self->{probers}->[-2], $self->{probers}->[-1]);
+  unless ($refs) {
+    my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
+    push @{$self->{probers}},
+        $hebprober,
+        Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
+            ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 0, $hebprober), # logical
+        Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
+            ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
+    $hebprober->set_model_probers
+        ($self->{probers}->[-2], $self->{probers}->[-1]);
+  }
   $self->{inactive_probers} = [];
   
   $self->{active_num} = @{$self->{probers}};
@@ -331,7 +338,16 @@ sub handle_data ($$) {
           if defined $self->{probers}->[0]; # Latin1
 
       my $old_prober_count = @{$self->{probers}};
-      my @new_prober = (
+      my @new_prober = $self->{resolve_latin1_refs} ? (
+        map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
+      ) : (
         map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
         $Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
@@ -363,6 +379,7 @@ sub handle_data ($$) {
         $Web::Encoding::UnivCharDet::Defs::Ibm852CzechModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm852PolishModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm865DanishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252IcelandicFaroeseModel,
 
         #$Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
         #$Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
@@ -439,30 +456,30 @@ sub get_confidence ($) {
 sub dump_status ($) {
   my $self = $_[0];
   my $cf = $self->get_confidence;
-  print " SBCS Group Prober --------begin status \n";
+  printf " SBCS: %s [%s] %s\n",
+      $cf,
+      $self->get_charset_name // '',
+      ($self->{resolve_latin1_refs} ? 'htmlrefs' : '');
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
-    unless ($_) {
-      #printf "  inactive: [%s] (i.e. confidence is too low).\n", $i; # $_->get_charset_name
-    } else {
-      $_->dump_status;
-    }
+    $_->dump_status if defined $_;
   }
   for (@{$self->{inactive_probers}}) {
-    print "[inactive]";
+    print "  [inactive]";
     $_->dump_status;
   }
-  printf " SBCS Group found best match [%s] confidence %f.\n",
-      $self->{probers}->[$self->{best_guess}]->get_charset_name, $cf
-      if $self->{best_guess} >= 0;
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  my $r = {type => ref $self,
-           confidence => $self->get_confidence,
-           probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}],
-           inactive_probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{inactive_probers}}]};
+  my $r = {
+    type => ref $self,
+    charset => $self->get_charset_name, # or undef
+    confidence => $self->get_confidence,
+    probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}],
+    inactive_probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{inactive_probers}}],
+    htmlrefs => !!$self->{resolve_latin1_refs},
+  };
   if ($self->{best_guess} >= 0) {
     $r->{best_guess} = $self->{probers}->[$self->{best_guess}]->get_charset_name;
   }
@@ -477,18 +494,20 @@ sub SAMPLE_SIZE () { 64 }
 sub SB_ENOUGH_REL_THRESHOLD () { 1024 }
 sub POSITIVE_SHORTCUT_THRESHOLD () { 0.95 }
 sub NEGATIVE_SHORTCUT_THRESHOLD () { 0.05 }
-sub SYMBOL_CAT_ORDER () { 250 }
-sub NUMBER_OF_SEQ_CAT () { 4 }
-sub POSITIVE_CAT () { NUMBER_OF_SEQ_CAT - 1 }
-sub PROBABLE_CAT () { NUMBER_OF_SEQ_CAT - 2 }
-sub NEUTRAL_CAT () { NUMBER_OF_SEQ_CAT - 3 }
+sub POSITIVE_CAT () { 3 }
+sub PROBABLE_CAT () { 2 }
+sub NEUTRAL_CAT () { 1 }
 sub NEGATIVE_CAT () { 0 }
+sub SYM_CAT () { 4 }
+sub CPY_CAT () { 5 }
 
 sub ILL () { 255 }
 sub CTR () { 254 }
 sub SYM () { 253 }
 sub RET () { 252 }
 sub NUM () { 251 }
+sub CPY () { 250 }
+sub SYMBOL_CAT_ORDER () { 249 }
 
 sub new ($$;$$) {
   my $self = bless {}, $_[0];
@@ -503,12 +522,14 @@ sub reset ($) {
   my $self = $_[0];
   $self->{state} = 'detecting';
   $self->{last_order} = 255;
-  $self->{seq_counters}->[$_] = 0 for 0..(NUMBER_OF_SEQ_CAT - 1);
+  $self->{seq_counters} = [0, 0, 0, 0, 0, 0];
   $self->{total_seqs} = 0;
   $self->{total_char} = 0;
   $self->{ctrl_char} = 0;
   $self->{out_char} = 0;
   $self->{freq_char} = 0;
+  $self->{enough_threshold} = SB_ENOUGH_REL_THRESHOLD;
+  $self->{symbol_state} = 0;
 } # reset
 
 sub handle_data ($$) {
@@ -540,6 +561,9 @@ sub handle_data ($$) {
                     ($order * $ss + $self->{last_order}), 1
           ];
         }
+        if ($self->{symbol_state} == 1) {
+          $self->{seq_counters}->[CPY_CAT]++;
+        }
       } elsif ($self->{last_order} < SYMBOL_CAT_ORDER) {
         $self->{seq_counters}->[NEGATIVE_CAT]++;
         $self->{total_seqs}++;
@@ -550,18 +574,34 @@ sub handle_data ($$) {
         $self->{seq_counters}->[NEGATIVE_CAT]++;
         $self->{total_seqs}++;
       }
+    } elsif ($order == SYM) {
+      $self->{seq_counters}->[SYM_CAT]++;
+      if ($self->{symbol_state} == 1) {
+        $self->{seq_counters}->[CPY_CAT]++;
+      }
+    } elsif ($order == CPY) {
+      if ($self->{last_order} == SYM or $self->{last_order} == 255) {
+        $self->{seq_counters}->[SYM_CAT]++;
+        $self->{symbol_state} = 1;
+
+        $self->{last_order} = $order;
+        next;
+      }
     }
     $self->{last_order} = $order;
+    $self->{symbol_state} = 0;
   } # $i
 
+  ## Seems less useful
   if ($self->{state} eq 'detecting') {
-    if ($self->{total_seqs} > SB_ENOUGH_REL_THRESHOLD) {
+    if ($self->{total_seqs} > $self->{enough_threshold}) {
       my $cf = $self->get_confidence;
       if ($cf > POSITIVE_SHORTCUT_THRESHOLD) {
         $self->{state} = 'found it';
       } elsif ($cf < NEGATIVE_SHORTCUT_THRESHOLD) {
         $self->{state} = 'not me';
       }
+      $self->{enough_threshold} += SB_ENOUGH_REL_THRESHOLD/2;
     }
   }
 
@@ -578,22 +618,53 @@ sub get_confidence ($) {
     }
     return 0.01;
   } else {
+    my $r = 0.01;
     if ($self->{total_seqs} > 0) {
       my $positive_seqs = $self->{seq_counters}->[POSITIVE_CAT];
       my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
       my $neutral_seqs = $self->{seq_counters}->[NEUTRAL_CAT];
       my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
 
-      my $r = ($positive_seqs + $probable_seqs/4)
+      $r = ($positive_seqs + $probable_seqs/4)
           / (($self->{total_seqs} - $neutral_seqs) || 1)
           / $self->{model}->{typical_positive_ratio};
       $r = $r * ($self->{total_char} - $self->{out_char} - $self->{ctrl_char}) / $self->{total_char};
       $r = $r * $self->{freq_char} / $self->{total_char};
       $r = 0.99 if $r >= 1.00;
-      $r *= 0.01 if $self->{model}->{debug_only};
-      return $r;
+
+      if (0) {
+        my $sym_ratio = $self->{seq_counters}->[SYM_CAT] / $self->{total_char};
+        my $k = 40;
+        my $len_factor = 1 - exp(- $self->{total_char} / $k);
+
+        my $gamma = 0.52;
+        my $pen_short = (1 - $sym_ratio) ** $gamma;
+        $pen_short = 0.4 if $sym_ratio >= 0.999;
+
+        my $sym_penalty = 1 - (1 - $pen_short) * $len_factor;
+
+        $r *= $sym_penalty;
+      }
     }
-    return 0.01;
+
+    {
+      my $n = $self->{seq_counters}->[CPY_CAT];
+      if ($n) {
+        my $c = 0.1;
+        my $max_gain = 0.5;
+
+        my $gain = $c * log(1 + $n);
+        $gain = $max_gain if $gain > $max_gain;
+
+        $r = 0.3 if $r < 0.3;
+        $r *= 1 + $gain;
+        $r = 0.99 if $r > 0.99;
+      }
+    }
+      
+    $r *= 0.01 if $self->{model}->{debug_only};
+    
+    return $r;
   }
 } # get_confidence
 
@@ -615,18 +686,26 @@ sub dump_status ($) {
   my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
   my $neutral_seqs = $self->{seq_counters}->[NEUTRAL_CAT];
   my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
-  printf "  SBCS: %1.3f [%s] (%d %d %d %d)\n",
+  printf "  SBCS: %1.3f [%s] (%s, %d %d %d %d s=%d c=%d / %s)\n",
       $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
       $self->{model}->{debug_name} // $self->get_charset_name,
-      $positive_seqs, $probable_seqs, $neutral_seqs, $negative_seqs;
+      $self->{state},
+      $positive_seqs, $probable_seqs, $neutral_seqs, $negative_seqs,
+      $self->{seq_counters}->[SYM_CAT],
+      $self->{seq_counters}->[CPY_CAT],
+      $self->{total_char};
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->{model}->{debug_name} // $self->get_charset_name,
-          charset => $self->get_charset_name,
-          confidence => $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
-          seq_counters => $self->{seq_counters}};
+  return {
+    type => $self->{model}->{debug_name} // $self->get_charset_name,
+    charset => $self->get_charset_name,
+    state => $self->{state},
+    confidence => $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
+    seq_counters => $self->{seq_counters},
+    total_char => $self->{total_char},
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::Hebrew;
@@ -773,7 +852,7 @@ sub new ($$;%) {
   my $filter = shift;
   my %args = @_;
 
-  if ($args{set_resolve_latin1_refs}) {
+  if ($args{resolve_latin1_refs}) {
     $self->{probers} = [
       undef,
       undef,
@@ -843,6 +922,7 @@ sub reset ($) {
   $self->{best_guess} = -1;
   $self->{state} = 'detecting';
   $self->{keep_next} = 0;
+  delete $self->{has_high};
   delete $self->{resolve_latin1_refs};
 } # reset
 
@@ -854,7 +934,9 @@ sub get_charset_name ($) {
       $self->{best_guess} = 0;
     }
   }
-  return $self->{probers}->[$self->{best_guess}]->get_charset_name;
+  my $prober = $self->{probers}->[$self->{best_guess}];
+  return $prober->get_charset_name if defined $prober;
+  return undef;
 } # get_charset_name
 
 sub handle_data ($$) {
@@ -871,6 +953,7 @@ sub handle_data ($$) {
       $keep_next = 2;
     } elsif ($keep_next) {
       if (--$keep_next == 0) {
+        $self->{has_high} = 1;
         for my $i (0..$#{$self->{probers}}) {
           local $_ = $self->{probers}->[$i];
           next unless $_;
@@ -885,6 +968,7 @@ sub handle_data ($$) {
   } # $pos
 
   if ($keep_next) {
+    $self->{has_high} = 1;
     for my $i (0..$#{$self->{probers}}) {
       local $_ = $self->{probers}->[$i];
       next unless $_;
@@ -901,33 +985,52 @@ sub handle_data ($$) {
 
 sub get_confidence ($) {
   my $self = $_[0];
-  my $best_conf = 0.0;
-  if ($self->{state} eq 'found it') {
+  if (not $self->{has_high}) {
+    return 0.01;
+  } elsif ($self->{state} eq 'found it') {
     return 0.99;
   } elsif ($self->{state} eq 'not me') {
     return 0.01;
   } else {
+    my $best_conf = 0.0;
+    my $second_conf = 0.0;
+    my $second_i = -1;
     for my $i (0..$#{$self->{probers}}) {
       local $_ = $self->{probers}->[$i];
       next unless $_;
       my $cf = $_->get_confidence;
-      if ($best_conf < $cf) {
-        $best_conf = $cf;
-        $self->{best_guess} = $i;
+      if ($second_conf < $cf) {
+        if ($_->got_min_data) {
+          $best_conf = $second_conf = $cf;
+          $self->{best_guess} = $second_i = $i;
+        } else {
+          $second_conf = $cf;
+          $second_i = $i;
+        }
+      } elsif ($best_conf < $cf) { # < $second_cf
+        if ($_->got_min_data) {
+          $best_conf = $cf;
+          $self->{best_guess} = $i;
+        }
       }
-    }
+    } # $i
+    if ($best_conf == 0.0 and $second_conf) {
+      $self->{best_guess} = $second_i;
+      $best_conf = $second_conf * 0.6;
+    } 
+    return $best_conf;
   }
-  return $best_conf;
 } # get_confidence
 
 my @ProberName = qw(UTF8 SJIS EUCJP GB18030 EUCKR Big5 EUCTW Johab);
 sub dump_status ($) {
   my $self = $_[0];
   $self->get_confidence;
-  printf " MBCS [%s] %s [%s]\n",
+  printf " MBCS [%s] %s [%s] (%s)\n",
       $self->get_charset_name,
       $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
-      $self->get_confidence;
+      $self->get_confidence,
+      $self->{state};
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
     unless (defined $_) {
@@ -941,11 +1044,14 @@ sub dump_status ($) {
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
-          charset => $self->get_charset_name,
-          htmlrefs => !!$self->{resolve_latin1_refs},
-          confidence => $self->get_confidence,
-          probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}]};
+  return {
+    type => $self->get_charset_name,
+    charset => $self->get_charset_name,
+    state => $self->{state},
+    htmlrefs => !!$self->{resolve_latin1_refs},
+    confidence => $self->get_confidence,
+    probers => [map { $_->dump_status_for_json } grep { defined $_ } @{$self->{probers}}],
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::UTF8;
@@ -985,7 +1091,9 @@ sub handle_data ($$$;$) {
     }
   }
   if ($self->{state} eq 'detecting') {
-    if ($self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
+    if ($self->{coding_sm}->{error_count}) {
+      $self->{state} = 'not me';
+    } elsif ($self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
   }
@@ -996,8 +1104,10 @@ sub ONE_CHAR_PROB { 0.50 }
 
 sub get_confidence ($) {
   my $self = $_[0];
-  my $unlike = 0.99;
-  if ($self->{num_of_mb_char} < 6) {
+  if ($self->{state} eq 'not me') {
+    return 0.1;
+  } elsif ($self->{num_of_mb_char} < 6) {
+    my $unlike = 0.99;
     $unlike *= ONE_CHAR_PROB for 1..$self->{num_of_mb_char};
     return 1.0 - $unlike;
   } else {
@@ -1005,19 +1115,25 @@ sub get_confidence ($) {
   }
 } # get_confidence
 
+sub got_min_data ($) { $_[0]->{num_of_mb_char} > 6 }
+
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%s)\n",
+  printf "%s [%s] (%s, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
-      $self->{state};
+      $self->{state},
+      $self->{coding_sm}->_dump_status;
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
-          charset => $self->get_charset_name,
-          confidence => $self->get_confidence};
+  return {
+    type => $self->get_charset_name,
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    coding_sm => $self->{coding_sm}->dump_status_for_json,
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser;
@@ -1067,8 +1183,12 @@ sub handle_data ($$$;$) {
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
-    if ($self->{distribution_analyser}->got_enough_data and
-        $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
+    if ($self->{coding_sm}->{error_count}) {
+      if ($self->{coding_sm}->{error_count} > 10) {
+        $self->{state} = 'not me';
+      }
+    } elsif ($self->{distribution_analyser}->got_enough_data and
+             $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
   }
@@ -1076,22 +1196,40 @@ sub handle_data ($$$;$) {
 } # handle_data
 
 sub get_confidence ($) {
-  return $_[0]->{distribution_analyser}->get_confidence;
+  my $self = $_[0];
+  if ($self->{state} eq 'not me') {
+    return 0.01;
+  }
+  my $conf = $self->{distribution_analyser}->get_confidence;
+  if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
+    $conf = 0.5;
+  }
+  return $conf;
 } # get_confidence
+
+sub got_min_data ($) {
+  return $_[0]->{distribution_analyser}->got_min_data;
+} # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "MBCS: %s [%s] (%s)\n",
+  printf "%s [%s] (%s, %s, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
-      $self->{state};
+      $self->{state},
+      $self->{coding_sm}->_dump_status,
+      $self->{distribution_analyser}->_dump_status;
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
-          charset => $self->get_charset_name,
-          confidence => $self->get_confidence};
+  return {
+    type => $self->get_charset_name,
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::GB18030;
@@ -1122,8 +1260,7 @@ package Web::Encoding::UnivCharDet::CharsetProber::EUCKR;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
 our $VERSION = '1.0';
 
-sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::CP949SMModel }
-#sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCKRSMModel }
+sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCKRSMModel }
 sub _distrib_analyser ($) { 'Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCKR' }
 sub get_charset_name ($) { 'euc-kr' }
 
@@ -1183,8 +1320,12 @@ sub handle_data ($$$;$) {
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
-    if ($self->{context_analyser}->got_enough_data and
-        $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
+    if ($self->{coding_sm}->{error_count}) {
+      if ($self->{coding_sm}->{error_count} > 10) {
+        $self->{state} = 'not me';
+      }
+    } elsif ($self->{context_analyser}->got_enough_data and
+             $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
   }
@@ -1194,24 +1335,44 @@ sub handle_data ($$$;$) {
 
 sub get_confidence ($) {
   my $self = $_[0];
+  if ($self->{state} eq 'not me') {
+    return 0.01;
+  }
   my $contxt_cf = $self->{context_analyser}->get_confidence;
   my $distrib_cf = $self->{distribution_analyser}->get_confidence;
-  return $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
+  my $conf = $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
+  $conf = $distrib_cf * 0.6 if $contxt_cf == -1;
+  if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
+    $conf = 0.5;
+  }
+  return $conf;
 } # get_confidence
+
+sub got_min_data ($) {
+  return $_[0]->{distribution_analyser}->got_min_data;
+} # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%s)\n",
+  printf "%s [%s] (%s, %s, %s %s, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
-      $self->{state};
+      $self->{state},
+      $self->{coding_sm}->_dump_status,
+      $self->{distribution_analyser}->get_confidence,
+      $self->{distribution_analyser}->_dump_status,
+      $self->{context_analyser}->get_confidence;
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
-          charset => $self->get_charset_name,
-          confidence => $self->get_confidence};
+  return {
+    type => $self->get_charset_name,
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::SJIS;
@@ -1270,8 +1431,12 @@ sub handle_data ($$$;$) {
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
   
   if ($self->{state} eq 'detecting') {
-    if ($self->{context_analyser}->got_enough_data and
-        $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
+    if ($self->{coding_sm}->{error_count}) {
+      if ($self->{coding_sm}->{error_count} > 10) {
+        $self->{state} = 'not me';
+      }
+    } elsif ($self->{context_analyser}->got_enough_data and
+             $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
   }
@@ -1280,24 +1445,49 @@ sub handle_data ($$$;$) {
 
 sub get_confidence ($) {
   my $self = $_[0];
+  if ($self->{state} eq 'not me') {
+    return 0.01;
+  }
   my $contxt_cf = $self->{context_analyser}->get_confidence;
   my $distrib_cf = $self->{distribution_analyser}->get_confidence;
-  return $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
+  my $conf = $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
+  $conf = $distrib_cf * 0.6 if $contxt_cf == -1;
+  if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
+    $conf = 0.5;
+  }
+  if ($self->{coding_sm}->{latin1_count}) {
+    my $k = 1.6;
+    my $factor = 0.5 + 0.5 * exp(-$k * $self->{coding_sm}->{latin1_count});
+    $conf *= $factor;
+  }
+  return $conf;
 } # get_confidence
+
+sub got_min_data ($) {
+  return $_[0]->{distribution_analyser}->got_min_data;
+} # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%s)\n",
+  printf "%s [%s] (%s, %s, %s %s, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
-      $self->{state};
+      $self->{state},
+      $self->{coding_sm}->_dump_status,
+      $self->{distribution_analyser}->get_confidence,
+      $self->{distribution_analyser}->_dump_status,
+      $self->{context_analyser}->get_confidence;
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => $self->get_charset_name,
-          charset => $self->get_charset_name,
-          confidence => $self->get_confidence};
+  return {
+    type => $self->get_charset_name,
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::ESC;
@@ -1398,7 +1588,8 @@ sub reset ($) {
                          $Web::Encoding::UnivCharDet::Defs::VietStateInitial,
                          $Web::Encoding::UnivCharDet::Defs::VietStateInitial];
   $self->{nonascii} = [0, 0, 0, 0];
-  $self->{words} = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]];
+  $self->{any_nonascii} = [0, 0, 0, 0];
+  $self->{words} = [[0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]];
   $self->{notme} = [0, 0, 0, 0];
   $self->{probers} = [  
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
@@ -1441,33 +1632,35 @@ sub handle_data ($$) {
           #
         } else {
           $self->{nonascii}->[$charset]++;
+          $self->{any_nonascii}->[$charset]++;
         }
 
         if (Web::Encoding::UnivCharDet::Defs::IS_VIET_WORD_START ($os, $ns)) {
           $self->{nonascii}->[$charset] = 0;
           $self->{current}->[$charset] = pack 'C', $cc;
+        } elsif (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD ($ns)) {
+          $self->{current}->[$charset] .= pack 'C', $cc;
         }
-      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD_END ($os, $ns)) {
-        if ($self->{nonascii}->[$charset]) {
-          $self->{words}->[$charset]->[1]++;
-        } else {
-          $self->{words}->[$charset]->[0]++;
+        if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD_END ($os, $ns)) {
+          if ($self->{nonascii}->[$charset]) {
+            $self->{words}->[$charset]->[1]++;
+            $self->{words}->[$charset]->[4]++ if 1 == length $self->{current}->[$charset];
+          } else {
+            $self->{words}->[$charset]->[0]++;
+          }
+          $self->{probers}->[$charset]->handle_data ($self->{current}->[$charset]);
         }
-        $self->{probers}->[$charset]->handle_data ($self->{current}->[$charset]);
-      }
-      if (Web::Encoding::UnivCharDet::Defs::IS_VIET_FWORD_END ($os, $ns)) {
-        if ($self->{nonascii}->[$charset]) {
-          $self->{words}->[$charset]->[3]++;
-        } else {
-          $self->{words}->[$charset]->[2]++;
+        if (Web::Encoding::UnivCharDet::Defs::IS_VIET_FWORD_END ($os, $ns)) {
+          if ($self->{nonascii}->[$charset]) {
+            $self->{words}->[$charset]->[3]++;
+          } else {
+            $self->{words}->[$charset]->[2]++;
+          }
+          $self->{probers}->[$charset]->handle_data ($self->{current}->[$charset]);
         }
-      }
         if (Web::Encoding::UnivCharDet::Defs::IS_VIET_NOTME ($os, $ns)) {
           $self->{notme}->[$charset] = 1;
           next TBL;
-        }
-        if (Web::Encoding::UnivCharDet::Defs::IS_VIET_VWORD ($ns)) {
-          $self->{current}->[$charset] .= pack 'C', $cc;
         }
 
         if ($self->{resolve_latin1_refs}) {
@@ -1502,7 +1695,7 @@ sub handle_data ($$) {
     } # TBL
   }
 
-  my $selected = [grep { $self->{notme}->[$_] == 0 } 0..$#{$self->{notme}}];
+  my $selected = [grep { $self->{notme}->[$_] == 0 and $self->{any_nonascii}->[$_] } 0..$#{$self->{notme}}];
   if (@$selected == 0) {
     $self->{state} = 'not me';
   } elsif (@$selected == 1) {
@@ -1535,11 +1728,11 @@ sub get_confidence ($;$) {
 
     my ($A1, $A2, $A3, $A4) = @{$self->{words}->[$charset]};
     if ($A2 == 0 and $A4 == 0) { # ASCII only
-      if ($A1 > 0) {
+      if ($A1 > 0 and not $self->{resolve_latin1_refs}) {
         my $conf = $self->{probers}->[$charset]->get_confidence;
         if ($conf > 0.9) {
           ## Words are ASCII-only but there are non-ASCII punctuations
-          push @answer, [$charset, 0.6, $A4];
+          push @answer, [$charset, $A1>$A3*2 ? 0.5 : 0.3, $A4];
         }
       }
       next;
@@ -1551,10 +1744,27 @@ sub get_confidence ($;$) {
     my $score;
     {
       if ($T < 10) {
-        if ($A2 >= 1) {
+        if ($A4 > 0) {
+          $score = 0.1;
+        } elsif ($A2 >= 1) {
           $score = 0.95;
         } elsif ($A1 >= 3) {
           $score = 0.8;
+        } else {
+          $score = 0.5;
+        }
+      
+        my $sc = $self->{probers}->[$charset]->{seq_counters};
+        my $negative = $sc->[Web::Encoding::UnivCharDet::CharsetProber::SBCS::NEGATIVE_CAT];
+        if ($negative) {
+          $score *= 0.3;
+        }
+        
+        last;
+      }
+      if ($A1 + $A2 > 10 and ($A1 == 0 or $A2 == 0)) {
+        if ($A4 > 0) {
+          $score = 0.1;
         } else {
           $score = 0.5;
         }
@@ -1578,10 +1788,27 @@ sub get_confidence ($;$) {
       #                * $length_factor
       #                * (1 - 0.5 * $a2_factor);
       #$raw -= 0.6 * $foreign_penalty;
-      
-      $score = 1 / (1 + exp(-5 * ($raw - 0.1)));
+
+      $score = 1 / (1 + exp(-5 * ($raw - 0.1)));      
       $score = 0 if $score < 0;
       $score = 1 if $score > 1;
+
+      if ($A2 > 0) {
+        my $r_thr = 0.25;
+        my $alpha = 1.0;
+        my $N_min = 12;
+        my $r_center = 0.30;
+        my $scale = 0.08;
+        my $k = 6;
+
+        my $r1 = $self->{words}->[$charset]->[4] / $A2;
+        my $x = ($r1 - $r_center) / $scale;
+        my $penalty = 1/(1+exp(-(-$k * $x)));
+        my $w = $A2 / $N_min;
+        $w = 1 if $w > 1;
+        my $m_final = 1 - $w*(1-$penalty);
+        $score *= $m_final;
+      }
 
       last;
     }
@@ -1620,7 +1847,7 @@ sub dump_status ($) {
       $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
       $self->{state};
   for my $charset (0..3) {
-    printf "  %s [%s] (%d %d %d %d / %d)\n",
+    printf "  %s [%s] (%d %d %d %d %d / %d)\n",
         $self->get_confidence ($charset),
         ['viscii', 'x-viet-vni', 'x-viet-vps', 'x-viet-tcvn']->[$charset],
         @{$self->{words}->[$charset]},

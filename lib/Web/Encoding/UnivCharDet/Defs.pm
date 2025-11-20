@@ -27,6 +27,84 @@ sub eStart () { 0 }
 sub eError () { 1 }
 sub eItsMe () { 2 }
 
+sub ILL () { 255 }
+sub CTR () { 254 }
+sub SYM () { 253 }
+sub RET () { 252 }
+sub NUM () { 251 }
+sub CPY () { 250 }
+
+# ------
+
+my $Windows_1252IcelandicFaroese_CharToOrderMap = pack 'C*',
+  CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR,
+  CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,
+  SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,
+  NUM,NUM,NUM,NUM,NUM,NUM,NUM,NUM,NUM,NUM,SYM,SYM,SYM,SYM,SYM,SYM,
+  SYM,  0, 21, 30, 15,  5, 14, 10, 18,  3, 20, 11,  8,  9,  2, 13, 
+   24, 36,  1,  4,  6,  7, 16, 33, 34, 23, 35,SYM,SYM,SYM,SYM,SYM, 
+  SYM,  0, 21, 30, 15,  5, 14, 10, 18,  3, 20, 11,  8,  9,  2, 13, 
+   24, 36,  1,  4,  6,  7, 16, 33, 34, 23, 35,SYM,SYM,SYM,SYM,CTR, 
+  SYM,ILL,SYM, 59,SYM,SYM,SYM,SYM,SYM,SYM, 40,SYM, 50,ILL, 44,ILL, 
+  ILL,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, 40,SYM, 50,ILL, 44, 60, 
+  SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,CPY,SYM,SYM,SYM,SYM,SYM,SYM, 
+  SYM,SYM,SYM,SYM,SYM, 61,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM, 
+   46, 19, 53, 49, 39, 37, 25, 42, 47, 32, 41, 45, 56, 17, 54, 55, 
+   12, 51, 48, 22, 52, 43, 28,SYM, 29, 62, 27, 57, 38, 31, 26, 58, 
+   46, 19, 53, 49, 39, 37, 25, 42, 47, 32, 41, 45, 56, 17, 54, 55, 
+   12, 51, 48, 22, 52, 43, 28,SYM, 29, 63, 27, 57, 38, 31, 26, 64, 
+;
+my $IcelandicFaroeseLangModel = pack 'C*',
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,2,3,3,2,3,2,2,2,3,0,1,3,3,3,2,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,1,2,2,
+  3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,2,3,2,3,3,3,3,3,2,2,1,3,1,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,2,3,3,2,3,1,2,0,1,1,3,0,1,2,3,3,2,
+  3,3,3,3,3,3,3,3,3,3,3,3,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,0,2,1,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,3,2,2,3,2,3,3,1,2,1,0,0,3,0,0,3,3,3,2,
+  3,3,3,3,3,3,3,3,3,3,3,3,0,3,3,2,3,3,3,3,3,3,3,3,2,3,1,3,3,3,2,3,3,2,0,3,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,3,1,3,2,2,3,1,2,3,1,2,2,1,1,3,0,1,1,2,2,1,
+  3,3,3,3,3,3,3,3,3,3,3,3,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,3,3,1,1,2,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,1,1,2,1,1,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,2,3,3,2,1,1,1,2,1,1,1,
+  3,3,3,3,3,3,3,3,3,3,2,3,0,3,3,2,3,3,3,3,3,2,3,3,1,3,0,3,3,2,1,3,1,1,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,0,2,3,2,3,1,3,1,3,3,1,1,1,0,2,1,2,2,0,0,0,0,0,0,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,3,1,2,3,0,3,3,1,0,0,0,0,3,0,0,3,2,2,1,
+  3,3,3,3,3,3,3,3,3,3,3,2,3,3,3,2,2,3,2,3,3,2,3,3,1,3,1,2,3,3,2,2,3,0,1,1,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,0,3,3,3,3,3,3,3,3,3,3,3,2,3,2,2,3,3,2,3,1,3,0,1,1,
+  3,3,3,3,3,3,3,3,3,2,2,2,3,3,2,3,1,3,1,3,3,2,3,1,1,3,0,0,3,3,0,0,3,0,0,0,0,
+  3,3,3,1,3,3,3,3,3,3,3,3,3,2,3,3,3,0,2,1,2,3,2,1,2,0,3,0,1,1,1,0,0,0,1,1,0,
+  3,3,3,3,2,3,3,3,3,3,1,2,0,3,2,1,3,2,1,3,3,2,3,3,0,3,0,3,3,3,1,2,3,2,0,0,0,
+  3,3,3,3,3,2,3,2,3,3,3,3,3,2,3,3,3,1,3,0,1,3,0,1,3,2,1,1,1,0,1,0,0,0,0,0,0,
+  3,1,1,3,1,3,1,3,1,1,1,2,0,3,0,1,1,2,1,3,0,1,3,1,1,1,0,3,3,3,1,1,1,0,0,1,0,
+  3,3,3,3,3,3,1,3,3,1,1,1,0,3,1,2,1,3,2,3,3,3,3,3,1,3,0,3,3,3,2,3,1,1,0,0,1,
+  3,3,3,2,3,2,3,3,3,3,3,3,3,1,3,3,3,1,3,2,2,3,0,1,3,0,1,0,0,1,1,0,0,0,1,1,0,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1,2,0,3,3,0,1,3,0,1,0,1,1,2,1,0,1,1,1,1,
+  3,3,3,3,3,3,3,3,3,3,2,2,0,3,2,2,1,3,3,3,2,2,3,3,3,3,1,2,2,2,1,1,2,0,1,1,0,
+  1,3,3,2,3,0,3,1,3,3,3,3,3,1,3,3,3,0,1,0,2,1,0,0,3,0,0,0,1,0,0,0,0,0,0,0,0,
+  3,3,0,3,0,3,0,3,0,0,1,0,0,3,1,0,3,2,0,3,3,0,3,3,0,3,0,3,1,0,0,3,2,0,0,0,0,
+  3,3,3,3,3,2,3,2,3,3,3,3,3,2,2,2,3,2,2,1,1,3,1,0,3,0,1,0,0,0,1,0,0,0,2,1,0,
+  1,3,3,1,2,1,3,1,3,3,3,3,3,0,3,2,1,0,1,0,0,1,0,1,2,0,0,0,0,0,1,0,0,0,2,1,0,
+  0,3,3,2,2,2,3,2,3,3,3,3,3,0,0,3,3,0,1,0,2,2,0,1,2,0,0,0,0,0,0,0,0,0,0,0,0,
+  3,3,1,3,2,3,3,3,3,2,1,3,0,3,1,2,1,2,3,0,1,1,0,2,1,1,0,0,0,0,3,0,1,1,1,2,2,
+  2,3,3,3,3,1,3,3,3,3,3,2,3,0,2,3,1,0,1,0,3,1,2,1,2,0,1,1,1,0,0,0,0,0,0,1,0,
+  2,3,2,2,3,1,3,2,3,1,2,3,3,1,2,1,2,0,1,0,0,2,0,0,1,0,0,0,0,0,1,0,0,0,0,1,1,
+  3,2,2,3,2,3,2,1,2,0,0,1,0,3,1,1,0,1,2,0,0,1,0,2,1,1,0,0,0,0,1,0,0,2,0,0,0,
+  3,1,2,3,1,2,3,2,2,1,0,0,0,2,2,1,2,2,1,1,1,1,1,1,2,0,0,1,1,0,2,0,0,1,2,0,0,
+  3,1,1,3,2,3,1,2,1,1,1,1,0,2,1,1,1,1,3,1,1,1,0,1,1,0,0,0,0,0,1,0,0,1,0,2,0,
+  2,1,0,2,1,1,0,3,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+;
+
+our $Windows_1252IcelandicFaroeseModel = {
+  char_to_order_map => $Windows_1252IcelandicFaroese_CharToOrderMap,
+  precedence_matrix => $IcelandicFaroeseLangModel,
+  freq_char_count => 37,
+  typical_positive_ratio => 0.9990070752977356,
+  keep_english_letter => 1,
+  charset_name => "windows-1252",
+  debug_name => "Windows_1252IcelandicFaroeseModel",
+};
+
+
 # ------
 
 my $KOI8R_CharToOrderMap = pack 'C*', 
@@ -1270,12 +1348,12 @@ PCK4BITS(3,3,3,3,3,3,3,0)   # f8 - ff
 ];
 
 my $BIG5_st = [
-PCK4BITS(eError,eStart,eStart,     3,eError,eError,eError,eError),#00-07 
-PCK4BITS(eError,eError,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eError),#08-0f 
-PCK4BITS(eError,eStart,eStart,eStart,eStart,eStart,eStart,eStart) #10-17 
+PCK4BITS(eError,eStart,eStart,     3,     3, eError,eStart,eStart),#00-07 
+PCK4BITS(     3,     3, eItsMe,eItsMe,eItsMe,eItsMe,eItsMe, eError),#08-0f 
+PCK4BITS(eError,eStart,eStart,eError, eStart,eStart,eStart,eStart) #10-17 
 ];
 
-my $Big5CharLenTable = [0, 1, 1, 2, 0];
+my $Big5CharLenTable = [0, 1, 1, 2, 2];
 
 sub Big5SMModel () { +{
   class_table => {
@@ -1333,11 +1411,11 @@ PCK4BITS(0,0,0,0,0,0,0,5)   # f8 - ff
 ];
 
 my $EUCJP_st = [
-PCK4BITS(     3,     4,     3,     5,eStart,eError,eError,eError),#00-07 
-PCK4BITS(eError,eError,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
-PCK4BITS(eItsMe,eItsMe,eStart,eError,eStart,eError,eError,eError),#10-17 
-PCK4BITS(eError,eError,eStart,eError,eError,eError,     3,eError),#18-1f 
-PCK4BITS(     3,eError,eError,eError,eStart,eStart,eStart,eStart) #20-27 
+PCK4BITS(     3,     4,     3,     5,eStart,eError,      3,     4),#00-07 
+PCK4BITS(     3,     5,eStart,eError, eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
+PCK4BITS(eItsMe,eItsMe, eStart,eError,eStart,eError,eError,eError),#10-17 
+PCK4BITS(eError,eError,eStart,eError,eError,eError,      3,eError),#18-1f 
+PCK4BITS(     3,eError,eError,eError, eStart,eStart,eStart,eStart) #20-27 
 ];
 
 my $EUCJPCharLenTable = [2, 2, 2, 3, 1, 0];
@@ -1371,23 +1449,23 @@ PCK4BITS(1,1,1,1,1,1,1,1),  # 20 - 27
 PCK4BITS(1,1,1,1,1,1,1,1),  # 28 - 2f 
 PCK4BITS(1,1,1,1,1,1,1,1),  # 30 - 37 
 PCK4BITS(1,1,1,1,1,1,1,1),  # 38 - 3f 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 40 - 47 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 48 - 4f 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 50 - 57 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 58 - 5f 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 60 - 67 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 68 - 6f 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 70 - 77 
-PCK4BITS(1,1,1,1,1,1,1,1),  # 78 - 7f 
-PCK4BITS(0,0,0,0,0,0,0,0),  # 80 - 87 
-PCK4BITS(0,0,0,0,0,0,0,0),  # 88 - 8f 
-PCK4BITS(0,0,0,0,0,0,0,0),  # 90 - 97 
-PCK4BITS(0,0,0,0,0,0,0,0),  # 98 - 9f 
-PCK4BITS(0,2,2,2,2,2,2,2),  # a0 - a7 
-PCK4BITS(2,2,2,2,2,3,3,3),  # a8 - af 
-PCK4BITS(2,2,2,2,2,2,2,2),  # b0 - b7 
-PCK4BITS(2,2,2,2,2,2,2,2),  # b8 - bf 
-PCK4BITS(2,2,2,2,2,2,2,2),  # c0 - c7 
+PCK4BITS(1,5,5,5,5,5,5,5),  # 40 - 47 
+PCK4BITS(5,5,5,5,5,5,5,5),  # 48 - 4f 
+PCK4BITS(5,5,5,5,5,5,5,5),  # 50 - 57 
+PCK4BITS(5,5,5,1,1,1,1,1),  # 58 - 5f 
+PCK4BITS(1,5,5,5,5,5,5,5),  # 60 - 67 
+PCK4BITS(5,5,5,5,5,5,5,5),  # 68 - 6f 
+PCK4BITS(5,5,5,5,5,5,5,5),  # 70 - 77 
+PCK4BITS(5,5,5,1,1,1,1,1),  # 78 - 7f 
+PCK4BITS(0,4,4,4,4,4,4,4),  # 80 - 87 
+PCK4BITS(4,4,4,4,4,4,4,4),  # 88 - 8f 
+PCK4BITS(4,4,4,4,4,4,4,4),  # 90 - 97 
+PCK4BITS(4,4,4,4,4,4,4,4),  # 98 - 9f 
+PCK4BITS(4,6,6,6,6,6,6,6),  # a0 - a7 
+PCK4BITS(6,6,6,6,6,3,3,3),  # a8 - af 
+PCK4BITS(6,6,6,6,6,6,6,6),  # b0 - b7 
+PCK4BITS(6,6,6,6,6,6,6,6),  # b8 - bf 
+PCK4BITS(6,6,6,6,6,6,6,2),  # c0 - c7 
 PCK4BITS(2,3,2,2,2,2,2,2),  # c8 - cf 
 PCK4BITS(2,2,2,2,2,2,2,2),  # d0 - d7 
 PCK4BITS(2,2,2,2,2,2,2,2),  # d8 - df 
@@ -1398,11 +1476,14 @@ PCK4BITS(2,2,2,2,2,2,2,0)   # f8 - ff
 ];
 
 my $EUCKR_st = [
-PCK4BITS(eError,eStart,     3,eError,eError,eError,eError,eError),#00-07 
-PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eError,eError,eStart,eStart) #08-0f 
+PCK4BITS(eError,eStart,     3,     4,     3,eStart,     3, eError),
+PCK4BITS(eStart,     3,     4,     3,eStart,     3, eItsMe,eItsMe),
+PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe, eError,eError,eStart),
+PCK4BITS(eStart,eStart,eStart,eStart, eError,eError,eError,eError),
+PCK4BITS(eStart,eStart,eError, eError,eError,eError,eError,eError),
 ];
 
-my $EUCKRCharLenTable = [0, 1, 2, 0];
+my $EUCKRCharLenTable = [0, 1, 2, 0, 2, 1, 2];
 
 sub EUCKRSMModel () { +{
   class_table => {
@@ -1412,7 +1493,7 @@ sub EUCKRSMModel () { +{
     unitmsk => eUnitMsk4bits,
     data => $EUCKR_cls,
   },
-  class_factor => 4,
+  class_factor => 7,
   state_table => {
     idxsft => eIdxSft4bits,
     sftmsk => eSftMsk4bits,
@@ -1461,7 +1542,7 @@ PCK4BITS(3,3,3,3,3,3,3,0)   # f8 - ff
 
 my $EUCTW_st = [
 PCK4BITS(eError,eError,eStart,     3,     3,     3,     4,eError),#00-07 
-PCK4BITS(eError,eError,eError,eError,eError,eError,eItsMe,eItsMe),#08-0f 
+PCK4BITS(eError,eStart,     3,     3,     3,     4,eItsMe,eItsMe),#08-0f 
 PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eError,eStart,eError),#10-17 
 PCK4BITS(eStart,eStart,eStart,eError,eError,eError,eError,eError),#18-1f 
 PCK4BITS(     5,eError,eError,eError,eStart,eError,eStart,eStart),#20-27 
@@ -1526,12 +1607,12 @@ PCK4BITS(6,6,6,6,6,6,6,0)   # f8 - ff
 ];
 
 my $GB18030_st = [
-PCK4BITS(eError,eStart,eStart,eStart,eStart,eStart,     3,eError),#00-07 
-PCK4BITS(eError,eError,eError,eError,eError,eError,eItsMe,eItsMe),#08-0f 
-PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eError,eError,eStart),#10-17 
-PCK4BITS(     4,eError,eStart,eStart,eError,eError,eError,eError),#18-1f 
-PCK4BITS(eError,eError,     5,eError,eError,eError,eItsMe,eError),#20-27 
-PCK4BITS(eError,eError,eStart,eStart,eStart,eStart,eStart,eStart) #28-2f 
+PCK4BITS(eError,eStart,eStart,eStart,eStart,eStart,     3, eError),#00-07 
+PCK4BITS(eStart,eStart,eStart,eStart,eStart,eStart, eItsMe,eItsMe),#08-0f 
+PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe, eError,eError,eStart),#10-17 
+PCK4BITS(     4,eError,eStart,eStart, eError,eError,eError,eError),#18-1f 
+PCK4BITS(eError,eError,     5, eError,eError,eError,eStart,eError),#20-27 
+PCK4BITS(eError,eError, eStart,eStart,eStart,eStart,eStart,eStart) #28-2f 
 ];
 
 my $GB18030CharLenTable = [0, 1, 1, 1, 1, 1, 2];
@@ -1592,8 +1673,8 @@ PCK4BITS(4,4,4,4,4,0,0,0)   # f8 - ff
 ];
 
 my $SJIS_st = [
-PCK4BITS(eError,eStart,eStart,     3,eError,eError,eError,eError),#00-07 
-PCK4BITS(eError,eError,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
+PCK4BITS(eError,eStart,eStart,     3,eError,eError,eError,eStart),#00-07 
+PCK4BITS(eStart,     3,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
 PCK4BITS(eItsMe,eItsMe,eError,eError,eStart,eStart,eStart,eStart) #10-17 
 ];
 
@@ -1734,8 +1815,8 @@ PCK4BITS(1,1,1,1,1,1,1,1)   # f8 - ff
 ];
 
 my $HZ_st = [
-PCK4BITS(eStart,eError,     3,eStart,eStart,eStart,eError,eError),#00-07 
-PCK4BITS(eError,eError,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
+PCK4BITS(eStart,eError,     3,eStart,eStart,eStart,eStart,eError),#00-07 
+PCK4BITS(     3,eStart,eStart,eStart,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
 PCK4BITS(eItsMe,eItsMe,eError,eError,eStart,eStart,     4,eError),#10-17 
 PCK4BITS(     5,eError,     6,eError,     5,     5,     4,eError),#18-1f 
 PCK4BITS(     4,eError,     4,     4,     4,eError,     4,eError),#20-27 
@@ -1801,8 +1882,8 @@ PCK4BITS(2,2,2,2,2,2,2,2)   # f8 - ff
 
 my $ISO2022CN_st = [
 PCK4BITS(eStart,     3,eError,eStart,eStart,eStart,eStart,eStart),#00-07 
-PCK4BITS(eStart,eError,eError,eError,eError,eError,eError,eError),#08-0f 
-PCK4BITS(eError,eError,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe),#10-17 
+PCK4BITS(eStart,eStart,     3,eError,eStart,eStart,eStart,eStart),#08-0f 
+PCK4BITS(eStart,eStart,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe),#10-17 
 PCK4BITS(eItsMe,eItsMe,eItsMe,eError,eError,eError,     4,eError),#18-1f 
 PCK4BITS(eError,eError,eError,eItsMe,eError,eError,eError,eError),#20-27 
 PCK4BITS(     5,     6,eError,eError,eError,eError,eError,eError),#28-2f 
@@ -1869,8 +1950,8 @@ PCK4BITS(2,2,2,2,2,2,2,2)   # f8 - ff
 
 my $ISO2022JP_st = [
 PCK4BITS(eStart,     3,eError,eStart,eStart,eStart,eStart,eStart),#00-07 
-PCK4BITS(eStart,eStart,eError,eError,eError,eError,eError,eError),#08-0f 
-PCK4BITS(eError,eError,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#10-17 
+PCK4BITS(eStart,eStart,eStart,     3,eError,eStart,eStart,eStart),#08-0f 
+PCK4BITS(eStart,eStart,eStart,eStart,eItsMe,eItsMe,eItsMe,eItsMe),#10-17 
 PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eError,eError),#18-1f 
 PCK4BITS(eError,     5,eError,eError,eError,     4,eError,eError),#20-27 
 PCK4BITS(eError,eError,eError,     6,eItsMe,eError,eItsMe,eError),#28-2f 
@@ -1937,8 +2018,8 @@ PCK4BITS(2,2,2,2,2,2,2,2)   # f8 - ff
 ];
 
 my $ISO2022KR_st = [
-PCK4BITS(eStart,     3,eError,eStart,eStart,eStart,eError,eError),#00-07 
-PCK4BITS(eError,eError,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
+PCK4BITS(eStart,     3,eError,eStart,eStart,eStart,eStart,     3),#00-07 
+PCK4BITS(eError,eStart,eStart,eStart,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
 PCK4BITS(eItsMe,eItsMe,eError,eError,eError,     4,eError,eError),#10-17 
 PCK4BITS(eError,eError,eError,eError,     5,eError,eError,eError),#18-1f 
 PCK4BITS(eError,eError,eError,eItsMe,eStart,eStart,eStart,eStart) #20-27 
@@ -3441,7 +3522,7 @@ our $VietStateTable = pack 'C*',
   # $c0 $c1 $c2 $d0 $d1 $d2 $e0 $e1 $f0 dlm ill$QT$AP$LT$GT$AM$SC$NM$SL$QR
   
   #0 initial
-             3,  1,  2,  3,  4, 12, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
+             3,  1,  2,  3,  4, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
   #1 VC0
              3, 13,  2,  3,  4, 13, 13,  0, 14, 0, 0,18, 0,15, 0,13, 0, 0,
   #2 VC1
@@ -3489,7 +3570,7 @@ our $VietStateTable = pack 'C*',
 ;
 sub IS_VIET_WORD_START ($$) { (
   not (
-    (1 <= $_[0] and $_[0] <= 4) or $_[0] == 13
+    (1 <= $_[0] and $_[0] <= 13)
   )
   and 
   (

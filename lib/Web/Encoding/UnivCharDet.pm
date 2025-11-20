@@ -296,6 +296,10 @@ sub handle_data ($$) {
           $self->{done} = 1;
           $self->{detected_charset} = 'windows-1252';
           $self->{font_charset} = $_->get_charset_name; # non-undef when found
+          if (defined $self->{font_charset} and
+              $self->{font_charset} eq 'windows-1252') {
+            delete $self->{font_charset};
+          }
           return 1;
         }
       }

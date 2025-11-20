@@ -24,7 +24,7 @@ sub new ($) {
   return $self;
 } # new
 
-sub reset {
+sub reset ($) {
   my $self = $_[0];
   $self->{state} = 'detecting';
   $self->{position} = 0;
