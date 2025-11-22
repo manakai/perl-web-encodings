@@ -65,7 +65,9 @@ sub handle_data ($$$;$) {
 
   if ($self->{state} eq 'detecting') {
     if ($self->{coding_sm}->{error_count}) {
-      #
+      if ($self->{coding_sm}->{error_count} > 10) {
+        $self->{state} = 'not me';
+      }
     } elsif ($self->{distribution_analyser}->got_enough_data and
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
@@ -77,6 +79,9 @@ sub handle_data ($$$;$) {
 
 sub get_confidence ($) {
   my $self = $_[0];
+  if ($self->{state} eq 'not me') {
+    return 0.01;
+  }
   my $conf = $self->{distribution_analyser}->get_confidence;
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
     $conf = 0.5;

@@ -35,7 +35,7 @@ my $Latin1Type = [
   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 1, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 6, 5, 5, 2, 5, 5, 5, 5, 5, 5,
+  0, 7, 0, 7, 7, 0, 6, 5, 5, 2, 5, 5, 5, 5, 5, 5,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5,
@@ -62,6 +62,9 @@ sub next_state ($$) {
   $self->{current_byte_pos}++;
   if ($self->{latin1_state} == 1 and $Latin1Type->[$cc] == 2) {
     $self->{latin1_state} = 2;
+  } elsif ($self->{latin1_state} == 1 and $Latin1Type->[$cc] == 7) {
+    $self->{latin1_count}++;
+    $self->{latin1_state} = 0;
   } elsif ($self->{latin1_state} == 2 and
            ($Latin1Type->[$cc] == 1 or
             $Latin1Type->[$cc] == 3 or

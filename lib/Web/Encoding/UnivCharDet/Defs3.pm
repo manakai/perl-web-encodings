@@ -86,8 +86,8 @@ my $Iso_8859_15French_CharToOrderMap = pack 'C*',
    12, 20,  6,  1,  5,  8, 15, 30, 21, 24, 28,SYM,SYM,SYM,SYM,SYM, # 5X */
   SYM,  2, 18, 11, 10,  0, 17, 16, 19,  3, 25, 27,  7, 13,  4,  9, # 6X */
    12, 20,  6,  1,  5,  8, 15, 30, 21, 24, 28,SYM,SYM,SYM,SYM,CTR, # 7X */
-  CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 8X */
-  CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR, # 9X */
+  ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,
+  ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,ILL,
   SYM,SYM,SYM,SYM,SYM,SYM, 47,SYM, 47,CPY,SYM,SYM,SYM,SYM,SYM,SYM, # AX */
   SYM,SYM,SYM,SYM, 53, 52,SYM,SYM, 53,SYM,SYM,SYM, 34, 34, 57,SYM, # BX */
    23, 41, 33, 51, 43, 48, 45, 29, 22, 14, 26, 40, 56, 42, 32, 36, # CX */
@@ -879,7 +879,7 @@ our $Mac_CentraleuropeCroatianModel = {
   typical_positive_ratio => 0.9990103879809265,
   keep_english_letter => 1,
   charset_name => "x-mac-ce",
-  debug_name => "Mac_CentraleuropeCroatianModel",
+  debug_name => "Mac_CECroatianModel",
 };
 
 our $Iso_8859_2PolishModel = {
@@ -919,7 +919,7 @@ our $Mac_CentraleuropePolishModel = {
   typical_positive_ratio => 0.9990014871349118,
   keep_english_letter => 1,
   charset_name => "x-mac-ce",
-  debug_name => "Mac_CentraleuropePolishModel",
+  debug_name => "Mac_CEPolishModel",
 };
 
 our $Iso_8859_2CzechModell = {
@@ -959,7 +959,7 @@ our $Mac_CentraleuropeCzechModel = {
   typical_positive_ratio => 0.9990074942238029,
   keep_english_letter => 1,
   charset_name => "x-mac-ce",
-  debug_name => "Mac_CentraleuropeCzechModel",
+  debug_name => "Mac_CECzechModel",
 };
 
 
@@ -1668,6 +1668,8 @@ my $TurkishLangModel = pack 'C*',
 #  debug_name => "Iso_8859_9TurkishModel",
 #};
 
+=pod
+
 our $Windows_1254TurkishModel = {
   char_to_order_map => $Windows_1254_CharToOrderMap,
   precedence_matrix => $TurkishLangModel,
@@ -1677,6 +1679,8 @@ our $Windows_1254TurkishModel = {
   charset_name => "windows-1254",
   debug_name => "Windows_1254TurkishModel",
 };
+
+=cut
 
 =pod
 
@@ -1988,7 +1992,6 @@ our $VisciiVietnameseModel = {
   typical_positive_ratio => 0.9990039713013892,
   keep_english_letter => 0,
   charset_name => "viscii",
-  debug_name => "VisciiVietnameseModel",
 };
 
 our $VpsVietnameseModel = {
@@ -1998,7 +2001,6 @@ our $VpsVietnameseModel = {
   typical_positive_ratio => 0.9990039713013892,
   keep_english_letter => 0,
   charset_name => "x-viet-vps",
-  debug_name => "VpsVietnameseModel",
 };
 
 our $VniVietnameseModel = {
@@ -2008,7 +2010,6 @@ our $VniVietnameseModel = {
   typical_positive_ratio => 0.9990039713013892,
   keep_english_letter => 0,
   charset_name => "x-viet-vni",
-  debug_name => "VniVietnameseModel",
 };
 
 our $Vn3VietnameseModel = {
@@ -2018,7 +2019,6 @@ our $Vn3VietnameseModel = {
   typical_positive_ratio => 0.9990039713013892,
   keep_english_letter => 0,
   charset_name => "x-viet-tcvn",
-  debug_name => "Vn3VietnameseModel",
 };
 
 

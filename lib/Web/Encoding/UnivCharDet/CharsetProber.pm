@@ -251,8 +251,10 @@ sub reset ($;$) {
   ] : [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-    $Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
-    $Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel, # [2]
+#    $Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
+    $Web::Encoding::UnivCharDet::Defs::Windows_1250CentralModel, # [1]
+#    $Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel, # [2]
+    $Web::Encoding::UnivCharDet::Defs::MacintoshWesternModel, # [2]
     $Web::Encoding::UnivCharDet::Defs::Win1251Model,
     $Web::Encoding::UnivCharDet::Defs::Koi8rModel,
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_5Model,
@@ -340,49 +342,68 @@ sub handle_data ($$) {
       my $old_prober_count = @{$self->{probers}};
       my @new_prober = $self->{resolve_latin1_refs} ? (
         map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
       ) : (
         map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
         #$Web::Encoding::UnivCharDet::Defs::Iso_8859_2HungarianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CroatianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2PolishModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CzechModell,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CentralModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CroatianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2PolishModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CzechModell,
         #$Web::Encoding::UnivCharDet::Defs::Windows_1250HungarianModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
+#        $Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
         #$Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1257EstonianModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1257LithuanianModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1257LatvianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13LatvianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1257BalticModel,
+#        $Web::Encoding::UnivCharDet::Defs::Windows_1257EstonianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Windows_1257LithuanianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Windows_1257LatvianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13BalticModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13LatvianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10LithuanianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10LithuanianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_15EstonianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_15FrenchModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
+#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
         #$Web::Encoding::UnivCharDet::Defs::Iso_8859_9TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
-        $Web::Encoding::UnivCharDet::Defs::Mac_CentraleuropeCzechModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm852CzechModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm852PolishModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm437WesternModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm850WesternModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm850ScandinavianModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm852CentralModel,
+#        $Web::Encoding::UnivCharDet::Defs::Ibm852CzechModel,
+#        $Web::Encoding::UnivCharDet::Defs::Ibm852PolishModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm775BalticModel,
+        $Web::Encoding::UnivCharDet::Defs::Ibm857TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm865DanishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252IcelandicFaroeseModel,
+        $Web::Encoding::UnivCharDet::Defs::MacintoshScandinavianModel,
+        $Web::Encoding::UnivCharDet::Defs::X_Mac_CeCentralModel,
+#        $Web::Encoding::UnivCharDet::Defs::Mac_CentraleuropeCzechModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10BalticModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16CentralModel,
 
         #$Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
         #$Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
       );
       push @{$self->{probers}}, @new_prober;
       $self->{active_num} += @new_prober;
@@ -465,7 +486,7 @@ sub dump_status ($) {
     $_->dump_status if defined $_;
   }
   for (@{$self->{inactive_probers}}) {
-    print "  [inactive]";
+    print "  [in]";
     $_->dump_status;
   }
 } # dump_status
@@ -507,7 +528,10 @@ sub SYM () { 253 }
 sub RET () { 252 }
 sub NUM () { 251 }
 sub CPY () { 250 }
-sub SYMBOL_CAT_ORDER () { 249 }
+sub TMK () { 249 }
+sub ORD () { 248 }
+sub DLM () { 247 }
+sub SYMBOL_CAT_ORDER () { 246 }
 
 sub new ($$;$$) {
   my $self = bless {}, $_[0];
@@ -574,13 +598,13 @@ sub handle_data ($$) {
         $self->{seq_counters}->[NEGATIVE_CAT]++;
         $self->{total_seqs}++;
       }
-    } elsif ($order == SYM) {
+    } elsif ($order == SYM or $order == DLM or $order == TMK or $order == ORD) {
       $self->{seq_counters}->[SYM_CAT]++;
       if ($self->{symbol_state} == 1) {
         $self->{seq_counters}->[CPY_CAT]++;
       }
     } elsif ($order == CPY) {
-      if ($self->{last_order} == SYM or $self->{last_order} == 255) {
+      if ($self->{last_order} == DLM or $self->{last_order} == 255) {
         $self->{seq_counters}->[SYM_CAT]++;
         $self->{symbol_state} = 1;
 
@@ -1027,7 +1051,7 @@ sub dump_status ($) {
   my $self = $_[0];
   $self->get_confidence;
   printf " MBCS [%s] %s [%s] (%s)\n",
-      $self->get_charset_name,
+      $self->get_charset_name // '',
       $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
       $self->get_confidence,
       $self->{state};
