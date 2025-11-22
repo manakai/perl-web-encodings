@@ -390,46 +390,6 @@ ILL, 61, 67, 86, 91, 63, 90, 36, 60, 38, 52, 90, 70, 54, 39, 58,
 91, 8, 64, 33, 30, 89, ILL, 48, 56, 60, 62, 32, ILL, 81, 80, 79,
 ;
 
-## Generated from $Viscii_CharToOrderMap
-my $Vni_CharToOrderMap = pack 'C*',
-CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, RET, CTR, CTR, RET, CTR, CTR,
-CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR,
-253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253,
-251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 253, 253, 253, 253, 253, 253,
-253, 6, 19, 3, 22, 23, 68, 5, 1, 4, 75, 21, 14, 10, 0, 9,
-15, 34, 12, 18, 2, 7, 13, 73, 50, 20, 82, 253, 253, 253, 253, 253,
-253, 6, 19, 3, 22, 23, 68, 5, 1, 4, 75, 21, 14, 10, 0, 9,
-15, 34, 12, 18, 2, 7, 13, 73, 50, 20, 82, 253, 253, 253, 253, CTR,
-ILL, ILL, SYM, SYM, SYM, SYM, SYM, SYM, ILL, SYM, SYM, SYM, SYM, ILL, ILL, ILL,
-ILL, SYM, SYM, SYM, SYM, ILL, SYM, SYM, ILL, SYM, SYM, SYM, SYM, SYM, ILL, SYM,
-SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM,
-SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM,
-SYM, SYM, SYM, SYM, SYM, SYM, 69, SYM, SYM, SYM, SYM, SYM, 53, 41, 93, SYM,
-SYM, 8, 43, 66, 48, SYM, 17, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM,
-SYM, SYM, SYM, SYM, SYM, SYM, 69, SYM, SYM, SYM, SYM, SYM, 53, 41, 93, SYM,
-SYM, 8, 43, 66, 48, SYM, 17, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM, SYM,
-;
-
-## Generated from $Viscii_CharToOrderMap
-my $Vn3_CharToOrderMap = pack 'C*',
-CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, RET, CTR, CTR, RET, CTR, CTR,
-CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR, CTR,
-253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253, 253,
-251, 251, 251, 251, 251, 251, 251, 251, 251, 251, 253, 253, 253, 253, 253, 253,
-253, 6, 19, 3, 22, 23, 68, 5, 1, 4, 75, 21, 14, 10, 0, 9,
-15, 34, 12, 18, 2, 7, 13, 73, 50, 20, 82, 253, 253, 253, 253, 253,
-253, 6, 19, 3, 22, 23, 68, 5, 1, 4, 75, 21, 14, 10, 0, 9,
-15, 34, 12, 18, 2, 7, 13, 73, 50, 20, 82, 253, 253, 253, 253, CTR,
-ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL,
-ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL, ILL,
-ILL, 47, 26, 31, 30, 48, 17, 8, 47, 26, 31, 30, 48, 17, 8, ILL,
-ILL, ILL, ILL, ILL, ILL, 11, 35, 51, 16, 29, ILL, 67, 86, 91, 61, ILL,
-ILL, ILL, ILL, ILL, ILL, ILL, 63, 49, 78, 76, 42, 45, 85, ILL, 87, 80,
-72, 88, 40, 44, 77, 24, 27, 53, 69, ILL, ILL, ILL, 66, 41, 43, 64,
-ILL, 74, 89, 33, 55, 57, 59, 83, 28, 25, 38, 52, 90, 36, 39, 60,
-ILL, 32, 70, 62, 56, 58, 65, 37, 54, 46, 79, 81, 84, 71, 93, ILL,
-;
-
 my $VietnameseLangModel = pack 'C*',
   3,3,3,3,3,3,3,3,2,3,3,3,3,2,3,2,2,3,3,3,3,3,3,3,3,3,3,1,3,3,3,3,0,3,2,2,2,3,0,2,3,2,3,1,1,1,1,
    3,3,2,1,2,2,0,1,2,1,2,0,3,1,3,3,3,1,3,0,3,3,0,0,0,3,3,1,2,0,0,1,0,0,0,2,3,0,3,0,1,0,0,0,2,3,0,
@@ -648,26 +608,6 @@ our $VpsVietnameseModel = {
   keep_english_letter => 0,
   charset_name => "x-viet-vps",
 };
-
-our $VniVietnameseModel = {
-  char_to_order_map => $Vni_CharToOrderMap,
-  precedence_matrix => $VietnameseLangModel,
-  freq_char_count => 94,
-  typical_positive_ratio => 0.9990039713013892,
-  keep_english_letter => 0,
-  charset_name => "x-viet-vni",
-};
-
-our $Vn3VietnameseModel = {
-  char_to_order_map => $Vn3_CharToOrderMap,
-  precedence_matrix => $VietnameseLangModel,
-  freq_char_count => 94,
-  typical_positive_ratio => 0.9990039713013892,
-  keep_english_letter => 0,
-  charset_name => "x-viet-tcvn",
-};
-
-
 
 
 my $Iso_8859_7_CharToOrderMap = pack 'C*',

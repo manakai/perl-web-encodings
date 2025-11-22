@@ -250,6 +250,9 @@ sub reset ($;$) {
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+    $Web::Encoding::UnivCharDet::Defs::TsciiModel,
+    $Web::Encoding::UnivCharDet::Defs::TabModel,
+    $Web::Encoding::UnivCharDet::Defs::TamModel,
   ] : [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
@@ -267,6 +270,9 @@ sub reset ($;$) {
     $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+    $Web::Encoding::UnivCharDet::Defs::TsciiModel,
+    $Web::Encoding::UnivCharDet::Defs::TabModel,
+    $Web::Encoding::UnivCharDet::Defs::TamModel,
     
     $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
     $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
@@ -1594,9 +1600,9 @@ sub reset ($) {
   $self->{probers} = [  
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
     $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
-    $Web::Encoding::UnivCharDet::Defs::VniVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::VniModel,
     $Web::Encoding::UnivCharDet::Defs::VpsVietnameseModel,
-    $Web::Encoding::UnivCharDet::Defs::Vn3VietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::Tcvn3Model,
   ];
   $self->{current} = ['', '', '', ''];
   $self->{ref} = ['', '', '', ''];
