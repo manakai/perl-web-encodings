@@ -245,35 +245,39 @@ sub reset ($;$) {
   my $refs = $_[1];
   $self->{probers} = $refs ? [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
+    undef, # [1]
+    undef, # [2]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
   ] : [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-#    $Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel, # [1]
     $Web::Encoding::UnivCharDet::Defs::Windows_1250CentralModel, # [1]
-#    $Web::Encoding::UnivCharDet::Defs::MacRomanSpanishModel, # [2]
     $Web::Encoding::UnivCharDet::Defs::MacintoshWesternModel, # [2]
+    
     $Web::Encoding::UnivCharDet::Defs::Win1251Model,
     $Web::Encoding::UnivCharDet::Defs::Koi8rModel,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5Model,
-    $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
-    $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
-    $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
     $Web::Encoding::UnivCharDet::Defs::Windows_1253GreekModel,
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_7GreekModel,
     #$Web::Encoding::UnivCharDet::Defs::Iso_8859_7Model,
     #$Web::Encoding::UnivCharDet::Defs::Win1253Model,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
     $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+    
+    $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
+    $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
     $Web::Encoding::UnivCharDet::Defs::Cp737GreekModel,
     $Web::Encoding::UnivCharDet::Defs::Ibm862HebrewModel,
+    
+    $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
+    
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5Model,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
+    $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
   ];
   unless ($refs) {
     my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
@@ -344,65 +348,37 @@ sub handle_data ($$) {
         map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
         $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
+        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
       ) : (
         map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
         $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252FrenchModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252SpanishModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252PortugueseModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1252GermanModel,
-        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_2HungarianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CentralModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CroatianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2PolishModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CzechModell,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1250HungarianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Windows_1250CroatianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Windows_1250PolishModel,
-        #$Web::Encoding::UnivCharDet::Defs::Windows_1250CzechModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1257BalticModel,
-#        $Web::Encoding::UnivCharDet::Defs::Windows_1257EstonianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Windows_1257LithuanianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Windows_1257LatvianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_13BalticModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13LatvianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4EstonianModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4LatvianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10LithuanianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15EstonianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15FrenchModel,
-#        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
-        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_9TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
+        $Web::Encoding::UnivCharDet::Defs::Windows_1252IcelandicFaroeseModel,
+        
         $Web::Encoding::UnivCharDet::Defs::Ibm437WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm850WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm850ScandinavianModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm852CentralModel,
-#        $Web::Encoding::UnivCharDet::Defs::Ibm852CzechModel,
-#        $Web::Encoding::UnivCharDet::Defs::Ibm852PolishModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm775BalticModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm857TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Ibm865DanishModel,
-        $Web::Encoding::UnivCharDet::Defs::Windows_1252IcelandicFaroeseModel,
+        
         $Web::Encoding::UnivCharDet::Defs::MacintoshScandinavianModel,
         $Web::Encoding::UnivCharDet::Defs::X_Mac_CeCentralModel,
-#        $Web::Encoding::UnivCharDet::Defs::Mac_CentraleuropeCzechModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10BalticModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16CentralModel,
 
-        #$Web::Encoding::UnivCharDet::Defs::Win1250HungarianModel,
-        #$Web::Encoding::UnivCharDet::Defs::Latin2HungarianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
+
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15EstonianModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15FrenchModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10BalticModel,
+        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_16CentralModel,
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
         #$Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
       );
       push @{$self->{probers}}, @new_prober;
