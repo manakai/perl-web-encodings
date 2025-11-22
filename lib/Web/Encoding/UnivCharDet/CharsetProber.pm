@@ -270,6 +270,7 @@ sub reset ($;$) {
     $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+    $Web::Encoding::UnivCharDet::Defs::Armscii_8ArmenianModel,
     $Web::Encoding::UnivCharDet::Defs::TsciiModel,
     $Web::Encoding::UnivCharDet::Defs::TabModel,
     $Web::Encoding::UnivCharDet::Defs::TamModel,
@@ -1207,6 +1208,7 @@ sub get_confidence ($) {
     return 0.01;
   }
   my $conf = $self->{distribution_analyser}->get_confidence;
+  $conf *= exp(-0.3 * $self->{coding_sm}->{error_count});
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
     $conf = 0.5;
   }
@@ -1404,6 +1406,11 @@ sub reset ($) {
   $self->{context_analyser}->reset ($self->{is_preferred_lang});
   $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
   $self->{distribution_analyser}->{_parent} = ref $self;
+  $self->{probers} = [
+    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+    $Web::Encoding::UnivCharDet::Defs::Jisx0201KatakanaModel,
+  ];
+  delete $self->{hwword};
 } # reset
 
 sub get_charset_name ($) { 'shift_jis' }
@@ -1413,7 +1420,8 @@ sub handle_data ($$$;$) {
   my $start_pos = $_[2] || 0;
   my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
-    my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
+    my $c = substr $_[1], $i, 1;
+    my $coding_state = $self->{coding_sm}->next_state ($c);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
       last;
@@ -1431,8 +1439,34 @@ sub handle_data ($$$;$) {
         $self->{distribution_analyser}->handle_one_char
             ($_[1], $i-1, $char_len);
       }
+      undef $c unless $char_len == 1;
+    } else {
+      undef $c;
     }
-  }
+    if (defined $c) {
+      if (defined $self->{hwword}) {
+        $self->{hwword} .= $c;
+      } else {
+        $self->{hwword} = $c;
+      }
+      if (30 < length $self->{hwword}) {
+        if ($self->{hwword} =~ /[^\x00-\x7F]/) {
+          $self->{probers}->[0]->handle_data (delete $self->{hwword});
+        } else {
+          delete $self->{hwword};
+        }
+      }
+    } else {
+      if (defined $self->{hwword}) {
+        if ($self->{hwword} =~ /[^\x00-\x7F]/) {
+          $self->{hwword} .= ' ';
+          $self->{probers}->[0]->handle_data (delete $self->{hwword});
+        } else {
+          delete $self->{hwword};
+        }
+      }
+    }
+  } # $i
 
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
   
@@ -1459,7 +1493,12 @@ sub get_confidence ($) {
   my $conf = $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
   $conf = $distrib_cf * 0.6 if $contxt_cf == -1;
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
-    $conf = 0.5;
+    if ($self->{probers}->[0]->{total_char} > 5 and
+        not $self->{probers}->[0]->{seq_counters}->[3]) { # POSITIVE_CAT
+      #
+    } else {
+      $conf = 0.5;
+    }
   }
   if ($self->{coding_sm}->{latin1_count}) {
     my $k = 1.6;
@@ -1470,7 +1509,8 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->{distribution_analyser}->got_min_data;
+  return $_[0]->{distribution_analyser}->got_min_data ||
+         $_[0]->{probers}->[0]->{seq_counters}->[3] > 4; # POSITIVE_CAT
 } # got_min_data
 
 sub dump_status ($) {
@@ -1483,6 +1523,10 @@ sub dump_status ($) {
       $self->{distribution_analyser}->get_confidence,
       $self->{distribution_analyser}->_dump_status,
       $self->{context_analyser}->get_confidence;
+  for (@{$self->{probers}}) {
+    print "  ";
+    $_->dump_status;
+  }
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1493,6 +1537,9 @@ sub dump_status_for_json ($) {
     confidence => $self->get_confidence,
     coding_sm => $self->{coding_sm}->dump_status_for_json,
     distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+    probers => [
+      map { $_->dump_status_for_json } @{$self->{probers}},
+    ],
   };
 } # dump_status_for_json
 
