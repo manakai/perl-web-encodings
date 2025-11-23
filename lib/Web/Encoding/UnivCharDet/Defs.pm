@@ -4462,9 +4462,9 @@ PCK4BITS(4,4,4,4,4,0,0,0)   # f8 - ff
 ];
 
 my $SJIS_st = [
-PCK4BITS(eError,eStart,eStart,     3,eError,eError,eError,eStart),#00-07 
-PCK4BITS(eStart,     3,eError,eError,eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
-PCK4BITS(eItsMe,eItsMe,eError,eError,eStart,eStart,eStart,eStart) #10-17 
+PCK4BITS(eError,eStart,eStart,     3,     3,eError, eError,eStart),#00-07 
+PCK4BITS(eStart,     3,eError,eError, eItsMe,eItsMe,eItsMe,eItsMe),#08-0f 
+PCK4BITS(eItsMe,eItsMe, eError,eError,eStart,eStart,eStart,eStart) #10-17 
 ];
 
 my $SJISCharLenTable = [0, 1, 1, 2, 0, 0];

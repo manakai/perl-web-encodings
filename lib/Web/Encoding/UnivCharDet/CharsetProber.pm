@@ -1350,26 +1350,38 @@ sub get_confidence ($) {
   my $distrib_cf = $self->{distribution_analyser}->get_confidence;
   my $conf = $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
   $conf = $distrib_cf * 0.6 if $contxt_cf == -1;
+
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
     $conf = 0.5;
   }
+
+  my $sigs = $self->{context_analyser}->{signature_count};
+  if ($sigs) {
+    my $k = 1.6;
+    my $boost_factor = 1 - exp(-$k * $sigs);
+    $conf += (1 - $conf) * $boost_factor;
+    $conf = 1 if $conf > 1;  
+  }
+  
   return $conf;
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->{distribution_analyser}->got_min_data;
+  return $_[0]->{distribution_analyser}->got_min_data ||
+      $_[0]->{context_analyser}->{signature_count};
 } # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, %s %s, %s)\n",
+  printf "%s [%s] (%s, %s, d: %s %s, x: %s, sig=%s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->_dump_status,
       $self->{distribution_analyser}->get_confidence,
       $self->{distribution_analyser}->_dump_status,
-      $self->{context_analyser}->get_confidence;
+      $self->{context_analyser}->get_confidence,
+      $self->{context_analyser}->{signature_count};
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1497,7 +1509,7 @@ sub get_confidence ($) {
         not $self->{probers}->[0]->{seq_counters}->[3]) { # POSITIVE_CAT
       #
     } else {
-      $conf = 0.5;
+      $conf = 0.5 + 0.3 * $self->{probers}->[0]->get_confidence;
     }
   }
   if ($self->{coding_sm}->{latin1_count}) {
@@ -1845,6 +1857,10 @@ sub get_confidence ($;$) {
       $score = 1 / (1 + exp(-5 * ($raw - 0.1)));      
       $score = 0 if $score < 0;
       $score = 1 if $score > 1;
+
+      if (($A1 + $A2) * 2 < $A3 + $A4) {
+        $score *= 0.6;
+      }
 
       if ($A2 > 0) {
         my $r_thr = 0.25;
