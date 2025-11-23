@@ -5,8 +5,6 @@ our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
 use Web::Encoding::UnivCharDet::Defs3;
 use Web::Encoding::UnivCharDet::CodingStateMachine;
-use Web::Encoding::UnivCharDet::CharDistribAnalysis;
-use Web::Encoding::UnivCharDet::ContextAnalysis;
 use Web::Encoding::UnivCharDet::JohabCharsetProber;
 
 sub get_state ($) {
@@ -907,7 +905,7 @@ sub new ($$;%) {
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
         : undef,
       $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
-        ? Web::Encoding::UnivCharDet::JohabCharsetProber->new
+        ? Web::Encoding::UnivCharDet::CharsetProber::Johab->new
               ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
         : undef,
     ];
@@ -1143,7 +1141,7 @@ sub dump_status_for_json ($) {
   };
 } # dump_status_for_json
 
-package Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser;
+package Web::Encoding::UnivCharDet::CharsetProber::MBCS;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
@@ -1153,17 +1151,45 @@ sub new ($$) {
   $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new
       ($self->_smmodel);
   $self->reset;
+  $self->_init;
   return $self;
 } # new
+
+sub NUM_OF_CATEGORY () { 8 }
+sub MINIMUM_DATA_THRESHOLD () { 4 }
+sub ENOUGH_REL_THRESHOLD () { 100 }
+sub MAX_REL_THRESHOLD () { 1000 }
+
+#sub MINIMUM_DATA_THRESHOLD () { 4 }
+sub ENOUGH_DATA_THRESHOLD () { 1024 }
 
 sub reset ($) {
   my $self = $_[0];
   $self->{coding_sm}->reset;
   $self->{state} = 'detecting';
   $self->{last_char} = "\x00\x00";
-  $self->{distribution_analyser} = $self->_distrib_analyser->new;
-  $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
-  $self->{distribution_analyser}->{_parent} = ref $self;
+
+  $self->{current_word_length} = 0;
+  $self->{avg_word_length} = 0;
+  $self->{latin1_state} = 1;
+  $self->{latin1_count} = 0;
+  
+  $self->{data_threshold} = $self->{is_preferred_lang} ? 0 : MINIMUM_DATA_THRESHOLD;
+  
+  ## CharDistribAnalysis
+  $self->{total_chars} = 0;
+  $self->{freq_chars} = 0;
+
+  ## ContextAnalysis
+  $self->{total_rel} = 0;
+  $self->{rel_sample}->[$_] = 0 for 0..(NUM_OF_CATEGORY - 1);
+  $self->{need_to_skip_char_num} = 0;
+  $self->{last_char_order} = -1;
+  $self->{done} = 0;
+  $self->{signature_count} = 0;
+  $self->{context_state} = 0;
+  $self->{kana_count} = 0;
+  $self->{non_kana_count} = 0;
 } # reset
 
 sub handle_data ($$$;$) {
@@ -1180,9 +1206,9 @@ sub handle_data ($$$;$) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
         substr ($self->{last_char}, 1, 0) = $c;
-        $self->{distribution_analyser}->handle_one_char ($self->{last_char}, 0, $char_len);
+        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
       } else {
-        $self->{distribution_analyser}->handle_one_char ($_[1], $i-1, $char_len);
+        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
       }
     }
   }
@@ -1194,7 +1220,7 @@ sub handle_data ($$$;$) {
       if ($self->{coding_sm}->{error_count} > 10) {
         $self->{state} = 'not me';
       }
-    } elsif ($self->{distribution_analyser}->got_enough_data and
+    } elsif ($self->distrib_got_enough_data and
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
@@ -1207,7 +1233,7 @@ sub get_confidence ($) {
   if ($self->{state} eq 'not me') {
     return 0.01;
   }
-  my $conf = $self->{distribution_analyser}->get_confidence;
+  my $conf = $self->distrib_get_confidence;
   $conf *= exp(-0.3 * $self->{coding_sm}->{error_count});
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
     $conf = 0.5;
@@ -1216,88 +1242,229 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->{distribution_analyser}->got_min_data;
+  return $_[0]->distrib_got_min_data;
 } # got_min_data
+
+## CharDistribAnalysis
+
+sub SURE_YES () { 0.99 }
+sub SURE_NO () { 0.01 }
+
+sub distrib_handle_one_char ($$$$) {
+  my $self = $_[0];
+  # $self, $str, $offset, $len
+
+  my $order = $_[3] == 2 ? $self->distrib_get_order ($_[1], $_[2]) : -1;
+  if ($order >= 0) {
+    $self->{total_chars}++;
+    if ($order < @{$self->{char_to_freq_order}}) {
+      if (512 > $self->{char_to_freq_order}->[$order]) {
+        $self->{freq_chars}++;
+      }
+    }
+  }
+} # distrib_handle_one_char
+
+sub distrib_get_order ($$$) { -1 }
+
+sub distrib_get_confidence ($) {
+  my $self = $_[0];
+  if ($self->{total_chars} <= 0 #or
+      #$self->{freq_chars} <= $self->{data_threshold}
+  ) {
+    return SURE_NO;
+  } elsif ($self->{total_chars} != $self->{freq_chars}) {
+    my $r = $self->{freq_chars} / (($self->{total_chars} - $self->{freq_chars}) * $self->{typical_distribution_ratio});
+    if ($r < 0.98) {
+      return $r;
+    } else {
+      my $x = $r - 0.98;
+      my $adjusted = 0.98 + (1 - exp(-5 * $x)) * (0.99 - 0.98);
+      $adjusted = 0.99 if $adjusted > 0.99;
+      return $adjusted;
+    }
+  } else {
+    return SURE_YES;
+  }
+} # distrib_get_confidence
+
+sub distrib_got_min_data ($) {
+  return not ($_[0]->{freq_chars} <= $_[0]->{data_threshold});
+} # distrib_got_min_data
+
+sub distrib_got_enough_data ($) {
+  return $_[0]->{total_chars} > ENOUGH_DATA_THRESHOLD;
+} # distrib_got_enough_data
+
+## ContextAnalysis
+
+sub context_handle_one_char ($$$) {
+  my $self = $_[0];
+  if ($self->{total_rel} > MAX_REL_THRESHOLD) {
+    $self->{done} = 1;
+  }
+  return if $self->{done};
+
+  my $order = -1;
+  if ($_[3] == 2) {
+    ($order) = $self->context_get_order ($_[1], $_[2]);
+  } else {
+    $self->{state} = 0;
+  }
+  
+  if ($order != -1 and $self->{last_char_order} != -1) {
+    $self->{total_rel}++;
+    $self->{rel_sample}->[Web::Encoding::UnivCharDet::Defs::jp2CharContext->[$self->{last_char_order}]->[$order]]++;
+  }
+  $self->{last_char_order} = $order;
+} # context_handle_one_char
+
+sub DONT_KNOW () { -1 }
+
+sub context_get_confidence ($) {
+  my $self = $_[0];
+  if ($self->{total_rel} > $self->{data_threshold}) {
+    return (($self->{total_rel} - $self->{rel_sample}->[0]) / $self->{total_rel});
+  } elsif ($self->{kana_count} / ($self->{kana_count} + $self->{non_kana_count} + 1e-7) > 0.8) {
+    ## Short string of Kana letters
+    return 0.5;
+  } else {
+    return DONT_KNOW;
+  }
+} # context_get_confidence
+
+sub context_got_enough_data ($) {
+  return $_[0]->{total_rel} > ENOUGH_REL_THRESHOLD;
+} # context_got_enough_data
+
+##
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, %s)\n",
+  printf "%s [%s] (%s, %s, %s, l=%d)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->_dump_status,
-      $self->{distribution_analyser}->_dump_status;
+      $self->_distrib_dump_status,
+      $self->{avg_word_length};
 } # dump_status
 
-sub dump_status_for_json ($) {
+sub _distrib_dump_status ($) {
+  my $self = $_[0];
+  return sprintf "%d / %d (%s %s)",
+      $self->{freq_chars},
+      $self->{total_chars},
+      $self->distrib_got_min_data ? 'min' : '',
+      $self->distrib_got_enough_data ? 'enough' : '';
+} # _distrib_dump_status
+
+sub distrib_dump_status_for_json ($) {
   my $self = $_[0];
   return {
-    type => $self->get_charset_name,
-    charset => $self->get_charset_name,
-    confidence => $self->get_confidence,
-    coding_sm => $self->{coding_sm}->dump_status_for_json,
-    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+    freq_chars => $self->{freq_chars},
+    total_chars => $self->{total_chars},
+    got_min_data => !! $self->distrib_got_min_data,
+    got_enought_data => !! $self->distrib_got_enough_data,
   };
-} # dump_status_for_json
+} # distrib_dump_status_for_json
+
 
 package Web::Encoding::UnivCharDet::CharsetProber::GB18030;
-push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
 
 sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::GB18030SMModel }
-sub _distrib_analyser ($) { 'Web::Encoding::UnivCharDet::CharDistribAnalysis::GB2312' }
 sub get_charset_name ($) { 'gb18030' }
 
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::GB2312CharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::GB2312_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
+
+sub distrib_get_order ($$$) {
+  if ((ord substr $_[1], $_[2], 1) >= 0xB0) {
+    return 94 * ((ord substr $_[1], $_[2], 1) - 0xB0) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1;
+  } else {
+    return -1;
+  }
+} # distrib_get_order
+
 package Web::Encoding::UnivCharDet::CharsetProber::Big5;
-push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
 
 sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::Big5SMModel }
-sub _distrib_analyser ($) { 'Web::Encoding::UnivCharDet::CharDistribAnalysis::Big5' }
 sub get_charset_name ($) { 'big5' }
 
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::Big5CharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::BIG5_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
+
+sub distrib_get_order ($$$) {
+  if ((ord substr $_[1], $_[2], 1) >= 0xA4) {
+    if ((ord substr $_[1], $_[2] + 1, 1) >= 0xA1) {
+      return 157 * ((ord substr $_[1], $_[2], 1) - 0xA4) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1 + 63;
+    } else {
+      return 157 * ((ord substr $_[1], $_[2], 1) - 0xA4) + (ord substr $_[1], $_[2] + 1, 1) - 0x40;
+    }
+  } else {
+    return -1;
+  }
+} # distrib_get_order
+
 package Web::Encoding::UnivCharDet::CharsetProber::EUCTW;
-push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
 
 sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCTWSMModel }
-sub _distrib_analyser ($) { 'Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCTW' }
 sub get_charset_name ($) { 'x-euc-tw' }
 
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::EUCTWCharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::EUCTW_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
+
+sub distrib_get_order ($$$) {
+  if ((ord substr $_[1], $_[2], 1) >= 0xC4) {
+    return 94 * ((ord substr $_[1], $_[2], 1) - 0xC4) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1;
+  } else {
+    return -1;
+  }
+} # distrib_get_order
+
 package Web::Encoding::UnivCharDet::CharsetProber::EUCKR;
-push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCSWithDistributionAnalyser);
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
 
 sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCKRSMModel }
-sub _distrib_analyser ($) { 'Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCKR' }
 sub get_charset_name ($) { 'euc-kr' }
 
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::EUCKRCharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::EUCKR_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
+
+sub distrib_get_order ($$$) {
+  if ((ord substr $_[1], $_[2], 1) >= 0xB0) {
+    return 94 * ((ord substr $_[1], $_[2], 1) - 0xB0) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1;
+  } else {
+    return -1;
+  }
+} # distrib_get_order
+
 package Web::Encoding::UnivCharDet::CharsetProber::EUCJP;
-push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
 
-sub new ($$) {
-  my $self = bless {}, $_[0];
-  $self->{is_preferred_lang} = $_[1];
-  $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new
-      (Web::Encoding::UnivCharDet::Defs::EUCJPSMModel);
-  $self->reset;
-  return $self;
-} # new
-
-sub reset ($) {
-  my $self = $_[0];
-  $self->{coding_sm}->reset;
-  $self->{state} = 'detecting';
-  $self->{last_char} = "\x00\x00";
-  $self->{context_analyser} = Web::Encoding::UnivCharDet::ContextAnalysis::EUCJP->new;
-  $self->{distribution_analyser} = Web::Encoding::UnivCharDet::CharDistribAnalysis::EUCJP->new;
-  $self->{context_analyser}->reset ($self->{is_preferred_lang});
-  $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
-  $self->{distribution_analyser}->{_parent} = ref $self;
-} # reset
-
+sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::EUCJPSMModel }
 sub get_charset_name ($) { 'euc-jp' }
+
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::JISCharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::JIS_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
 
 sub handle_data ($$$;$) {
   my $self = $_[0];
@@ -1312,15 +1479,11 @@ sub handle_data ($$$;$) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
         (substr $self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
-        $self->{context_analyser}->handle_one_char
-            ($self->{last_char}, 0, $char_len);
-        $self->{distribution_analyser}->handle_one_char
-            ($self->{last_char}, 0, $char_len);
+        $self->context_handle_one_char ($self->{last_char}, 0, $char_len);
+        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
       } else {
-        $self->{context_analyser}->handle_one_char
-            ($_[1], $i-1, $char_len);
-        $self->{distribution_analyser}->handle_one_char
-            ($_[1], $i-1, $char_len);
+        $self->context_handle_one_char ($_[1], $i-1, $char_len);
+        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
       }
     }
   }
@@ -1332,7 +1495,7 @@ sub handle_data ($$$;$) {
       if ($self->{coding_sm}->{error_count} > 10) {
         $self->{state} = 'not me';
       }
-    } elsif ($self->{context_analyser}->got_enough_data and
+    } elsif ($self->context_got_enough_data and
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
@@ -1341,13 +1504,71 @@ sub handle_data ($$$;$) {
   return $self->{state};
 } # handle_data
 
+sub distrib_get_order ($$$) {
+  if ((ord substr $_[1], $_[2], 1) >= 0xA0) {
+    return 94 * ((ord substr $_[1], $_[2], 1) - 0xA1) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1;
+  } else {
+    return -1;
+  }
+} # distrib_get_order
+
+sub context_get_order ($$$) {
+  my $self = $_[0];
+  my $f = ord substr $_[1], $_[2], 1;
+  my $s = ord substr $_[1], $_[2] + 1, 1;
+  
+  my $char_len = 1;
+  if ($f == 0x8E or ($f >= 0xA1 and $f <= 0xFE)) {
+    $char_len = 2;
+  } elsif ($f == 0x8F) {
+    $char_len = 3;
+  }
+
+  if ($f == 0xA4 and ($s >= 0xA1 and $s <= 0xF3)) {
+    $self->{context_state} = 0;
+    $self->{kana_count}++;
+    return ($s - 0xA1, $char_len);
+  }
+
+  if ($f == 0xA5 and ($s >= 0xA1 and $s <= 0xF3)) {
+    $self->{kana_count}++;
+  } else {
+    $self->{non_kana_count}++;
+  }
+
+  ## EUC-JP signatures advocated by the most popular portal site and
+  ## the most famous HTML reference site in early-Heisei days (1990s)
+  ## of Japan:
+  ##   <https://web.archive.org/web/20030202085121/http://docs.yahoo.co.jp/docs/help/mojibake/sonota.html>
+  ##   <https://www.tohoho-web.com/wwwxx005.htm#spell-character>
+  ##   <https://wiki.suikawiki.org/n/%E6%96%87%E5%AD%97%E3%82%B3%E3%83%BC%E3%83%89%E8%87%AA%E5%8B%95%E5%88%A4%E5%88%A5#section-%E6%96%87%E5%AD%97%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AE%E6%B1%BA%E5%AE%9A%E2%80%A8%E3%83%90%E3%82%A4%E3%83%88%E5%88%97%E7%AD%89%E3%81%8B%E3%82%89%E3%81%AE%E6%8E%A8%E5%AE%9A%E2%80%A8%E5%88%A4%E5%AE%9A%E5%99%A8%E3%82%92%E6%84%8F%E8%AD%98%E3%81%97%E3%81%9F%E8%91%97%E8%80%85%E3%81%AB%E3%82%88%E3%82%8B%E8%A8%98%E8%BF%B0>.
+  if (($f == 0xFD and $s == 0xFE) or # 0xFDFE : an unassigned code point
+      ($f == 0xF3 and $s == 0xFE) or
+      #($f == 0xB9 and $s == 0xA7) or # EUC "孝", SJIS "ｹｧ" (ｹｧ could be part of slang or something, so not a good signature)
+      ($f == 0xEB and $s == 0xFD) or
+      ($f == 0xC4 and $s == 0xF0) or
+      ($f == 0xF3 and $s == 0xFD)) {
+    $self->{signature_count}++;
+    $self->{context_state} = 0;
+  } elsif ($f == 0xC8 and $s == 0xFE) {
+    $self->{context_state} = 1;
+  } elsif ($self->{context_state} == 1 and $f == 0xC6 and $s == 0xFD) {
+    $self->{signature_count}++;
+    $self->{context_state} = 0;
+  } else {
+    $self->{context_state} = 0;
+  }
+  
+  return (-1, $char_len);
+} # context_get_order
+
 sub get_confidence ($) {
   my $self = $_[0];
   if ($self->{state} eq 'not me') {
     return 0.01;
   }
-  my $contxt_cf = $self->{context_analyser}->get_confidence;
-  my $distrib_cf = $self->{distribution_analyser}->get_confidence;
+  my $contxt_cf = $self->context_get_confidence;
+  my $distrib_cf = $self->distrib_get_confidence;
   my $conf = $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
   $conf = $distrib_cf * 0.6 if $contxt_cf == -1;
 
@@ -1355,7 +1576,7 @@ sub get_confidence ($) {
     $conf = 0.5;
   }
 
-  my $sigs = $self->{context_analyser}->{signature_count};
+  my $sigs = $self->{signature_count};
   if ($sigs) {
     my $k = 1.6;
     my $boost_factor = 1 - exp(-$k * $sigs);
@@ -1367,8 +1588,7 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->{distribution_analyser}->got_min_data ||
-      $_[0]->{context_analyser}->{signature_count};
+  return $_[0]->distrib_got_min_data || $_[0]->{signature_count};
 } # got_min_data
 
 sub dump_status ($) {
@@ -1378,10 +1598,10 @@ sub dump_status ($) {
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->_dump_status,
-      $self->{distribution_analyser}->get_confidence,
-      $self->{distribution_analyser}->_dump_status,
-      $self->{context_analyser}->get_confidence,
-      $self->{context_analyser}->{signature_count};
+      $self->distrib_get_confidence,
+      $self->_distrib_dump_status,
+      $self->context_get_confidence,
+      $self->{signature_count};
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1391,33 +1611,27 @@ sub dump_status_for_json ($) {
     charset => $self->get_charset_name,
     confidence => $self->get_confidence,
     coding_sm => $self->{coding_sm}->dump_status_for_json,
-    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+    distribution_analyser => $self->distrib_dump_status_for_json,
+    context_confidence => $self->context_get_confidence,
+    signature_count => $self->{signature_count},
   };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::SJIS;
-push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
 
-sub new ($$) {
-  my $self = bless {}, $_[0];
-  $self->{is_preferred_lang} = $_[1];
-  $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new
-      (Web::Encoding::UnivCharDet::Defs::SJISSMModel);
-  $self->reset;
-  return $self;
-} # new
+sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::SJISSMModel }
+sub get_charset_name ($) { 'shift_jis' }
+
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::JISCharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::JIS_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
 
 sub reset ($) {
   my $self = $_[0];
-  $self->{coding_sm}->reset;
-  $self->{state} = 'detecting';
-  $self->{last_char} = "\x00\x00";
-  $self->{context_analyser} = Web::Encoding::UnivCharDet::ContextAnalysis::SJIS->new;
-  $self->{distribution_analyser} = Web::Encoding::UnivCharDet::CharDistribAnalysis::SJIS->new;
-  $self->{context_analyser}->reset ($self->{is_preferred_lang});
-  $self->{distribution_analyser}->reset ($self->{is_preferred_lang});
-  $self->{distribution_analyser}->{_parent} = ref $self;
+  $self->SUPER::reset;
   $self->{probers} = [
     map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
     $Web::Encoding::UnivCharDet::Defs::Jisx0201KatakanaModel,
@@ -1425,7 +1639,25 @@ sub reset ($) {
   delete $self->{hwword};
 } # reset
 
-sub get_charset_name ($) { 'shift_jis' }
+
+my $Latin1Type = [
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 1, 0, 1, 0,
+  0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 1, 0, 0,
+  0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+  4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 1, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 7, 0, 7, 7, 0, 6, 5, 5, 2, 5, 5, 5, 5, 5, 5,
+  6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+  6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+  6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+];
 
 sub handle_data ($$$;$) {
   my $self = $_[0];
@@ -1433,6 +1665,7 @@ sub handle_data ($$$;$) {
   my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
   for my $i ($start_pos..($limit_pos - 1)) {
     my $c = substr $_[1], $i, 1;
+    my $cc = ord $c;
     my $coding_state = $self->{coding_sm}->next_state ($c);
     if ($coding_state == Web::Encoding::UnivCharDet::Defs::eItsMe) {
       $self->{state} = 'found it';
@@ -1441,20 +1674,20 @@ sub handle_data ($$$;$) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
         substr ($self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
-        $self->{context_analyser}->handle_one_char
+        $self->context_handle_one_char
             ($self->{last_char}, 2-$char_len, $char_len);
-        $self->{distribution_analyser}->handle_one_char
-            ($self->{last_char}, 0, $char_len);
+        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
       } else {
-        $self->{context_analyser}->handle_one_char
-            ($_[1], $i+1-$char_len, $char_len);
-        $self->{distribution_analyser}->handle_one_char
-            ($_[1], $i-1, $char_len);
+        $self->context_handle_one_char ($_[1], $i+1-$char_len, $char_len);
+        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
       }
-      undef $c unless $char_len == 1;
+      undef $c if $char_len > 1;
     } else {
       undef $c;
     }
+
+    ## Run the prober to test whether runs of halfwidth katakanas are
+    ## meaningful Japanese text or not.
     if (defined $c) {
       if (defined $self->{hwword}) {
         $self->{hwword} .= $c;
@@ -1478,6 +1711,33 @@ sub handle_data ($$$;$) {
         }
       }
     }
+
+    ## Detect lone halfwidth katakanas and leading or trailing
+    ## halfwidth katakanas that can be interpreted as Latin1
+    ## characters (e.g. 0xA9 copyright sign in Windows-1252).
+    if ($self->{latin1_state} == 1 and $Latin1Type->[$cc] == 2) {
+      $self->{latin1_state} = 2;
+    } elsif ($self->{latin1_state} == 1 and $Latin1Type->[$cc] == 7) {
+      $self->{latin1_count}++;
+      $self->{latin1_state} = 0;
+    } elsif ($self->{latin1_state} == 2 and
+             ($Latin1Type->[$cc] == 1 or
+              $Latin1Type->[$cc] == 3 or
+              $Latin1Type->[$cc] == 4)) {
+      $self->{latin1_count}++;
+      $self->{latin1_state} = 0;
+    } elsif ($Latin1Type->[$cc] == 1) {
+      $self->{latin1_state} = 1;
+    } elsif ($Latin1Type->[$cc] == 6) {
+      $self->{latin1_state} = 3;
+    } elsif ($Latin1Type->[$cc] == 5 || $Latin1Type->[$cc] == 2) {
+      ## Halfwidth small katakanas or voiced sound marks, not followed
+      ## by halfwidth katakana or double-byte character
+      unless (not defined $c or $self->{latin1_state} == 3) {
+        $self->{latin1_count}++;
+      }
+      $self->{latin1_state} = 3;
+    }
   } # $i
 
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
@@ -1487,7 +1747,7 @@ sub handle_data ($$$;$) {
       if ($self->{coding_sm}->{error_count} > 10) {
         $self->{state} = 'not me';
       }
-    } elsif ($self->{context_analyser}->got_enough_data and
+    } elsif ($self->context_enough_data and
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
@@ -1495,13 +1755,47 @@ sub handle_data ($$$;$) {
   return $self->{state};
 } # handle_data
 
+sub distrib_get_order ($$$) {
+  my $order;
+  if ((ord substr $_[1], $_[2], 1) >= 0x81 and
+      (ord substr $_[1], $_[2], 1) <= 0x9F) {
+    $order = 188 * ((ord substr $_[1], $_[2], 1) - 0x81);
+  } elsif ((ord substr $_[1], $_[2], 1) >= 0xE0 and
+           (ord substr $_[1], $_[2], 1) <= 0xEF) {
+    $order = 188 * ((ord substr $_[1], $_[2], 1) - 0xE0 + 31);
+  } else {
+    return -1;
+  }
+  $order += (ord substr $_[1], $_[2] + 1, 1) - 0x40;
+  $order-- if (ord substr $_[1], $_[2] + 1, 1) > 0x7F;
+  return $order;
+} # distrib_get_order
+
+sub context_get_order ($$$) {
+  my $char_len = 1;
+  if (((ord substr $_[1], $_[2], 1) >= 0x81 and
+       (ord substr $_[1], $_[2], 1) <= 0x9F) or
+      ((ord substr $_[1], $_[2], 1) >= 0xE0 and
+       (ord substr $_[1], $_[2], 1) <= 0xFC)) {
+    $char_len = 2;
+  }
+
+  if ((substr $_[1], $_[2], 1) eq "\202" and
+      (ord substr $_[1], $_[2] + 1, 1) >= 0x9F and
+      (ord substr $_[1], $_[2] + 1, 1) <= 0xF1) {
+    return ((ord substr $_[1], $_[2] + 1, 1) - 0x9F, $char_len);
+  }
+
+  return (-1, $char_len);
+} # context_get_order
+
 sub get_confidence ($) {
   my $self = $_[0];
   if ($self->{state} eq 'not me') {
     return 0.01;
   }
-  my $contxt_cf = $self->{context_analyser}->get_confidence;
-  my $distrib_cf = $self->{distribution_analyser}->get_confidence;
+  my $contxt_cf = $self->context_get_confidence;
+  my $distrib_cf = $self->distrib_get_confidence;
   my $conf = $contxt_cf > $distrib_cf ? $contxt_cf : $distrib_cf;
   $conf = $distrib_cf * 0.6 if $contxt_cf == -1;
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
@@ -1521,20 +1815,21 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->{distribution_analyser}->got_min_data ||
+  return $_[0]->distrib_got_min_data ||
          $_[0]->{probers}->[0]->{seq_counters}->[3] > 4; # POSITIVE_CAT
 } # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, %s %s, %s)\n",
+  printf "%s [%s] (%s, %s, %s %s, l=%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->_dump_status,
-      $self->{distribution_analyser}->get_confidence,
-      $self->{distribution_analyser}->_dump_status,
-      $self->{context_analyser}->get_confidence;
+      $self->distrib_get_confidence,
+      $self->_distrib_dump_status,
+      $self->{latin1_count},
+      $self->context_get_confidence;
   for (@{$self->{probers}}) {
     print "  ";
     $_->dump_status;
@@ -1548,7 +1843,9 @@ sub dump_status_for_json ($) {
     charset => $self->get_charset_name,
     confidence => $self->get_confidence,
     coding_sm => $self->{coding_sm}->dump_status_for_json,
-    distribution_analyser => $self->{distribution_analyser}->dump_status_for_json,
+    distribution_analyser => $self->distrib_dump_status_for_json,
+    context_confidence => $self->context_get_confidence,
+    latin1_count => $self->{latin1_count},
     probers => [
       map { $_->dump_status_for_json } @{$self->{probers}},
     ],
