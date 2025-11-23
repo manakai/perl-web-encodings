@@ -4330,15 +4330,15 @@ PCK4BITS(3,3,3,3,3,3,3,0)   # f8 - ff
 ];
 
 my $EUCTW_st = [
-PCK4BITS(eError,eError,eStart,     3,     3,     3,     4,eError),#00-07 
-PCK4BITS(eError,eStart,     3,     3,     3,     4,eItsMe,eItsMe),#08-0f 
-PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eError,eStart,eError),#10-17 
-PCK4BITS(eStart,eStart,eStart,eError,eError,eError,eError,eError),#18-1f 
-PCK4BITS(     5,eError,eError,eError,eStart,eError,eStart,eStart),#20-27 
-PCK4BITS(eStart,eError,eStart,eStart,eStart,eStart,eStart,eStart) #28-2f 
+PCK4BITS(eError,eError,eStart,     3,     3,     3,     4, eError),#00-07 
+PCK4BITS(eError,eStart,     3,     3,     3,     4, eItsMe,eItsMe),#08-0f 
+PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe, eError,eStart,eError),#10-17 
+PCK4BITS(eStart,eStart,eStart,eError, eError,     5,eError,     5),#18-1f 
+PCK4BITS(     5,     5,eError, eError,eStart,eError,eStart,eStart),#20-27 
+PCK4BITS(eStart,eError, eStart,eStart,eStart,eStart,eStart,eStart) #28-2f 
 ];
 
-my $EUCTWCharLenTable = [0, 0, 1, 2, 2, 2, 3];
+my $EUCTWCharLenTable = [0, 0, 1, 2, 2, 2, 2];
 
 sub EUCTWSMModel () { +{
   class_table => {

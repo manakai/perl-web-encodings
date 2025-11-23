@@ -31,11 +31,11 @@ sub handle_data ($$$;$) {
       my $is_sep = 0;
       if ($i == $start_pos) {
         (substr $self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
-        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
-        $is_sep = 1 unless $self->{last_char} =~ /^[\x84-\xD3]/;
+        $self->_handle_one_char ($self->{last_char}, 2-$char_len, $char_len);
+        $is_sep = 1 unless $self->{last_char} =~ /[\x84-\xD3].$/;
       } else {
-        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
-        $is_sep = 1 unless substr ($_[1], $i-1, $char_len) =~ /^[\x84-\xD3]/;
+        $self->_handle_one_char ($_[1], $i+1-$char_len, $char_len);
+        $is_sep = 1 unless substr ($_[1], $i+1-$char_len, 1) =~ /^[\x84-\xD3]/;
       }
       if ($is_sep) {
         if ($self->{current_word_length}) {

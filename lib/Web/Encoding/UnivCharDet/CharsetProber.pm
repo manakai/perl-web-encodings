@@ -1173,6 +1173,10 @@ sub reset ($) {
   $self->{avg_word_length} = 0;
   $self->{latin1_state} = 1;
   $self->{latin1_count} = 0;
+  $self->{context_state} = 0;
+  $self->{kana_count} = 0;
+  $self->{non_kana_count} = 0;
+  $self->{cs3_count} = 0;
   
   $self->{data_threshold} = $self->{is_preferred_lang} ? 0 : MINIMUM_DATA_THRESHOLD;
   
@@ -1185,11 +1189,8 @@ sub reset ($) {
   $self->{rel_sample}->[$_] = 0 for 0..(NUM_OF_CATEGORY - 1);
   $self->{need_to_skip_char_num} = 0;
   $self->{last_char_order} = -1;
-  $self->{done} = 0;
+  $self->{context_done} = 0;
   $self->{signature_count} = 0;
-  $self->{context_state} = 0;
-  $self->{kana_count} = 0;
-  $self->{non_kana_count} = 0;
 } # reset
 
 sub handle_data ($$$;$) {
@@ -1204,15 +1205,17 @@ sub handle_data ($$$;$) {
       last;
     } elsif ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
+      ## $char_len is 2 for GB 18030 four-byte characters
       if ($i == $start_pos) {
         substr ($self->{last_char}, 1, 0) = $c;
-        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
+        $self->_handle_one_char ($self->{last_char}, 2-$char_len, $char_len);
       } else {
-        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
+        $self->_handle_one_char ($_[1], $i+1-$char_len, $char_len);
       }
     }
   }
-  
+
+  ## XXX broken for GB 18030 four-byte characters
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
@@ -1223,6 +1226,10 @@ sub handle_data ($$$;$) {
     } elsif ($self->distrib_got_enough_data and
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
+    } else {
+      if ($self->{cs3_count} > 10) { # Many four-byte characters of GB 18030
+        $self->{state} = 'found it';
+      }
     }
   }
   return $self->{state};
@@ -1238,6 +1245,14 @@ sub get_confidence ($) {
   if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
     $conf = 0.5;
   }
+
+  if ($self->{cs3_count}) { ## GB 18030 4-byte characters
+    my $k = 1.2;
+    my $boost_factor = 1 - exp(-$k * $self->{cs3_count});
+    $conf += (1 - $conf) * $boost_factor;
+    $conf = 1 if $conf > 1;  
+  }
+
   return $conf;
 } # get_confidence
 
@@ -1245,12 +1260,7 @@ sub got_min_data ($) {
   return $_[0]->distrib_got_min_data;
 } # got_min_data
 
-## CharDistribAnalysis
-
-sub SURE_YES () { 0.99 }
-sub SURE_NO () { 0.01 }
-
-sub distrib_handle_one_char ($$$$) {
+sub _handle_one_char ($$$$) {
   my $self = $_[0];
   # $self, $str, $offset, $len
 
@@ -1263,7 +1273,12 @@ sub distrib_handle_one_char ($$$$) {
       }
     }
   }
-} # distrib_handle_one_char
+} # _handle_one_char
+
+## CharDistribAnalysis
+
+sub SURE_YES () { 0.99 }
+sub SURE_NO () { 0.01 }
 
 sub distrib_get_order ($$$) { -1 }
 
@@ -1298,27 +1313,6 @@ sub distrib_got_enough_data ($) {
 
 ## ContextAnalysis
 
-sub context_handle_one_char ($$$) {
-  my $self = $_[0];
-  if ($self->{total_rel} > MAX_REL_THRESHOLD) {
-    $self->{done} = 1;
-  }
-  return if $self->{done};
-
-  my $order = -1;
-  if ($_[3] == 2) {
-    ($order) = $self->context_get_order ($_[1], $_[2]);
-  } else {
-    $self->{state} = 0;
-  }
-  
-  if ($order != -1 and $self->{last_char_order} != -1) {
-    $self->{total_rel}++;
-    $self->{rel_sample}->[Web::Encoding::UnivCharDet::Defs::jp2CharContext->[$self->{last_char_order}]->[$order]]++;
-  }
-  $self->{last_char_order} = $order;
-} # context_handle_one_char
-
 sub DONT_KNOW () { -1 }
 
 sub context_get_confidence ($) {
@@ -1341,13 +1335,14 @@ sub context_got_enough_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, %s, l=%d)\n",
+  printf "%.4f [%s] (%s, %s, %s, l=%d, cs3=%d)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->_dump_status,
       $self->_distrib_dump_status,
-      $self->{avg_word_length};
+      $self->{avg_word_length},
+      $self->{cs3_count};
 } # dump_status
 
 sub _distrib_dump_status ($) {
@@ -1366,6 +1361,7 @@ sub distrib_dump_status_for_json ($) {
     total_chars => $self->{total_chars},
     got_min_data => !! $self->distrib_got_min_data,
     got_enought_data => !! $self->distrib_got_enough_data,
+    cs3_count => $self->{cs3_count},
   };
 } # distrib_dump_status_for_json
 
@@ -1381,6 +1377,25 @@ sub _init ($) {
   $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::GB2312CharToFreqOrder;
   $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::GB2312_TYPICAL_DISTRIBUTION_RATIO;
 } # _init
+
+sub _handle_one_char ($$$$) {
+  my $self = $_[0];
+  # $self, $str, $offset, $len
+
+  my $order = $_[3] == 2 ? $self->distrib_get_order ($_[1], $_[2]) : -1;
+  if ($order >= 0) {
+    $self->{total_chars}++;
+    if ($order < @{$self->{char_to_freq_order}}) {
+      if (512 > $self->{char_to_freq_order}->[$order]) {
+        $self->{freq_chars}++;
+      }
+    }
+  }
+
+  if ($_[3] == 2 and substr ($_[1], $_[2]+1, 1) =~ /[\x30-\x39]/) {
+    $self->{cs3_count}++;
+  }
+} # _handle_one_char
 
 sub distrib_get_order ($$$) {
   if ((ord substr $_[1], $_[2], 1) >= 0xB0) {
@@ -1479,15 +1494,14 @@ sub handle_data ($$$;$) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
         (substr $self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
-        $self->context_handle_one_char ($self->{last_char}, 0, $char_len);
-        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
+        $self->_handle_one_char ($self->{last_char}, 2-$char_len, $char_len);
       } else {
-        $self->context_handle_one_char ($_[1], $i-1, $char_len);
-        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
+        $self->_handle_one_char ($_[1], $i+1-$char_len, $char_len);
       }
     }
   }
 
+  ## XXX Broken for 3-byte characters
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
 
   if ($self->{state} eq 'detecting') {
@@ -1504,6 +1518,63 @@ sub handle_data ($$$;$) {
   return $self->{state};
 } # handle_data
 
+sub _handle_one_char ($$$$) {
+  my $self = $_[0];
+  # $self, $str, $offset, $len
+
+  my $order = $_[3] == 2 ? $self->distrib_get_order ($_[1], $_[2]) : -1;
+  if ($order >= 0) {
+    $self->{total_chars}++;
+    if ($order < @{$self->{char_to_freq_order}}) {
+      if (512 > $self->{char_to_freq_order}->[$order]) {
+        $self->{freq_chars}++;
+      }
+    }
+  }
+
+  if ($self->{total_rel} > Web::Encoding::UnivCharDet::CharsetProber::MBCS::MAX_REL_THRESHOLD) {
+    $self->{context_done} = 1;
+  }
+  unless ($self->{context_done}) {
+    my $order = -1;
+    if ($_[3] == 2) {
+      $order = $self->context_get_order2 ($_[1], $_[2]);
+    } elsif ($_[3] == 3) { # EUC-JP CS3
+      my $f = ord substr $_[1], $_[2]+1, 1;
+      if ($self->{context_state} == 0 and
+          ($f == 0xA2 or $f == 0xA6 or $f == 0xA7 or $f == 0xA9 or
+           $f == 0xAA or $f == 0xAB)) {
+        $self->{context_state} = 3;
+        ## If a 3-byte sequence of
+        ## 0x8E GR GR, where GR GR
+        ## is an alphabetical
+        ## character of JIS X 0212,
+        ## is sorounded by ASCII
+        ## characters, it is likely
+        ## an EUC-JP file that
+        ## contains European texts.
+      } else {
+        $self->{context_state} = 2;
+      }
+    } else {
+      if ($self->{context_state} == 3) {
+        $self->{cs3_count}++;
+      }
+      $self->{context_state} = 0;
+      ## 0 : Initial; After single byte character
+      ## 1 : After EUC-JP two-character signature first half
+      ## 2 : After other EUC-JP double or triple byte character
+      ## 3 : After 0 then triple byte alphabet character
+    }
+  
+    if ($order != -1 and $self->{last_char_order} != -1) {
+      $self->{total_rel}++;
+      $self->{rel_sample}->[Web::Encoding::UnivCharDet::Defs::jp2CharContext->[$self->{last_char_order}]->[$order]]++;
+    }
+    $self->{last_char_order} = $order;
+  }
+} # _handle_one_char
+
 sub distrib_get_order ($$$) {
   if ((ord substr $_[1], $_[2], 1) >= 0xA0) {
     return 94 * ((ord substr $_[1], $_[2], 1) - 0xA1) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1;
@@ -1512,22 +1583,15 @@ sub distrib_get_order ($$$) {
   }
 } # distrib_get_order
 
-sub context_get_order ($$$) {
+sub context_get_order2 ($$$) {
   my $self = $_[0];
   my $f = ord substr $_[1], $_[2], 1;
   my $s = ord substr $_[1], $_[2] + 1, 1;
   
-  my $char_len = 1;
-  if ($f == 0x8E or ($f >= 0xA1 and $f <= 0xFE)) {
-    $char_len = 2;
-  } elsif ($f == 0x8F) {
-    $char_len = 3;
-  }
-
   if ($f == 0xA4 and ($s >= 0xA1 and $s <= 0xF3)) {
-    $self->{context_state} = 0;
+    $self->{context_state} = 2;
     $self->{kana_count}++;
-    return ($s - 0xA1, $char_len);
+    return $s - 0xA1;
   }
 
   if ($f == 0xA5 and ($s >= 0xA1 and $s <= 0xF3)) {
@@ -1549,18 +1613,18 @@ sub context_get_order ($$$) {
       ($f == 0xC4 and $s == 0xF0) or
       ($f == 0xF3 and $s == 0xFD)) {
     $self->{signature_count}++;
-    $self->{context_state} = 0;
+    $self->{context_state} = 2;
   } elsif ($f == 0xC8 and $s == 0xFE) {
     $self->{context_state} = 1;
   } elsif ($self->{context_state} == 1 and $f == 0xC6 and $s == 0xFD) {
     $self->{signature_count}++;
-    $self->{context_state} = 0;
+    $self->{context_state} = 2;
   } else {
-    $self->{context_state} = 0;
+    $self->{context_state} = 2;
   }
   
-  return (-1, $char_len);
-} # context_get_order
+  return -1;
+} # context_get_order2
 
 sub get_confidence ($) {
   my $self = $_[0];
@@ -1576,10 +1640,16 @@ sub get_confidence ($) {
     $conf = 0.5;
   }
 
-  my $sigs = $self->{signature_count};
-  if ($sigs) {
+  if ($self->{signature_count}) {
     my $k = 1.6;
-    my $boost_factor = 1 - exp(-$k * $sigs);
+    my $boost_factor = 1 - exp(-$k * $self->{signature_count});
+    $conf += (1 - $conf) * $boost_factor;
+    $conf = 1 if $conf > 1;  
+  }
+
+  if ($self->{cs3_count}) { ## EUC CS3
+    my $k = 1.2;
+    my $boost_factor = 1 - exp(-$k * $self->{cs3_count});
     $conf += (1 - $conf) * $boost_factor;
     $conf = 1 if $conf > 1;  
   }
@@ -1588,12 +1658,13 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->distrib_got_min_data || $_[0]->{signature_count};
+  return $_[0]->distrib_got_min_data ||
+      $_[0]->{signature_count} || $_[0]->{cs3_count};
 } # got_min_data
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, d: %s %s, x: %s, sig=%s)\n",
+  printf "%s [%s] (%s, %s, d: %s %s, x: %s, sig=%d, cs3=%d)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
@@ -1601,7 +1672,8 @@ sub dump_status ($) {
       $self->distrib_get_confidence,
       $self->_distrib_dump_status,
       $self->context_get_confidence,
-      $self->{signature_count};
+      $self->{signature_count},
+      $self->{cs3_count};
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1614,6 +1686,7 @@ sub dump_status_for_json ($) {
     distribution_analyser => $self->distrib_dump_status_for_json,
     context_confidence => $self->context_get_confidence,
     signature_count => $self->{signature_count},
+    cs3_count => $self->{cs3_count},
   };
 } # dump_status_for_json
 
@@ -1674,12 +1747,9 @@ sub handle_data ($$$;$) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
         substr ($self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
-        $self->context_handle_one_char
-            ($self->{last_char}, 2-$char_len, $char_len);
-        $self->distrib_handle_one_char ($self->{last_char}, 0, $char_len);
+        $self->_handle_one_char ($self->{last_char}, 2-$char_len, $char_len);
       } else {
-        $self->context_handle_one_char ($_[1], $i+1-$char_len, $char_len);
-        $self->distrib_handle_one_char ($_[1], $i-1, $char_len);
+        $self->_handle_one_char ($_[1], $i+1-$char_len, $char_len);
       }
       undef $c if $char_len > 1;
     } else {
@@ -1747,13 +1817,46 @@ sub handle_data ($$$;$) {
       if ($self->{coding_sm}->{error_count} > 10) {
         $self->{state} = 'not me';
       }
-    } elsif ($self->context_enough_data and
+    } elsif ($self->context_got_enough_data and
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     }
   }
   return $self->{state};
 } # handle_data
+
+sub _handle_one_char ($$$$) {
+  my $self = $_[0];
+  # $self, $str, $offset, $len
+
+  my $order = $_[3] == 2 ? $self->distrib_get_order ($_[1], $_[2]) : -1;
+  if ($order >= 0) {
+    $self->{total_chars}++;
+    if ($order < @{$self->{char_to_freq_order}}) {
+      if (512 > $self->{char_to_freq_order}->[$order]) {
+        $self->{freq_chars}++;
+      }
+    }
+  }
+
+  if ($self->{total_rel} > Web::Encoding::UnivCharDet::CharsetProber::MBCS::MAX_REL_THRESHOLD) {
+    $self->{context_done} = 1;
+  }
+  unless ($self->{context_done}) {
+    my $order = -1;
+    if ($_[3] == 2) {
+      $order = $self->context_get_order2 ($_[1], $_[2]);
+    } else {
+      $self->{context_state} = 0;
+    }
+  
+    if ($order != -1 and $self->{last_char_order} != -1) {
+      $self->{total_rel}++;
+      $self->{rel_sample}->[Web::Encoding::UnivCharDet::Defs::jp2CharContext->[$self->{last_char_order}]->[$order]]++;
+    }
+    $self->{last_char_order} = $order;
+  }
+} # _handle_one_char
 
 sub distrib_get_order ($$$) {
   my $order;
@@ -1771,23 +1874,15 @@ sub distrib_get_order ($$$) {
   return $order;
 } # distrib_get_order
 
-sub context_get_order ($$$) {
-  my $char_len = 1;
-  if (((ord substr $_[1], $_[2], 1) >= 0x81 and
-       (ord substr $_[1], $_[2], 1) <= 0x9F) or
-      ((ord substr $_[1], $_[2], 1) >= 0xE0 and
-       (ord substr $_[1], $_[2], 1) <= 0xFC)) {
-    $char_len = 2;
-  }
-
+sub context_get_order2 ($$$) {
   if ((substr $_[1], $_[2], 1) eq "\202" and
       (ord substr $_[1], $_[2] + 1, 1) >= 0x9F and
       (ord substr $_[1], $_[2] + 1, 1) <= 0xF1) {
-    return ((ord substr $_[1], $_[2] + 1, 1) - 0x9F, $char_len);
+    return ((ord substr $_[1], $_[2] + 1, 1) - 0x9F);
   }
 
-  return (-1, $char_len);
-} # context_get_order
+  return -1;
+} # context_get_order2
 
 sub get_confidence ($) {
   my $self = $_[0];
