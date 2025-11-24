@@ -5,7 +5,6 @@ our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
 use Web::Encoding::UnivCharDet::Defs3;
 use Web::Encoding::UnivCharDet::CodingStateMachine;
-use Web::Encoding::UnivCharDet::JohabCharsetProber;
 
 sub get_state ($) {
   return $_[0]->{state};
@@ -361,7 +360,6 @@ sub handle_data ($$) {
         $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CentralModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1257BalticModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13BalticModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252IcelandicFaroeseModel,
         
@@ -376,6 +374,7 @@ sub handle_data ($$) {
         $Web::Encoding::UnivCharDet::Defs::MacintoshScandinavianModel,
         $Web::Encoding::UnivCharDet::Defs::X_Mac_CeCentralModel,
 
+        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13BalticModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
 
@@ -386,10 +385,12 @@ sub handle_data ($$) {
         $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
         #$Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
       );
-      push @{$self->{probers}}, @new_prober;
+      my $p = delete $self->{probers}->[2]; # or undef
+      splice @{$self->{probers}}, 0, 1, @new_prober;
+      push @{$self->{probers}}, $p;
       $self->{active_num} += @new_prober;
 
-      for my $i ($old_prober_count..$#{$self->{probers}}) {
+      for my $i (0..$#new_prober) {
         local $_ = $self->{probers}->[$i];
         next unless defined $_;
         my $st = $_->handle_data ($new_buf);
@@ -441,7 +442,14 @@ sub get_confidence ($) {
           $cn->{$charset} //= $i;
         }
       }
-      my $charset = [sort { $cc->{$b} <=> $cc->{$a} || $a cmp $b } keys %$cc]->[0];
+      ## When multiple encodings has equal confidence values, use the
+      ## first encoding in the list.  This can happen when the input
+      ## only has limited numbers of non-ASCII characters and the
+      ## encodings have similar structures, e.g. windows-1257 vs
+      ## iso-8859-13 vs ibm775.
+      my $charset = [sort { $cc->{$b} <=> $cc->{$a} ||
+                            $cn->{$a} <=> $cn->{$b} ||
+                            $a cmp $b } keys %$cc]->[0];
       if (defined $charset) {
         $self->{best_guess} = $cn->{$charset};
         if ($best_conf < 0.21 and $self->{latin} and $charset eq 'windows-1252') {
@@ -502,6 +510,7 @@ sub NEUTRAL_CAT () { 1 }
 sub NEGATIVE_CAT () { 0 }
 sub SYM_CAT () { 4 }
 sub CPY_CAT () { 5 }
+sub CPY2_CAT () { 6 }
 
 sub ILL () { 255 }
 sub CTR () { 254 }
@@ -527,7 +536,7 @@ sub reset ($) {
   my $self = $_[0];
   $self->{state} = 'detecting';
   $self->{last_order} = 255;
-  $self->{seq_counters} = [0, 0, 0, 0, 0, 0];
+  $self->{seq_counters} = [0, 0, 0, 0, 0, 0, 0];
   $self->{total_seqs} = 0;
   $self->{total_char} = 0;
   $self->{ctrl_char} = 0;
@@ -542,8 +551,8 @@ sub handle_data ($$) {
 
   my $ss = $self->{model}->{freq_char_count} // SAMPLE_SIZE;
   for my $i (0..((length $_[1]) - 1)) {
-    my $order = (ord substr $self->{model}->{char_to_order_map},
-                         (ord substr $_[1], $i, 1), 1) || 0;
+    my $cc = ord substr $_[1], $i, 1;
+    my $order = (ord substr $self->{model}->{char_to_order_map}, $cc, 1) || 0;
 
     $self->{total_char}++;
     if ($order == ILL) {
@@ -567,7 +576,9 @@ sub handle_data ($$) {
           ];
         }
         if ($self->{symbol_state} == 1) {
-          $self->{seq_counters}->[CPY_CAT]++;
+          ## This cannot be used as strong implication of SBCS, as $cc
+          ## can be the second byte of a MBCS.
+          $self->{seq_counters}->[CPY2_CAT]++;
         }
       } elsif ($self->{last_order} < SYMBOL_CAT_ORDER) {
         $self->{seq_counters}->[NEGATIVE_CAT]++;
@@ -579,15 +590,27 @@ sub handle_data ($$) {
         $self->{seq_counters}->[NEGATIVE_CAT]++;
         $self->{total_seqs}++;
       }
-    } elsif ($order == SYM or $order == DLM or $order == TMK or $order == ORD) {
+    } elsif ($order == SYM) {
       $self->{seq_counters}->[SYM_CAT]++;
-      if ($self->{symbol_state} == 1) {
+    } elsif ($order == DLM) {
+      $self->{seq_counters}->[SYM_CAT]++;
+      if ($self->{symbol_state} == 1 or $self->{symbol_state} == 2) {
+        $self->{seq_counters}->[CPY_CAT]++;
+      }
+    } elsif ($order == RET) {
+      if ($self->{symbol_state} == 1 or $self->{symbol_state} == 2) {
         $self->{seq_counters}->[CPY_CAT]++;
       }
     } elsif ($order == CPY) {
       if ($self->{last_order} == DLM or $self->{last_order} == 255) {
-        $self->{seq_counters}->[SYM_CAT]++;
         $self->{symbol_state} = 1;
+
+        $self->{last_order} = $order;
+        next;
+      }
+    } elsif ($order == TMK or $order == ORD) {
+      if ($self->{last_order} < SYMBOL_CAT_ORDER) {
+        $self->{symbol_state} = 2;
 
         $self->{last_order} = $order;
         next;
@@ -653,16 +676,13 @@ sub get_confidence ($) {
     }
 
     {
-      my $n = $self->{seq_counters}->[CPY_CAT];
-      if ($n) {
-        my $c = 0.1;
-        my $max_gain = 0.5;
+      my $n = $self->{seq_counters}->[CPY_CAT] + 0.3 * $self->{seq_counters}->[CPY2_CAT];
+      if ($n and $self->{seq_counters}->[NEGATIVE_CAT] < 10) {
+        my $A = 1.0;
+        my $k = 2.0;
+        my $boost = (1 - $r) * $A * (1 - exp(-$k * $n));
 
-        my $gain = $c * log(1 + $n);
-        $gain = $max_gain if $gain > $max_gain;
-
-        $r = 0.3 if $r < 0.3;
-        $r *= 1 + $gain;
+        $r += $boost;
         $r = 0.99 if $r > 0.99;
       }
     }
@@ -691,13 +711,14 @@ sub dump_status ($) {
   my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
   my $neutral_seqs = $self->{seq_counters}->[NEUTRAL_CAT];
   my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
-  printf "  SBCS: %1.3f [%s] (%s, %d %d %d %d s=%d c=%d / %s)\n",
+  printf "  %1.4f [%s] (%s, %d %d %d %d s=%d c=%d,%d / %s)\n",
       $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
       $self->{model}->{debug_name} // $self->get_charset_name,
       $self->{state},
       $positive_seqs, $probable_seqs, $neutral_seqs, $negative_seqs,
       $self->{seq_counters}->[SYM_CAT],
       $self->{seq_counters}->[CPY_CAT],
+      $self->{seq_counters}->[CPY2_CAT],
       $self->{total_char};
 } # dump_status
 
@@ -1124,11 +1145,11 @@ sub got_min_data ($) { $_[0]->{num_of_mb_char} > 6 }
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s)\n",
+  printf "%s [%s] (%s, e=%s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
-      $self->{coding_sm}->_dump_status;
+      $self->{coding_sm}->{error_count};
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1137,7 +1158,7 @@ sub dump_status_for_json ($) {
     type => $self->get_charset_name,
     charset => $self->get_charset_name,
     confidence => $self->get_confidence,
-    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    error_count => $self->{coding_sm}->{error_count},
   };
 } # dump_status_for_json
 
@@ -1335,15 +1356,28 @@ sub context_got_enough_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%.4f [%s] (%s, %s, %s, l=%d, cs3=%d)\n",
+  printf "%.4f [%s] (%s, e=%s, %s, l=%d, cs3=%d)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
-      $self->{coding_sm}->_dump_status,
+      $self->{coding_sm}->{error_count},
       $self->_distrib_dump_status,
       $self->{avg_word_length},
       $self->{cs3_count};
 } # dump_status
+
+sub dump_status_for_json ($) {
+  my $self = $_[0];
+  return {
+    type => (ref $self),
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    error_count => $self->{coding_sm}->{error_count},
+    distribution_analyser => $self->distrib_dump_status_for_json,
+    avg_word_length => $self->{avg_word_length},
+    cs3_count => $self->{cs3_count},
+  };
+} # dump_status_for_json
 
 sub _distrib_dump_status ($) {
   my $self = $_[0];
@@ -1469,6 +1503,99 @@ sub distrib_get_order ($$$) {
   }
 } # distrib_get_order
 
+package Web::Encoding::UnivCharDet::CharsetProber::Johab;
+push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
+our $VERSION = '1.0';
+
+sub _smmodel ($) { Web::Encoding::UnivCharDet::Defs::JohabSMModel }
+sub get_charset_name ($) { 'x-johab' }
+
+sub _init ($) {
+  $_[0]->{char_to_freq_order} = Web::Encoding::UnivCharDet::Defs::EUCKRCharToFreqOrder;
+  $_[0]->{typical_distribution_ratio} = Web::Encoding::UnivCharDet::Defs::EUCKR_TYPICAL_DISTRIBUTION_RATIO;
+} # _init
+
+sub handle_data ($$$;$) {
+  my $self = $_[0];
+  my $start_pos = $_[2] || 0;
+  my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
+  for my $i ($start_pos..($limit_pos - 1)) {
+    my $c = ord substr $_[1], $i, 1;
+    my $coding_state = $self->{coding_sm}->next_state (substr $_[1], $i, 1);
+    # eItsMe is used for other purpose.
+    if ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
+      my $char_len = $self->{coding_sm}->get_current_char_len;
+      my $is_sep = 0;
+      if ($i == $start_pos) {
+        substr ($self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
+        $self->_handle_one_char ($self->{last_char}, 2-$char_len, $char_len);
+        $is_sep = 1 unless $self->{last_char} =~ /[\x84-\xD3].$/;
+      } else {
+        $self->_handle_one_char ($_[1], $i+1-$char_len, $char_len);
+        $is_sep = 1 unless substr ($_[1], $i+1-$char_len, 1) =~ /^[\x84-\xD3]/;
+      }
+      if ($is_sep) {
+        if ($self->{current_word_length}) {
+          $self->{avg_word_length} = 0.9 * $self->{avg_word_length} + 0.1 * $self->{current_word_length};
+          $self->{current_word_length} = 0;
+        }
+      } else {
+        $self->{current_word_length}++;
+      }
+    }
+  }
+
+  substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
+
+  if ($self->{state} eq 'detecting') {
+    if ($self->{coding_sm}->{error_count}) {
+      if ($self->{coding_sm}->{error_count} > 10) {
+        $self->{state} = 'not me';
+      }
+    } elsif ($self->distrib_got_enough_data and
+             $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
+      $self->{state} = 'found it';
+    }
+  }
+  
+  return $self->{state};
+} # handle_data
+
+sub get_confidence ($) {
+  my $self = $_[0];
+  if ($self->{state} eq 'not me') {
+    return 0.01;
+  }
+  my $conf = $self->distrib_get_confidence;
+  if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
+    $conf = 0.5;
+  }
+
+  {
+    my $avg = $self->{avg_word_length};
+    my $mu  = 3.0;
+    my $sigma = 1.0;
+    my $diff = $avg - $mu;
+    my $score = exp( - ($diff * $diff) / (2 * $sigma * $sigma) );
+
+    my $factor = 0.7 + 0.3 * $score;
+    $conf *= $factor;
+    $conf = 0.1 if $conf < 0.1;
+  }
+  
+  return $conf;
+} # get_confidence
+
+sub distrib_get_order ($$$) {
+  my $c = ord substr $_[1], $_[2], 1;
+  if (0x88 <= $c and $c <= 0xD3) {
+    return Web::Encoding::UnivCharDet::Defs::johab_to_euckr $c, ord substr $_[1], $_[2] + 1, 1;
+  } else {
+    return -1;
+  }
+} # distrib_get_order
+
+
 package Web::Encoding::UnivCharDet::CharsetProber::EUCJP;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
 our $VERSION = '1.0';
@@ -1493,7 +1620,7 @@ sub handle_data ($$$;$) {
     } elsif ($coding_state == Web::Encoding::UnivCharDet::Defs::eStart) {
       my $char_len = $self->{coding_sm}->get_current_char_len;
       if ($i == $start_pos) {
-        (substr $self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
+        substr ($self->{last_char}, 1, 1) = substr $_[1], $start_pos, 1;
         $self->_handle_one_char ($self->{last_char}, 2-$char_len, $char_len);
       } else {
         $self->_handle_one_char ($_[1], $i+1-$char_len, $char_len);
@@ -1664,11 +1791,11 @@ sub got_min_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, d: %s %s, x: %s, sig=%d, cs3=%d)\n",
+  printf "%s [%s] (%s, e=%s, d: %s %s, x: %s, sig=%d, cs3=%d)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
-      $self->{coding_sm}->_dump_status,
+      $self->{coding_sm}->{error_count},
       $self->distrib_get_confidence,
       $self->_distrib_dump_status,
       $self->context_get_confidence,
@@ -1682,7 +1809,7 @@ sub dump_status_for_json ($) {
     type => $self->get_charset_name,
     charset => $self->get_charset_name,
     confidence => $self->get_confidence,
-    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    error_count => $self->{coding_sm}->{error_count},
     distribution_analyser => $self->distrib_dump_status_for_json,
     context_confidence => $self->context_get_confidence,
     signature_count => $self->{signature_count},
@@ -1725,7 +1852,7 @@ my $Latin1Type = [
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 7, 0, 7, 7, 0, 6, 5, 5, 2, 5, 5, 5, 5, 5, 5,
-  6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+  6, 6, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1790,7 +1917,8 @@ sub handle_data ($$$;$) {
     } elsif ($self->{latin1_state} == 1 and $Latin1Type->[$cc] == 7) {
       $self->{latin1_count}++;
       $self->{latin1_state} = 0;
-    } elsif ($self->{latin1_state} == 2 and
+    } elsif (($self->{latin1_state} == 2 or
+              $self->{latin1_state} == 4) and
              ($Latin1Type->[$cc] == 1 or
               $Latin1Type->[$cc] == 3 or
               $Latin1Type->[$cc] == 4)) {
@@ -1800,6 +1928,12 @@ sub handle_data ($$$;$) {
       $self->{latin1_state} = 1;
     } elsif ($Latin1Type->[$cc] == 6) {
       $self->{latin1_state} = 3;
+    } elsif ($Latin1Type->[$cc] == 8) {
+      if ($self->{latin1_state} == 1) {
+        $self->{latin1_state} = 4;
+      } else {
+        $self->{latin1_state} = 3;
+      }
     } elsif ($Latin1Type->[$cc] == 5 || $Latin1Type->[$cc] == 2) {
       ## Halfwidth small katakanas or voiced sound marks, not followed
       ## by halfwidth katakana or double-byte character
@@ -1808,6 +1942,11 @@ sub handle_data ($$$;$) {
       }
       $self->{latin1_state} = 3;
     }
+    ## 0: Initial
+    ## 1: After delimiter
+    ## 2: After copyright
+    ## 3: After halfwidth katakana
+    ## 4: After 1 followed by latin1 middle dot
   } # $i
 
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
@@ -1901,9 +2040,9 @@ sub get_confidence ($) {
       $conf = 0.5 + 0.3 * $self->{probers}->[0]->get_confidence;
     }
   }
-  if ($self->{coding_sm}->{latin1_count}) {
+  if ($self->{latin1_count}) {
     my $k = 1.6;
-    my $factor = 0.5 + 0.5 * exp(-$k * $self->{coding_sm}->{latin1_count});
+    my $factor = 0.5 + 0.5 * exp(-$k * $self->{latin1_count});
     $conf *= $factor;
   }
   return $conf;
@@ -1916,11 +2055,11 @@ sub got_min_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, %s, %s %s, l=%d, %s)\n",
+  printf "%s [%s] (%s, e=%s, %s %s, l=%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
-      $self->{coding_sm}->_dump_status,
+      $self->{coding_sm}->{error_count},
       $self->distrib_get_confidence,
       $self->_distrib_dump_status,
       $self->{latin1_count},
@@ -1937,7 +2076,7 @@ sub dump_status_for_json ($) {
     type => $self->get_charset_name,
     charset => $self->get_charset_name,
     confidence => $self->get_confidence,
-    coding_sm => $self->{coding_sm}->dump_status_for_json,
+    error_count => $self->{coding_sm}->{error_count},
     distribution_analyser => $self->distrib_dump_status_for_json,
     context_confidence => $self->context_get_confidence,
     latin1_count => $self->{latin1_count},

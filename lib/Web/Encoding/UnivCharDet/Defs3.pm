@@ -1363,7 +1363,7 @@ PCK4BITS(3,1,1,1,1,1,1,1),  # 60 - 67
 PCK4BITS(1,1,1,1,1,1,1,1),  # 68 - 6f
 PCK4BITS(1,1,3,1,1,1,1,1),  # 70 - 77
 PCK4BITS(1,1,1,1,1,1,3,0),  # 78 - 7f
-PCK4BITS(0,0,0,0,8,8,8,8),  # 80 - 87
+PCK4BITS(0,5,5,5,8,8,8,8),  # 80 - 87
 PCK4BITS(8,8,8,8,8,8,8,8),  # 88 - 8f
 PCK4BITS(8,7,2,7,7,7,7,7),  # 90 - 97
 PCK4BITS(7,7,7,7,7,7,2,2),  # 98 - 9f
@@ -2136,7 +2136,20 @@ our $JohabToEUCKROrder = pack 's*',
   -1,  -1,  -1,  -1
 ;
 
+sub johab_to_euckr ($$) {
+  my $x = ord substr $Web::Encoding::UnivCharDet::Defs::JohabCho,
+      ($_[0] >> 2) & 0x1F, 1;
+  my $y = ord substr $Web::Encoding::UnivCharDet::Defs::JohabJung,
+      (($_[0] << 3) | ($_[1] >> 5)) & 0x1F, 1;
+  my $z = ord substr $Web::Encoding::UnivCharDet::Defs::JohabJong,
+      $_[1] & 0x1F, 1;
 
+  if ($x == 0xff || $y == 0xff || $z == 0xff) {
+    return -1;
+  } else {
+    return unpack 's', substr $Web::Encoding::UnivCharDet::Defs::JohabToEUCKROrder, ($x * 21*28 + $y * 28 + $z)*2, 2;
+  }
+} # johab_to_euckr
 
 
 1;

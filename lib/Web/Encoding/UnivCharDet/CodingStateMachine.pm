@@ -27,15 +27,19 @@ sub next_state ($$) {
   my $cc = ord $_[1];
   my $byte_cls = GETFROMPCK ($cc, $self->{model}->{class_table});
   if ($self->{current_state} == Web::Encoding::UnivCharDet::Defs::eStart) {
-    $self->{current_byte_pos} = 0;
     $self->{current_char_len} = $self->{model}->{char_len_table}->[$byte_cls];
+  } elsif ($self->{current_state} == Web::Encoding::UnivCharDet::Defs::eError) {
+    $self->{current_char_len} = 1;
   }
   my $state = $self->{current_state} = GETFROMPCK ($self->{current_state} * $self->{model}->{class_factor} + $byte_cls, $self->{model}->{state_table});
   if ($state == Web::Encoding::UnivCharDet::Defs::eError) {
     $self->{error_count}++;
   }
-  $self->{current_byte_pos}++;
   return $state;
+  ## When $state is eStart, i.e. a character boundary is found,
+  ## |get_current_char_len| returns the number of the bytes of the
+  ## previous character.  It is 1 if the previous byte is in error and
+  ## is not part of a well-formed multibyte character.
 } # next_state
 
 sub get_current_char_len ($) {
@@ -48,16 +52,13 @@ sub get_coding_state_machine {
 
 sub _dump_status ($) {
   my $self = $_[0];
-  return sprintf "%s / %d e=%d",
-      $self->{current_state},
-      $self->{current_byte_pos} || 0,
+  return sprintf "e=%d",
       $self->{error_count};
 } # _dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
   return {
-    current_state => $self->{current_state},
     error_count => $self->{error_count},
   };
 } # dump_status_for_json
