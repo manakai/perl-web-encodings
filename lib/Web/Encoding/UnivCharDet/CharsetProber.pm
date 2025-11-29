@@ -286,15 +286,8 @@ sub reset ($;$) {
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
   ];
   unless ($refs) {
-    my $hebprober = Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
     push @{$self->{probers}},
-        $hebprober,
-        Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-            ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 0, $hebprober), # logical
-        Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-            ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1, $hebprober); # visual
-    $hebprober->set_model_probers
-        ($self->{probers}->[-2], $self->{probers}->[-1]);
+        Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
   }
   $self->{inactive_probers} = [];
   
@@ -532,11 +525,10 @@ sub ORD () { 248 }
 sub DLM () { 247 }
 sub SYMBOL_CAT_ORDER () { 246 }
 
-sub new ($$;$$) {
+sub new ($$;$) {
   my $self = bless {}, $_[0];
   $self->{model} = $_[1] // die "No model";
   $self->{reversed} = $_[2];
-  $self->{name_prober} = $_[3];
   $self->{model}->{class_table} //= $Web::Encoding::UnivCharDet::Defs::defaultCharClassTable;
   $self->reset;
   return $self;
@@ -766,10 +758,7 @@ sub get_confidence ($) {
 
 sub get_charset_name ($) {
   my $self = $_[0];
-  unless ($self->{name_prober}) {
-    return $self->{model}->{charset_name};
-  }
-  return $self->{name_prober}->get_charset_name;
+  return $self->{model}->{charset_name};
 } # get_charset_name
 
 sub keep_english_letters ($) {
@@ -809,40 +798,37 @@ package Web::Encoding::UnivCharDet::CharsetProber::Hebrew;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub FINAL_KAF () { "\xea" }
-sub NORMAL_KAF () { "\xeb" }
-sub FINAL_MEM () { "\xed" }
-sub NORMAL_MEM () { "\xee" }
-sub FINAL_NUN () { "\xef" }
-sub NORMAL_NUN () { "\xf0" }
-sub FINAL_PE () { "\xf3" }
-sub NORMAL_PE () { "\xf4" }
-sub FINAL_TSADI () { "\xf5" }
-sub NORMAL_TSADI () { "\xf6" }
-
 sub MIN_FINAL_CHAR_DISTANCE () { 5 }
 sub MIN_MODEL_DISTANCE () { 0.01 }
 
 sub VISUAL_HEBREW_NAME () { "iso-8859-8" }
 sub LOGICAL_HEBREW_NAME () { "windows-1255" }
 
-sub is_final ($$) {
-  return (($_[1] eq FINAL_KAF) ||
-          ($_[1] eq FINAL_MEM) ||
-          ($_[1] eq FINAL_NUN) ||
-          ($_[1] eq FINAL_PE) ||
-          ($_[1] eq FINAL_TSADI));
-} # is_final
+my $IS_FINAL = {
+  0xEA, 1, # FINAL_KAF
+  0xED, 1, # FINAL_MEM
+  0xEF, 1, # FINAL_NUN
+  0xF3, 1, # FINAL_PE
+  0xF5, 1, # FINAL_TSADI
+};
 
-sub is_non_final ($$) {
-  return (($_[1] eq NORMAL_KAF) ||
-          ($_[1] eq NORMAL_MEM) ||
-          ($_[1] eq NORMAL_NUN) ||
-          ($_[1] eq NORMAL_PE));
-} # is_non_final
+my $IS_NON_FINAL = {
+  0xEB, 1, # NORMAL_KAF
+  0xEE, 1, # NORMAL_MEM
+  0xF0, 1, # NORMAL_NUN
+  0xF4, 1, # NORMAL_PE
+  ## Not sure why this is excluded...
+  #0xF6, 1, # NORMAL_TSADI
+};
 
 sub new ($) {
   my $self = bless {}, $_[0];
+  $self->{probers} = [
+    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
+        ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 0), # logical
+    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
+        ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1), # visual
+  ];
   $self->reset;
   return $self;
 } # new
@@ -851,93 +837,129 @@ sub reset ($) {
   my $self = $_[0];
   $self->{final_char_logical_score} = 0;
   $self->{final_char_visual_score} = 0;
-  $self->{prev} = ' ';
-  $self->{before_prev} = ' ';
+  $self->{prev} = 0;
+  $self->{before_prev} = 0;
+  $self->{state} = 'detecting';
+  $self->{confidence} = 0.01;
+  for (@{$self->{probers}}) {
+    $_->reset;
+  }
 } # reset
-
-sub set_model_probers ($$$) {
-  my $self = $_[0];
-  $self->{logical_prob} = $_[1];
-  $self->{visual_prob} = $_[2];
-} # set_model_probers
 
 sub handle_data ($$) {
   my $self = $_[0];
-  if ($self->get_state eq 'not me') {
-    return 'not me';
+  if ($self->{state} eq 'not me') {
+    return $self->{state};
+  }
+
+  delete $self->{confidence};
+  my $bad = 0;
+  for (@{$self->{probers}}) {
+    my $state = $_->handle_data ($_[1]);
+    $bad++ if $state eq 'not me';
+  }
+  if ($bad == @{$self->{probers}}) {
+    return $self->{state} = 'not me';
   }
 
   for my $i (0..((length $_[1]) - 1)) {
-    my $c = substr $_[1], $i, 1;
-    if ($c eq ' ') {
-      if ($self->{before_prev} ne ' ') {
-        if ($self->is_final ($self->{prev})) {
+    my $cc = ord substr $_[1], $i, 1;
+    if (0xD0 <= $cc and $cc <= 0xFA) { # hebrew letter
+      if ($self->{before_prev} == 0 and $IS_FINAL->{$self->{prev}}) {
+        ## \b, final, letter
+        $self->{final_char_visual_score}++;
+      }
+    } else { # not a hebrew letter
+      $cc = 0;
+      if ($self->{before_prev} != 0) {
+        if ($IS_FINAL->{$self->{prev}}) {
+          ## letter, final, \b
           $self->{final_char_logical_score}++;
-        } elsif ($self->is_non_final ($self->{prev})) {
+        } elsif ($IS_NON_FINAL->{$self->{prev}}) {
+          ## letter, non-final, \b
           $self->{final_char_visual_score}++;
         }
       }
-    } else {
-      if ($self->{before_prev} eq ' ' and
-          $self->is_final ($self->{prev}) and
-          ($c ne ' ')) {
-        $self->{final_char_visual_score}++;
-      }
     }
     $self->{before_prev} = $self->{prev};
-    $self->{prev} = $c;
+    $self->{prev} = $cc;
   } # $i
 
-  return 'detecting';
+  return $self->{state};
 } # handle_data
+
+sub get_state ($) { $_[0]->{state} }
 
 sub get_charset_name ($) {
   my $self = $_[0];
+
+  if ($self->{final_char_logical_score} and not $self->{final_char_visual_score}) {
+    $self->{confidence} = $self->{probers}->[0]->get_confidence;
+    return LOGICAL_HEBREW_NAME;
+  } elsif ($self->{final_char_visual_score} and not $self->{final_char_logical_score}) {
+    $self->{confidence} = $self->{probers}->[1]->get_confidence;
+    return VISUAL_HEBREW_NAME;
+  }
+  
   my $finalsub = $self->{final_char_logical_score} - $self->{final_char_visual_score};
   if ($finalsub >= MIN_FINAL_CHAR_DISTANCE) {
+    $self->{confidence} = $self->{probers}->[0]->get_confidence;
     return LOGICAL_HEBREW_NAME;
   } elsif ($finalsub <= - MIN_FINAL_CHAR_DISTANCE) {
+    $self->{confidence} = $self->{probers}->[1]->get_confidence;
     return VISUAL_HEBREW_NAME;
   }
 
-  my $modelsub = $self->{logical_prob}->get_confidence - $self->{visual_prob}->get_confidence;
+  my $modelsub = $self->{probers}->[0]->get_confidence # logical
+               - $self->{probers}->[1]->get_confidence; # visual
   if ($modelsub > MIN_MODEL_DISTANCE) {
+    $self->{confidence} = $self->{probers}->[0]->get_confidence;
     return LOGICAL_HEBREW_NAME;
   } elsif ($modelsub < - MIN_MODEL_DISTANCE) {
+    $self->{confidence} = $self->{probers}->[1]->get_confidence;
     return VISUAL_HEBREW_NAME;
   }
 
   if ($finalsub < 0) {
+    $self->{confidence} = $self->{probers}->[1]->get_confidence;
     return VISUAL_HEBREW_NAME;
   }
 
+  $self->{confidence} = $self->{probers}->[0]->get_confidence;
   return LOGICAL_HEBREW_NAME;
 } # get_charset_name
 
-sub get_state ($) {
+sub get_confidence ($) {
   my $self = $_[0];
-  if ($self->{logical_prob}->get_state eq 'not me' and
-      $self->{visual_prob}->get_state eq 'not me') {
-    return 'not me';
-  }
-  return 'detecting';
-} # get_state
-
-sub get_confidence ($) { 0.0 }
+  $self->get_charset_name unless defined $self->{confidence};
+  return $self->{confidence};
+} # get_confidence
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "  HEB: %d - %d [Logical-Visual score]\n",
+  printf "  HEB: %.3f [%s] (%s, L=%d V=%d)\n",
+      $self->get_confidence,
+      $self->get_charset_name,
+      $self->{state},
       $self->{final_char_logical_score},
       $self->{final_char_visual_score};
+  for (@{$self->{probers}}) {
+    print "  ";
+    $_->dump_status;
+  }
 } # dump_status
 
 sub dump_status_for_json ($) {
   my $self = $_[0];
-  return {type => ref $self,
-          probers => [map { $_->dump_status_for_json } grep { defined $_ } $self->{logical_prob}, $self->{visual_prob}],
-          logical => $self->{final_char_logical_score},
-          visual => $self->{final_char_visual_score}};
+  return {
+    type => ref $self,
+    charset => $self->get_charset_name,
+    confidence => $self->get_confidence,
+    state => $self->{state},
+    probers => [map { $_->dump_status_for_json } @{$self->{probers}}],
+    logical => $self->{final_char_logical_score},
+    visual => $self->{final_char_visual_score},
+  };
 } # dump_status_for_json
 
 package Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup;
