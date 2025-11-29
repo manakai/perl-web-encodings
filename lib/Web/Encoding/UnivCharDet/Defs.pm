@@ -42,6 +42,68 @@ sub DOT () { CPY }
 
 # ------
 
+our $CharClassMask    = 0b00001111;
+sub   CCB_CAPITAL () { 0b00010000 }
+sub     CCB_SMALL () { 0b00100000 }
+sub      CC_DIGIT () { 0b00000001 }
+sub      CC_ROMAN () { 0b00000010 }
+sub   CC_CURRENCY () { 0b00000011 }
+sub  CC_DELIMITER () { 0b00000100 }
+sub        CC_DOT () { 0b00000101 }
+sub  CC_SEPARATOR () { 0b00000110 }
+sub     CC_LQUOTE () { 0b00000111 }
+sub     CC_RQUOTE () { 0b00001000 }
+sub      CC_RAPOS () { 0b00001001 }
+sub  CC_B_ORDINAL () { 0b00001010 }
+sub    CC_ORDINAL () { 0b00001011 }
+sub         CC_TM () { 0b00001100 }
+sub  CC_COPYRIGHT () { 0b00001101 }
+
+our $InitialCharClass = CC_DELIMITER;
+our $EOFCharClass     = CC_DELIMITER;
+our $defaultCharClassTable = pack 'C*',
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+;
+
+our $windows_1252CharClassTable = pack 'C*',
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  4,  4,  4,  4,  0,  0,
+  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  4,  0,  4,  0,
+  0, 16, 16, 16, 26, 16, 16, 16, 16, 16, 16, 16, 16, 26, 26, 16,
+ 16, 16, 16, 26, 16, 16, 16, 16, 16, 16, 16,  0,  0,  0,  0,  0,
+  0, 32, 32, 32, 32, 32, 32, 32, 32, 34, 32, 32, 32, 32, 42, 32,
+ 32, 32, 32, 32, 32, 32, 34, 32, 34, 32, 32,  0,  0,  0,  0,  0,
+  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 16,  0,  0,  0,
+  0,  7,  9,  7,  8,  6,  6,  6,  0, 12,  0,  0, 32,  0,  0, 16,
+  4,  0,  3,  3,  3,  3,  0,  0,  0, 13, 11,  0,  0,  0, 12,  0,
+ 11,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11,  0,  0,  0,  0,  0,
+ 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+ 16, 16, 16, 16, 16, 16, 16,  0, 16, 16, 16, 16, 16, 16, 16, 48,
+ 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+ 32, 32, 32, 32, 32, 32, 32,  0, 32, 32, 32, 32, 32, 32, 32, 32,
+;
+
+
+
+
+# ------
+
 my $Windows_1252IcelandicFaroese_CharToOrderMap = pack 'C*',
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,RET,CTR,CTR,RET,CTR,CTR,
   CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,CTR,
@@ -106,6 +168,7 @@ our $Windows_1252IcelandicFaroeseModel = {
   precedence_matrix => $IcelandicFaroeseLangModel,
   freq_char_count => 37,
   typical_positive_ratio => 0.9990070752977356,
+  class_table => $windows_1252CharClassTable,
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Windows_1252IcelandicFaroeseModel",
@@ -302,6 +365,7 @@ our $Windows_1252WesternModel = {
   precedence_matrix => $WesternLangModel,
   freq_char_count => 51,
   typical_positive_ratio => 0.9990047080448273,
+  class_table => $windows_1252CharClassTable,
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Windows_1252Western",
@@ -438,6 +502,7 @@ our $Windows_1252ScandinavianModel = {
   precedence_matrix => $ScandinavianLangModel,
   freq_char_count => 33,
   typical_positive_ratio => 0.999012287891397,
+  class_table => $windows_1252CharClassTable,
   keep_english_letter => 1,
   charset_name => "windows-1252",
   debug_name => "Windows_1252Scandinavian",
@@ -840,7 +905,7 @@ my $Ibm775Baltic_CharToOrderMap = pack "C*",
   194, 34,195, 18, 31, 44,196,197,198, 27,199,200, 25,201, 31,202,
   203,204,205,206, 41, 44,207,208,209, 41, 34,210,SYM,211,SYM,SYM,
    18, 25,212,213,214,215,SYM,SYM,CPY,TMK,SYM,SYM,SYM,SYM,SYM,SYM,
-  SYM,SYM,SYM,SYM,SYM, 35, 33, 39,CPY,SYM,SYM,SYM,SYM,SYM,SYM,SYM,
+  SYM,SYM,SYM,SYM,SYM, 35, 33, 39,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,
   SYM,SYM,SYM,SYM,SYM,SYM, 26, 30,SYM,SYM,SYM,SYM,SYM,SYM,SYM,SYM,
    35, 33, 39, 20, 37, 22, 26, 30, 28,SYM,SYM,SYM,SYM,SYM,SYM,SYM,
   216,217,218,219, 32, 32,220,221, 43, 43, 38, 38, 36, 27, 36,SYM,
@@ -4077,6 +4142,11 @@ our $Armscii_8ArmenianModel = {
   keep_english_letter => 1,
   charset_name => "armscii-8",
 };
+
+
+
+
+
 
 
 # ------

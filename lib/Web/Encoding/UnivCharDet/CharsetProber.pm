@@ -77,11 +77,13 @@ sub filter_with_english_letters ($$) {
   } # $i
 
   unless ($is_in_tag) {
-    while ($prev < $len) { $new .= substr $_[1]. $prev, 1; $prev++ }
+    while ($prev < $len) { $new .= substr $_[1], $prev, 1; $prev++ }
   }
 
   return $new;
 } # filter_with_english_letters
+
+sub handle_eof ($) { }
 
 sub dump_status ($) {
   my $self = $_[0];
@@ -410,6 +412,13 @@ sub handle_data ($$) {
   return $self->{state};
 } # handle_data
 
+sub handle_eof ($) {
+  my $self = $_[0];
+  for (@{$self->{probers}}) {
+    $_->handle_eof if defined $_;
+  }
+} # handle_eof
+
 sub get_confidence ($) {
   my $self = $_[0];
 
@@ -528,6 +537,7 @@ sub new ($$;$$) {
   $self->{model} = $_[1] // die "No model";
   $self->{reversed} = $_[2];
   $self->{name_prober} = $_[3];
+  $self->{model}->{class_table} //= $Web::Encoding::UnivCharDet::Defs::defaultCharClassTable;
   $self->reset;
   return $self;
 } # new
@@ -544,6 +554,7 @@ sub reset ($) {
   $self->{freq_char} = 0;
   $self->{enough_threshold} = SB_ENOUGH_REL_THRESHOLD;
   $self->{symbol_state} = 0;
+  $self->{class_state} = 0;
 } # reset
 
 sub handle_data ($$) {
@@ -575,11 +586,6 @@ sub handle_data ($$) {
                     ($order * $ss + $self->{last_order}), 1
           ];
         }
-        if ($self->{symbol_state} == 1) {
-          ## This cannot be used as strong implication of SBCS, as $cc
-          ## can be the second byte of a MBCS.
-          $self->{seq_counters}->[CPY2_CAT]++;
-        }
       } elsif ($self->{last_order} < SYMBOL_CAT_ORDER) {
         $self->{seq_counters}->[NEGATIVE_CAT]++;
         $self->{total_seqs}++;
@@ -592,32 +598,88 @@ sub handle_data ($$) {
       }
     } elsif ($order == SYM) {
       $self->{seq_counters}->[SYM_CAT]++;
-    } elsif ($order == DLM) {
-      $self->{seq_counters}->[SYM_CAT]++;
-      if ($self->{symbol_state} == 1 or $self->{symbol_state} == 2) {
-        $self->{seq_counters}->[CPY_CAT]++;
-      }
-    } elsif ($order == RET) {
-      if ($self->{symbol_state} == 1 or $self->{symbol_state} == 2) {
-        $self->{seq_counters}->[CPY_CAT]++;
-      }
-    } elsif ($order == CPY) {
-      if ($self->{last_order} == DLM or $self->{last_order} == 255) {
-        $self->{symbol_state} = 1;
-
-        $self->{last_order} = $order;
-        next;
-      }
-    } elsif ($order == TMK or $order == ORD) {
-      if ($self->{last_order} < SYMBOL_CAT_ORDER) {
-        $self->{symbol_state} = 2;
-
-        $self->{last_order} = $order;
-        next;
-      }
     }
     $self->{last_order} = $order;
     $self->{symbol_state} = 0;
+
+    my $char_class_all = ord substr $self->{model}->{class_table}, $cc, 1;
+    my $char_class = $char_class_all & $Web::Encoding::UnivCharDet::Defs::CharClassMask;
+    if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DELIMITER) {
+      if ($self->{class_state} == 3 and $cc <= 0x7F) {
+        $self->{seq_counters}->[CPY_CAT]++;
+      } elsif (($self->{class_state} == 4 and $cc <= 0x7F) or
+               $self->{class_state} == 3 or
+               $self->{class_state} == 7) {
+        $self->{seq_counters}->[CPY2_CAT]++;
+      }
+      if ($cc <= 0x7F) {
+        $self->{class_state} = 2;
+      } else {
+        $self->{class_state} = 6;
+      }
+    } elsif (($self->{class_state} == 2 or $self->{class_state} == 0) and
+             $char_class == Web::Encoding::UnivCharDet::Defs::CC_COPYRIGHT) {
+      $self->{class_state} = 3;
+      ## Delimiter followed by copyright followed by delimiter is
+      ## counted as a strong implication for the encoding.  Many Web
+      ## pages have a 0xA9 byte, i.e. a copyright sign in ANSI code
+      ## pages, enclosed by spaces or tags.
+      ##
+      ## Though 0xA9 is a valid Shift_JIS character, it's a halfwidth
+      ## small Katakana, which should have been preceded by a
+      ## halfwidth Katakana.
+      ##
+      ## Sometimes the copyright sign is followed by a year or a
+      ## copyright holder's name.  In many multibyte encodings the
+      ## 0xA9 byte can be the first byte of a multibyte character.
+      ##
+      ## In many Macintosh encodings, 0xA9 is copyright sign.
+      ##
+      ## In many OEM code pages, 0xA8 is copyright sign.  It's also a
+      ## halfwidth small Katakana in Shift_JIS and can be the first
+      ## byte of a multibyte character.
+      ##
+      ## 0xA0 can be the second byte of a multibyte character such
+      ## that recognizing 0x20 0xA9 0xA0 or 0xA0 0xA9 0xA0 as a strong
+      ## implication is a bit dangerous.
+    } elsif ($self->{class_state} == 6 and
+             $char_class == Web::Encoding::UnivCharDet::Defs::CC_COPYRIGHT) {
+      $self->{class_state} = 7;
+    } elsif ($cc <= 0x7F and
+             ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DIGIT or
+              $char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL))) {
+      $self->{class_state} = 5;
+    } elsif ($self->{class_state} == 5 and
+             $char_class == Web::Encoding::UnivCharDet::Defs::CC_TM) {
+      $self->{class_state} = 4;
+      ## ASCII alphanumeric followed by a trademark or a registered
+      ## trademark followed by delimiter is counted as an implication
+      ## for the encoding.
+      ##
+      ## 0xAE registered trademark in many ANSI code pages
+      ## 0xA9 registered trademark in many OEM code pages
+      ## 0xA8 registered trademark in many Macintosh encodings
+      ## 0x99 trademark in many ANSI code pages
+      ## 0xAA trademark in many Macintosh encodings
+      ##
+      ## 0xA8 .. 0xAE are halfwidth Katakana in Shift_JIS and will not
+      ## follow a alphanumeric in normal texts.
+      ##
+      ## 0x99 and 0xA8 .. 0xAE can be one of the bytes of a multibyte
+      ## character.  However, if it is preceded by an ASCII
+      ## alphanumerical byte and followed by an ASCII delimiter byte,
+      ## it cannot be a port of a well-formed multibyte character.
+    } else {
+      $self->{class_state} = 1;
+      ## 0: initial
+      ## 1: normal
+      ## 2: after ASCII delimiter
+      ## 3: after copyright
+      ## 4: after trademark
+      ## 5: after ASCII alphanumeric
+      ## 6: after non-ASCII delimiter
+      ## 7: after non-ASCII delimiter followed by copyright
+    }
   } # $i
 
   ## Seems less useful
@@ -635,6 +697,15 @@ sub handle_data ($$) {
 
   return $self->{state};
 } # handle_data
+
+sub handle_eof ($) {
+  my $self = $_[0];
+  if ($self->{class_state} == 3) {
+    $self->{seq_counters}->[CPY_CAT]++;
+  } elsif ($self->{class_state} == 4) {
+    $self->{seq_counters}->[CPY2_CAT]++;
+  }
+} # handle_eof
 
 sub get_confidence ($) {
   my $self = $_[0];
@@ -1008,6 +1079,13 @@ sub handle_data ($$) {
   $self->{keep_next} = $keep_next;
   return $self->{state};
 } # handle_data
+
+sub handle_eof ($) {
+  my $self = $_[0];
+  for (@{$self->{probers}}) {
+    $_->handle_eof if defined $_;
+  }
+} # handle_eof
 
 sub get_confidence ($) {
   my $self = $_[0];
@@ -1885,7 +1963,7 @@ sub handle_data ($$$;$) {
 
     ## Run the prober to test whether runs of halfwidth katakanas are
     ## meaningful Japanese text or not.
-    if (defined $c) {
+    if (defined $c and $cc > 0xA0) {
       if (defined $self->{hwword}) {
         $self->{hwword} .= $c;
       } else {
@@ -1963,6 +2041,16 @@ sub handle_data ($$$;$) {
   }
   return $self->{state};
 } # handle_data
+
+sub handle_eof ($) {
+  my $self = $_[0];
+  if (defined $self->{hwword}) {
+    if ($self->{hwword} =~ /[^\x00-\x7F]/) {
+      $self->{hwword} .= ' ';
+      $self->{probers}->[0]->handle_data (delete $self->{hwword});
+    }
+  }
+} # handle_eof
 
 sub _handle_one_char ($$$$) {
   my $self = $_[0];
@@ -2050,7 +2138,7 @@ sub get_confidence ($) {
 
 sub got_min_data ($) {
   return $_[0]->distrib_got_min_data ||
-         $_[0]->{probers}->[0]->{seq_counters}->[3] > 4; # POSITIVE_CAT
+         $_[0]->{probers}->[0]->{seq_counters}->[3] => 4; # POSITIVE_CAT
 } # got_min_data
 
 sub dump_status ($) {

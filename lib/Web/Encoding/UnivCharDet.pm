@@ -329,6 +329,7 @@ sub data_end ($) {
   }
 
   if (defined $self->{utf1632_prober}) {
+    $self->{utf1632_prober}->handle_eof;
     $self->{reported} = $self->{utf1632_prober}->get_charset_name; # or undef
   }
 
@@ -336,6 +337,7 @@ sub data_end ($) {
     my $max_prober_confidence = 0.0;
     my $max_prober;
     for (grep { defined $_ } @{$self->{charset_probers}}) {
+      $_->handle_eof;
       my $prober_confidence = $_->get_confidence;
       if ($prober_confidence > $max_prober_confidence) {
         $max_prober_confidence = $prober_confidence;
@@ -356,6 +358,7 @@ sub data_end ($) {
     }
   } elsif ($self->{input_state} eq 'pure ascii' or
            $self->{input_state} eq 'esc ascii') {
+    #$self->{esc_charset_prober}->handle_eof;
     if ($self->{esc_found}) {
       #
     } elsif ($self->{binary_found}) {
