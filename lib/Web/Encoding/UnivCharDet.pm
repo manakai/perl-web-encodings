@@ -232,7 +232,7 @@ sub handle_data ($$) {
           ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
                   (resolve_latin1_refs => 1);
     }
-    $self->{resolve_latin1_refs} = 'windows-1252';
+    $self->{resolve_latin1_refs} = 1;
   } else {
     delete $self->{resolve_latin1_refs};
     delete $self->{charset_probers}->[4];
@@ -272,7 +272,7 @@ sub handle_data ($$) {
   } elsif ($self->{input_state} eq 'high byte') {
     if (defined $self->{resolve_latin1_refs}) {
       my $x = $_[1];
-      if ($self->{resolve_latin1_refs} eq 'windows-1252') {
+      if ($self->{resolve_latin1_refs}) {
         $x =~ s{&#(12[89]|1[3-9][0-9]|2[0-4][0-9]|25[0-5]);}{pack 'C', $1}ge;
         $x =~ s{&([A-Za-z0-9]+);}{
           if (defined $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$1}) {

@@ -10,44 +10,6 @@ sub get_state ($) {
   return $_[0]->{state};
 } # get_state
 
-sub set_resolve_latin1_refs ($$) {
-  my $self = $_[0];
-  if ($self->{resolve_latin1_refs} = $_[1]) {
-    for (grep { defined $_ } @{$self->{probers} or []}) {
-      $_->set_resolve_latin1_refs ($self->{resolve_latin1_refs});
-    }
-  }
-} # set_resolve_latin1_refs
-
-sub filter_without_english_letters ($$) {
-  my $meet_msb = 0;
-  my $prev = 0;
-  my $new = '';
-  my $len = length $_[1];
-  for my $i (0..($len - 1)) {
-    my $c = ord substr $_[1], $i, 1;
-    if ($c & 0x80) {
-      $meet_msb = 1;
-    } elsif ($c < 0x41 or
-             ($c > 0x5A and $c < 0x61) or
-             $c > 0x7A) {
-      if ($meet_msb and $i > $prev) {
-        while ($prev < $i) { $new .= substr $_[1], $prev, 1; $prev++ }
-        $prev++;
-        $new .= ' ';
-        $meet_msb = 0;
-      } else {
-        $prev = $i + 1;
-      }
-    }
-  }
-  if ($meet_msb and $len > $prev) {
-    while ($prev < $len) { $new .= substr $_[1], $prev, 1; $prev++ }
-  }
-
-  return $new;
-} # filter_without_english_letters
-
 sub filter_with_english_letters ($$) {
   my $is_in_tag = 0;
   my $new = '';
@@ -234,19 +196,17 @@ our $VERSION = '1.0';
 sub new ($;%) {
   my $self = bless {}, shift;
   my %args = @_;
-  $self->reset ($args{resolve_latin1_refs});
-  $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
+  $self->reset (%args);
   return $self;
 } # new
 
-sub reset ($;$) {
-  my $self = $_[0];
-  my $refs = $_[1];
-  $self->{probers} = $refs ? [
+sub reset ($;%) {
+  my ($self, %args) = @_;
+  $self->{probers} = $args{resolve_latin1_refs} ? [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     undef, # [1]
     undef, # [2]
-    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) }
     $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
     $Web::Encoding::UnivCharDet::Defs::TsciiModel,
@@ -285,7 +245,9 @@ sub reset ($;$) {
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
   ];
-  unless ($refs) {
+  if ($args{resolve_latin1_refs}) {
+    $self->{resolve_latin1_refs} = 1;
+  } else {
     push @{$self->{probers}},
         Web::Encoding::UnivCharDet::CharsetProber::Hebrew->new;
   }
@@ -313,38 +275,36 @@ sub get_charset_name ($) {
 sub handle_data ($$) {
   my $self = $_[0];
 
-  my $new_buf = $self->filter_without_english_letters ($_[1]);
-  if (length $new_buf) {
-    for my $i (0..$#{$self->{probers}}) {
-      local $_ = $self->{probers}->[$i];
-      next unless defined $_;
-      my $st = $_->handle_data ($new_buf);
-      if ($st eq 'found it') {
-        $self->{best_guess} = $i;
-        return $self->{state} = 'found it';
-      } elsif ($st eq 'not me') {
-        push @{$self->{inactive_probers}}, delete $self->{probers}->[$i];
-        $self->{active_num}--;
-        if ($self->{active_num} <= 0) {
-          return $self->{state} = 'not me';
-        }
+  for my $i (0..$#{$self->{probers}}) {
+    local $_ = $self->{probers}->[$i];
+    next unless defined $_;
+    my $st = $_->handle_data ($_[1]);
+    if ($st eq 'found it') {
+      $self->{best_guess} = $i;
+      return $self->{state} = 'found it';
+    } elsif ($st eq 'not me') {
+      push @{$self->{inactive_probers}}, delete $self->{probers}->[$i];
+      $self->{active_num}--;
+      if ($self->{active_num} <= 0) {
+        return $self->{state} = 'not me';
       }
-    } # $i
+    }
+  } # $i
 
-    if (not $self->{latin} and
+  if (not $self->{latin} and
         ((defined $self->{probers}->[0] and
           $self->{probers}->[0]->get_confidence > 0.3) or
          (defined $self->{probers}->[1] and
           $self->{probers}->[1]->get_confidence > 0.3) or
          (defined $self->{probers}->[2] and
           $self->{probers}->[2]->get_confidence > 0.2))) {
-      $self->{latin} = 1;
-      push @{$self->{inactive_probers}}, delete $self->{probers}->[0]
-          if defined $self->{probers}->[0]; # Latin1
+    $self->{latin} = 1;
+    push @{$self->{inactive_probers}}, delete $self->{probers}->[0]
+        if defined $self->{probers}->[0]; # Latin1
 
       my $old_prober_count = @{$self->{probers}};
       my @new_prober = $self->{resolve_latin1_refs} ? (
-        map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+        map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) }
         $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
         #$Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
@@ -385,23 +345,23 @@ sub handle_data ($$) {
       push @{$self->{probers}}, $p;
       $self->{active_num} += @new_prober;
 
-      for my $i (0..$#new_prober) {
-        local $_ = $self->{probers}->[$i];
-        next unless defined $_;
-        my $st = $_->handle_data ($new_buf);
-        if ($st eq 'found it') {
-          $self->{best_guess} = $i;
-          return $self->{state} = 'found it';
-        } elsif ($st eq 'not me') {
-          push @{$self->{inactive_probers}}, delete $self->{probers}->[$i];
-          $self->{active_num}--;
-          if ($self->{active_num} <= 0) {
-            return $self->{state} = 'not me';
-          }
+    for my $i (0..$#new_prober) {
+      local $_ = $self->{probers}->[$i];
+      next unless defined $_;
+      my $st = $_->handle_data ($_[1]);
+      if ($st eq 'found it') {
+        $self->{best_guess} = $i;
+        return $self->{state} = 'found it';
+      } elsif ($st eq 'not me') {
+        push @{$self->{inactive_probers}}, delete $self->{probers}->[$i];
+        $self->{active_num}--;
+        if ($self->{active_num} <= 0) {
+          return $self->{state} = 'not me';
         }
-      } # $i
-    }
+      }
+    } # $i
   }
+  
   return $self->{state};
 } # handle_data
 
@@ -525,17 +485,16 @@ sub ORD () { 248 }
 sub DLM () { 247 }
 sub SYMBOL_CAT_ORDER () { 246 }
 
-sub new ($$;$) {
-  my $self = bless {}, $_[0];
-  $self->{model} = $_[1] // die "No model";
-  $self->{reversed} = $_[2];
+sub new ($$;%) {
+  my $self = bless {}, shift;
+  $self->{model} = shift // die "No model";
   $self->{model}->{class_table} //= $Web::Encoding::UnivCharDet::Defs::defaultCharClassTable;
-  $self->reset;
+  $self->reset (@_);
   return $self;
 } # new
 
-sub reset ($) {
-  my $self = $_[0];
+sub reset ($;%) {
+  my ($self, %args) = @_;
   $self->{state} = 'detecting';
   $self->{last_order} = 255;
   $self->{seq_counters} = [0, 0, 0, 0, 0, 0, 0];
@@ -547,15 +506,101 @@ sub reset ($) {
   $self->{enough_threshold} = SB_ENOUGH_REL_THRESHOLD;
   $self->{symbol_state} = 0;
   $self->{class_state} = 0;
+  $self->{word_state} = $args{tokenized} ? 4 : 0;
+  $self->{reversed} = $args{reversed};
+  #$self->{resolve_latin1_refs} = $args{resolve_latin1_refs};
 } # reset
 
 sub handle_data ($$) {
   my $self = $_[0];
-
   my $ss = $self->{model}->{freq_char_count} // SAMPLE_SIZE;
-  for my $i (0..((length $_[1]) - 1)) {
+
+  my $i = 0;
+  my $word_start_i = 0;
+  my $max_i = (length $_[1]) - 1;
+  while ($i <= $max_i) {
     my $cc = ord substr $_[1], $i, 1;
-    my $order = (ord substr $self->{model}->{char_to_order_map}, $cc, 1) || 0;
+    my $char_class_all = ord substr $self->{model}->{class_table}, $cc, 1;
+    my $char_class = $char_class_all & $Web::Encoding::UnivCharDet::Defs::CharClassMask;
+
+    my @cc;
+    ## Input non-ASCII bytes and sorounding ASCII alphabet letters to
+    ## the model.
+    # $self->{word_state}
+    #   0  Initial
+    #   1  non-ASCII
+    #   2  ASCII word
+    #   3  trailing ASCII word
+    #   4  tokenized data
+    if ($self->{word_state} == 1) {
+      if ($cc >= 0x80) {
+        push @cc, $cc;
+      } else {
+        if ($char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL)) {
+          $self->{word_state} = 3;
+          push @cc, $cc;
+        } else {
+          #push @cc, $cc;
+          push @cc, 0x20;
+          $self->{word_state} = 0;
+        }
+      }
+    } elsif ($self->{word_state} == 3) {
+      if ($cc >= 0x80) {
+        $self->{word_state} = 1;
+        push @cc, $cc;
+      } else {
+        if ($char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL)) {
+          push @cc, $cc;
+        } else {
+          #push @cc, $cc;
+          push @cc, 0x20;
+          $self->{word_state} = 0;
+        }
+      }
+    } elsif ($self->{word_state} == 2) {
+      if ($cc >= 0x80) {
+        $self->{word_state} = 1;
+        push @cc, 0x20;
+        $word_start_i = $i - 10 if $word_start_i + 10 < $i;
+        for ($word_start_i .. ($i - 1)) {
+          push @cc, ord substr $_[1], $_, 1;
+        }
+        push @cc, $cc;
+      } else {
+        if ($char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL)) {
+          #
+        } else {
+          $self->{word_state} = 0;
+        }
+      }
+    } elsif ($self->{word_state} == 4) {
+      push @cc, $cc;
+    } else { # 0 initial
+      if ($cc >= 0x80) {
+        $self->{word_state} = 1;
+        push @cc, $cc;
+      } else {
+        if ($char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL)) {
+          $self->{word_state} = 2;
+          #$word_start_i = $i - 1;
+          #$word_start_i = 0 if $i < 1;
+          $word_start_i = $i;
+        }
+      }
+    }
+    if ($self->{word_state} == 2) {
+      ## Serve last 10 ASCII letters to the model such that it is
+      ## taken into account in case the next chunk starts with
+      ## non-ASCII bytes.
+      $word_start_i = $max_i - 10 if $word_start_i + 10 < $max_i;
+      #for ($word_start_i .. ($i - 1)) {
+        # XXX
+      #}
+    }
+
+    for my $cc (@cc) {
+      my $order = (ord substr $self->{model}->{char_to_order_map}, $cc, 1) || 0;
 
     $self->{total_char}++;
     if ($order == ILL) {
@@ -593,9 +638,8 @@ sub handle_data ($$) {
     }
     $self->{last_order} = $order;
     $self->{symbol_state} = 0;
+    } # $cc
 
-    my $char_class_all = ord substr $self->{model}->{class_table}, $cc, 1;
-    my $char_class = $char_class_all & $Web::Encoding::UnivCharDet::Defs::CharClassMask;
     if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DELIMITER) {
       if ($self->{class_state} == 3 and $cc <= 0x7F) {
         $self->{seq_counters}->[CPY_CAT]++;
@@ -672,6 +716,8 @@ sub handle_data ($$) {
       ## 6: after non-ASCII delimiter
       ## 7: after non-ASCII delimiter followed by copyright
     }
+
+    $i++;
   } # $i
 
   ## Seems less useful
@@ -787,6 +833,7 @@ sub dump_status_for_json ($) {
   return {
     type => $self->{model}->{debug_name} // $self->get_charset_name,
     charset => $self->get_charset_name,
+    #htmlrefs => !! resolve_latin1_refs
     state => $self->{state},
     confidence => $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
     seq_counters => $self->{seq_counters},
@@ -821,19 +868,19 @@ my $IS_NON_FINAL = {
   #0xF6, 1, # NORMAL_TSADI
 };
 
-sub new ($) {
+sub new ($;%) {
   my $self = bless {}, $_[0];
   $self->{probers} = [
-    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-        ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 0), # logical
-    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
-        ($Web::Encoding::UnivCharDet::Defs::Win1255Model, 1), # visual
+    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new # logical
+        ($Web::Encoding::UnivCharDet::Defs::Win1255Model),
+    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new # visual
+        ($Web::Encoding::UnivCharDet::Defs::Win1255Model),
   ];
   $self->reset;
   return $self;
 } # new
 
-sub reset ($) {
+sub reset ($;%) {
   my $self = $_[0];
   $self->{final_char_logical_score} = 0;
   $self->{final_char_visual_score} = 0;
@@ -841,9 +888,8 @@ sub reset ($) {
   $self->{before_prev} = 0;
   $self->{state} = 'detecting';
   $self->{confidence} = 0.01;
-  for (@{$self->{probers}}) {
-    $_->reset;
-  }
+  $self->{probers}->[0]->reset; # logical
+  $self->{probers}->[1]->reset (reverse => 1); # visual
 } # reset
 
 sub handle_data ($$) {
@@ -954,6 +1000,7 @@ sub dump_status_for_json ($) {
   return {
     type => ref $self,
     charset => $self->get_charset_name,
+    #htmlrefs => !! resolve_latin1_refs
     confidence => $self->get_confidence,
     state => $self->{state},
     probers => [map { $_->dump_status_for_json } @{$self->{probers}}],
@@ -1025,13 +1072,12 @@ sub new ($$;%) {
     ];
   }
 
-  $self->reset;
-  $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
+  $self->reset (%args);
   return $self;
 } # new
 
-sub reset ($) {
-  my $self = $_[0];
+sub reset ($;%) {
+  my ($self, %args) = @_;
   $self->{active_num} = 0;
   for (@{$self->{probers}}) {
     next unless $_;
@@ -1042,7 +1088,7 @@ sub reset ($) {
   $self->{state} = 'detecting';
   $self->{keep_next} = 0;
   delete $self->{has_high};
-  delete $self->{resolve_latin1_refs};
+  $self->{resolve_latin1_refs} = $args{resolve_latin1_refs};
 } # reset
 
 sub get_charset_name ($) {
@@ -1184,7 +1230,7 @@ package Web::Encoding::UnivCharDet::CharsetProber::UTF8;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub new ($) {
+sub new ($;%) {
   my $self = bless {}, $_[0];
   $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new
       (Web::Encoding::UnivCharDet::Defs::UTF8SMModel);
@@ -1192,7 +1238,7 @@ sub new ($) {
   return $self;
 } # new
 
-sub reset {
+sub reset ($;%) {
   my $self = $_[0];
   $self->{coding_sm}->reset;
   $self->{num_of_mb_char} = 0;
@@ -1226,7 +1272,7 @@ sub handle_data ($$$;$) {
   return $self->{state};
 } # handle_data
 
-sub ONE_CHAR_PROB { 0.50 }
+sub ONE_CHAR_PROB () { 0.50 }
 
 sub get_confidence ($) {
   my $self = $_[0];
@@ -1257,6 +1303,7 @@ sub dump_status_for_json ($) {
   return {
     type => $self->get_charset_name,
     charset => $self->get_charset_name,
+    # htmlrefs => !! resolve_latin1_refs
     confidence => $self->get_confidence,
     error_count => $self->{coding_sm}->{error_count},
   };
@@ -1266,7 +1313,7 @@ package Web::Encoding::UnivCharDet::CharsetProber::MBCS;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub new ($$) {
+sub new ($$;%) {
   my $self = bless {}, $_[0];
   $self->{is_preferred_lang} = $_[1];
   $self->{coding_sm} = Web::Encoding::UnivCharDet::CodingStateMachine->new
@@ -1284,7 +1331,7 @@ sub MAX_REL_THRESHOLD () { 1000 }
 #sub MINIMUM_DATA_THRESHOLD () { 4 }
 sub ENOUGH_DATA_THRESHOLD () { 1024 }
 
-sub reset ($) {
+sub reset ($;%) {
   my $self = $_[0];
   $self->{coding_sm}->reset;
   $self->{state} = 'detecting';
@@ -1932,10 +1979,10 @@ sub _init ($) {
 sub reset ($) {
   my $self = $_[0];
   $self->SUPER::reset;
-  $self->{probers} = [
-    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-    $Web::Encoding::UnivCharDet::Defs::Jisx0201KatakanaModel,
-  ];
+  $self->{probers} = [];
+  $self->{probers}->[0] = Web::Encoding::UnivCharDet::CharsetProber::SBCS->new
+      ($Web::Encoding::UnivCharDet::Defs::Jisx0201KatakanaModel,
+       tokenized => 1);
   delete $self->{hwword};
 } # reset
 
@@ -2276,13 +2323,19 @@ our $VERSION = '1.0';
 sub new ($;%) {
   my $self = bless {}, shift;
   my %args = @_;
-  $self->reset;
-  $self->set_resolve_latin1_refs (1) if $args{resolve_latin1_refs};
+  $self->{probers} = [  
+    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+    $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::VniModel,
+    $Web::Encoding::UnivCharDet::Defs::VpsVietnameseModel,
+    $Web::Encoding::UnivCharDet::Defs::Tcvn3Model,
+  ];
+  $self->reset (%args);
   return $self;
 } # new
 
-sub reset ($) {
-  my $self = $_[0];
+sub reset ($;%) {
+  my ($self, %args) = @_;
   $self->{state} = 'detecting';
   delete $self->{detected_charset};
   $self->{vstates} = [$Web::Encoding::UnivCharDet::Defs::VietStateInitial,
@@ -2297,16 +2350,12 @@ sub reset ($) {
   $self->{any_nonascii} = [0, 0, 0, 0];
   $self->{words} = [[0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]];
   $self->{notme} = [0, 0, 0, 0];
-  $self->{probers} = [  
-    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-    $Web::Encoding::UnivCharDet::Defs::VisciiVietnameseModel,
-    $Web::Encoding::UnivCharDet::Defs::VniModel,
-    $Web::Encoding::UnivCharDet::Defs::VpsVietnameseModel,
-    $Web::Encoding::UnivCharDet::Defs::Tcvn3Model,
-  ];
+  for (@{$self->{probers}}) {
+    $_->reset (tokenized => 1);
+  }
   $self->{current} = ['', '', '', ''];
   $self->{ref} = ['', '', '', ''];
-  delete $self->{resolve_latin1_refs};
+  $self->{resolve_latin1_refs} = $args{resolve_latin1_refs};
 } # reset
 
 my $Tables = [
