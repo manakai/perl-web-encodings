@@ -395,6 +395,7 @@ sub detect ($$;%) {
 # XXX
 my $FontDefs = {
   "limon s1" => {charset => 'x-abc'},
+  # PN-TTAmar # 7bit
   aniezhai => {charset => "x-aniezhai"},
   "adarshalipiexp" => {charset => "x-adarshalipiexp"},
   "adhawin-tamil" => {charset => "x-adhawin"},
@@ -403,20 +404,25 @@ my $FontDefs = {
   amudham2000 => {charset => "x-amudham2000"},
   "arial am" => {charset => "armscii-8"},
   "arial latarm" => {charset => "armscii-8"},
+  "armnet courier" => {charset => "armscii-8"}, # ?
   au => {charset => "x-au"},
   bhaskar => {charset => "bhaskar"},
   chanakya => {charset => "x-chanakya"},
+  "dallak times" => {charset => "armscii-8"}, # ?
+  "dallak time" => {charset => "armscii-8"}, # ?
   eenadu => {charset => "x-eenadu"},
   epatrika => {charset => "x-epatrika"},
   rswwwnet => {charset => "georgian-academy"},
   trg1 => {charset => "georgian-academy"},
   "bpg classic dina" => {charset => "georgian-academy"},
   gopika => {charset => "x-gopika"},
+  "tl-tthemalatha" => {charset => "x-hemalatha"},
   htchanakya => {charset => "htchanakya"},
   inaimathi => {charset => "x-inaimathi"},
   "inaimathi-1.8" => {charset => "x-inaimathi"},
   jagran => {charset => "jagran"},
   "ml-ttkarthika" => {charset => "x-karthika"},
+  "gj-ttkrishna" => {charset => "x-krishna"},
   lokweb => {charset => "x-lokweb"},
   "lt-tm-barani" => {charset => "x-tam-lttmbarani"},
   "mac c swiss" => {charset => "x-mac-c-swiss"},
@@ -424,8 +430,10 @@ my $FontDefs = {
   "utopic" => {charset => "x-utopic"},
   "unq_ttabid" => {charset => "x-pascii"},
   pothana => {charset => "x-pothana"},
+  pulshelvetika7 => {charset => "x-pulshelvetika7"},
   "sanskrit new" => {charset => "x-sanskrit-new"},
   "or-ttsarala" => {charset => "x-sarala"},
+  "bn-ttsatyajit" => {charset => "x-satyajit"},
   "shree-mal-0502" => {charset => "x-shree-mal-0502"},
   "shree-tel-0900" => {charset => "x-shree-tel-0900"},
   shree802 => {charset => "x-shree802"},
@@ -437,6 +445,7 @@ my $FontDefs = {
   "telugu lipi" => {charset => "x-telugu-lipi"},
   thoolika => {charset => "x-thoolika"},
   tikkana => {charset => "x-tikkana"},
+  "times sudeuro" => {charset => "iso-8859-3"},
   tboomis => {charset => "x-tam-tboomis"},
   tboomih => {charset => "x-tam-tboomis"},
   tboomi => {charset => "x-tam-tboomis"},
@@ -446,6 +455,7 @@ my $FontDefs = {
   "tab_inaimathi" => {charset => "tab"},
   "tab-lfs-kamban" => {charset => "tab"},
   'tam-kalaignar' => {charset => "tam"},
+  tamlkamban => {charset => "tam"},
   "tsc_janani" => {charset => "tscii"},
   "thunaivantsc" => {charset => "tscii"},
   "tscsaiindira" => {charset => "tscii"},
@@ -476,7 +486,11 @@ my $FontDefs = {
   "tneritsc" => {charset => "tscii"},
   "tamil_avarangal31tsc" => {charset => "tscii"},
   shivaji01 => {charset => "x-shivaji01"},
+  "kn-ttuma" => {charset => "x-uma"},
+  umairi => {charset => "x-umairi"},
   vakil_01 => {charset => "x-vakil_01"},
+  "tm-ttvalluvar" => {charset => "x-valluvar"},
+  "dv-ttvasundhara" => {charset => "x-vasundhara"},
   ".vntime" => {charset => "x-viet-tcvn"},
   "vntime" => {charset => "x-viet-tcvn"},
   "vni-aptima" => {charset => "x-viet-vni"},
@@ -489,6 +503,18 @@ my $FontDefs = {
   webdunia => {charset => "x-webdunia"},
   xdvng => {charset => 'x-xdvng'},
 };
+$FontDefs->{lc $_} = {charset => 'x-rahman'} for qw(
+Z00 Z01 Z02 Z03 Z04 Z05 Z06 Z07 Z08 Z09 
+Z10 Z11 Z12 Z13 Z14 Z15 Z16 Z17 Z18 Z19 
+Z20 Z21 Z22 Z23 Z24 Z25 Z26 Z27 Z28 Z29 
+Z30 Z31 Z32 Z33 Z34 Z35 Z36 Z37 Z38 Z39 
+Z40 Z41 Z42 Z43 Z44 Z45 Z46 Z47 Z48 Z49 
+Z50 Z51 Z52 Z53 Z54 Z55 Z56 Z57 Z58 Z59 
+Z60 Z61 Z62 Z63 Z64 Z65 Z66 Z67 Z68 Z69 
+Z70 Z71 Z72 Z73 Z74 Z75 Z76 Z77 Z78 Z79 
+Z80 Z81 Z82 Z83 Z84
+),
+'P#URDU_Naskh';
 
 sub _detect_font ($$) {
   my $self = shift;
