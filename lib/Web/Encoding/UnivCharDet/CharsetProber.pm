@@ -1257,7 +1257,8 @@ sub handle_data ($$) {
         for my $i (0..$#{$self->{probers}}) {
           local $_ = $self->{probers}->[$i];
           next unless $_;
-          my $st = $_->handle_data ($_[1], $start, $pos + 1);
+          my $st = $_->handle_data ($_[1], $start, $pos + 1,
+                                    $start || !$self->{keep_next});
           if ($st eq 'found it') {
             $self->{best_guess} = $i;
             return $self->{state} = 'found it';
@@ -1272,7 +1273,8 @@ sub handle_data ($$) {
     for my $i (0..$#{$self->{probers}}) {
       local $_ = $self->{probers}->[$i];
       next unless $_;
-      my $st = $_->handle_data ($_[1], $start);
+      my $st = $_->handle_data ($_[1], $start, undef,
+                                $start || !$self->{keep_next});
       if ($st eq 'found it') {
         $self->{best_guess} = $i;
         return $self->{state} = 'found it';
@@ -1483,7 +1485,8 @@ sub reset ($;%) {
   $self->{context_state} = 0;
   $self->{kana_count} = 0;
   $self->{non_kana_count} = 0;
-  $self->{cs3_count} = 0;
+  $self->{cs1_count} = 0;
+  $self->{boost_count} = 0;
   
   $self->{data_threshold} = $self->{is_preferred_lang} ? 0 : MINIMUM_DATA_THRESHOLD;
   
@@ -1500,10 +1503,15 @@ sub reset ($;%) {
   $self->{signature_count} = 0;
 } # reset
 
-sub handle_data ($$$;$) {
+sub handle_data ($$$;$$) {
   my $self = $_[0];
   my $start_pos = $_[2] || 0;
   my $limit_pos = defined $_[3] ? $_[3] : length $_[1];
+  $self->{context_state} = 1 if $_[4];
+      # 0: Not a start of 8-bit chunk
+      # 1: Start of 8-bit chunk
+      # 2: After delimiter
+  
   for my $i ($start_pos..($limit_pos - 1)) {
     my $c = substr $_[1], $i, 1;
     my $coding_state = $self->{coding_sm}->next_state ($c);
@@ -1534,7 +1542,7 @@ sub handle_data ($$$;$) {
              $self->get_confidence > Web::Encoding::UnivCharDet::Defs::SHORTCUT_THRESHOLD) {
       $self->{state} = 'found it';
     } else {
-      if ($self->{cs3_count} > 10) { # Many four-byte characters of GB 18030
+      if ($self->{boost_count} > 10) {
         $self->{state} = 'found it';
       }
     }
@@ -1558,9 +1566,9 @@ sub get_confidence ($) {
     $conf = 0.5;
   }
 
-  if ($self->{cs3_count}) { ## GB 18030 4-byte characters
+  if ($self->{boost_count}) {
     my $k = 1.2;
-    my $boost_factor = 1 - exp(-$k * $self->{cs3_count});
+    my $boost_factor = 1 - exp(-$k * $self->{boost_count});
     $conf += (1 - $conf) * $boost_factor;
     $conf = 1 if $conf > 1;  
   }
@@ -1569,7 +1577,11 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->distrib_got_min_data;
+  return (
+    not ($_[0]->{freq_chars} <= $_[0]->{data_threshold}) or
+    $_[0]->{signature_count} or
+    $_[0]->{boost_count}
+  );
 } # got_min_data
 
 sub _handle_one_char ($$$$) {
@@ -1584,6 +1596,14 @@ sub _handle_one_char ($$$$) {
         $self->{freq_chars}++;
       }
     }
+    $self->{context_state} = 0;
+  } elsif ($order == -2 and $self->{context_state} == 1) {
+    $self->{context_state} = 2;
+  } elsif ($self->{context_state} == 2 and "\x20" eq substr $_[1], $_[2], 1) {
+    $self->{boost_count}++;
+    $self->{context_state} = 0;
+  } else {
+    $self->{context_state} = 0;
   }
 } # _handle_one_char
 
@@ -1615,10 +1635,6 @@ sub distrib_get_confidence ($) {
   }
 } # distrib_get_confidence
 
-sub distrib_got_min_data ($) {
-  return not ($_[0]->{freq_chars} <= $_[0]->{data_threshold});
-} # distrib_got_min_data
-
 sub distrib_got_enough_data ($) {
   return $_[0]->{total_chars} > ENOUGH_DATA_THRESHOLD;
 } # distrib_got_enough_data
@@ -1647,14 +1663,14 @@ sub context_got_enough_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%.4f [%s] (%s, e=%s, %s, l=%d, cs3=%d, %s)\n",
+  printf "%.4f [%s] (%s, e=%s, %s, l=%d, +%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->{error_count},
       $self->_distrib_dump_status,
       $self->{avg_word_length},
-      $self->{cs3_count},
+      $self->{boost_count},
       $self->got_min_data ? 'min' : '_';
 } # dump_status
 
@@ -1667,17 +1683,16 @@ sub dump_status_for_json ($) {
     error_count => $self->{coding_sm}->{error_count},
     distribution_analyser => $self->distrib_dump_status_for_json,
     avg_word_length => $self->{avg_word_length},
-    cs3_count => $self->{cs3_count},
+    boost_count => $self->{boost_count},
     got_min_data => $self->got_min_data,
   };
 } # dump_status_for_json
 
 sub _distrib_dump_status ($) {
   my $self = $_[0];
-  return sprintf "%d / %d (%s %s)",
+  return sprintf "%d / %d (%s)",
       $self->{freq_chars},
       $self->{total_chars},
-      $self->distrib_got_min_data ? 'min' : '',
       $self->distrib_got_enough_data ? 'enough' : '';
 } # _distrib_dump_status
 
@@ -1686,9 +1701,7 @@ sub distrib_dump_status_for_json ($) {
   return {
     freq_chars => $self->{freq_chars},
     total_chars => $self->{total_chars},
-    got_min_data => !! $self->distrib_got_min_data,
     got_enought_data => !! $self->distrib_got_enough_data,
-    cs3_count => $self->{cs3_count},
   };
 } # distrib_dump_status_for_json
 
@@ -1719,8 +1732,9 @@ sub _handle_one_char ($$$$) {
     }
   }
 
+  ## 4-byte character
   if ($_[3] == 2 and substr ($_[1], $_[2]+1, 1) =~ /[\x30-\x39]/) {
-    $self->{cs3_count}++;
+    $self->{boost_count}++;
   }
 } # _handle_one_char
 
@@ -1745,14 +1759,30 @@ sub _init ($) {
 } # _init
 
 sub distrib_get_order ($$$) {
-  if ((ord substr $_[1], $_[2], 1) >= 0xA4) {
-    if ((ord substr $_[1], $_[2] + 1, 1) >= 0xA1) {
-      return 157 * ((ord substr $_[1], $_[2], 1) - 0xA4) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1 + 63;
+  my $c1 = ord substr $_[1], $_[2], 1;
+  my $c2 = ord substr $_[1], $_[2] + 1, 1;
+  if ($c1 >= 0xA4) {
+    if ($c2 >= 0xA1) {
+      return 157 * ($c1 - 0xA4) + ($c2 - 0xA1) + 63;
     } else {
-      return 157 * ((ord substr $_[1], $_[2], 1) - 0xA4) + (ord substr $_[1], $_[2] + 1, 1) - 0x40;
+      return 157 * ($c1 - 0xA4) + ($c2 - 0x40);
     }
   } else {
-    return -1;
+    if ($c1 == 0xA1 and $c2 == 0x56) {
+      return -2; # separator
+
+      ## Big5 0xA156 is a dash and is sometimes used to separate
+      ## components of file names.  0xA1 is a reversed exclamation
+      ## mark in windows-1252 and can be used at the start of sentence
+      ## in some language but is expected to be followed by a capital
+      ## letter.  0xA1 is a halfwidth full stop in Shift_JIS is
+      ## unlikely used at the start.  0xA156 is unused in gb18030.
+      ## 0xA156 is a hangul syllable but is unlikely used as a
+      ## singleton.  We use an ASCII, 0xA1, 0x56, 0x20 sequence as an
+      ## implication of Big5.
+    } else {
+      return -1;
+    }
   }
 } # distrib_get_order
 
@@ -1789,12 +1819,39 @@ sub _init ($) {
 } # _init
 
 sub distrib_get_order ($$$) {
-  if ((ord substr $_[1], $_[2], 1) >= 0xB0) {
-    return 94 * ((ord substr $_[1], $_[2], 1) - 0xB0) + (ord substr $_[1], $_[2] + 1, 1) - 0xA1;
+  my $c1 = ord substr $_[1], $_[2], 1;
+  if ($c1 >= 0xB0) {
+    my $c2 = ord substr $_[1], $_[2] + 1, 1;
+    if ($c2 >= 0xA1) {
+      $_[0]->{cs1_count}++;
+      return 94 * ($c1 - 0xB0) + ($c2 - 0xA1);
+    } else {
+      return -1;
+    }
   } else {
     return -1;
   }
 } # distrib_get_order
+
+sub get_confidence ($) {
+  my $self = $_[0];
+  if ($self->{state} eq 'not me') {
+    return 0.01;
+  }
+  
+  my $conf = $self->distrib_get_confidence;
+  $conf *= exp(-0.3 * $self->{coding_sm}->{error_count});
+  if ($conf < 0.5 and not $self->{coding_sm}->{error_count}) {
+    $conf = 0.5;
+  }
+
+  ## No KS X 1001 hangul syllables
+  unless ($self->{cs1_count}) {
+    $conf *= 0.7;
+  }
+
+  return $conf;
+} # get_confidence
 
 package Web::Encoding::UnivCharDet::CharsetProber::Johab;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber::MBCS);
@@ -1974,7 +2031,7 @@ sub _handle_one_char ($$$$) {
       }
     } else {
       if ($self->{context_state} == 3) {
-        $self->{cs3_count}++;
+        $self->{boost_count}++;
       }
       $self->{context_state} = 0;
       ## 0 : Initial; After single byte character
@@ -2063,9 +2120,9 @@ sub get_confidence ($) {
     $conf = 1 if $conf > 1;  
   }
 
-  if ($self->{cs3_count}) { ## EUC CS3
+  if ($self->{boost_count}) { ## EUC CS3
     my $k = 1.2;
-    my $boost_factor = 1 - exp(-$k * $self->{cs3_count});
+    my $boost_factor = 1 - exp(-$k * $self->{boost_count});
     $conf += (1 - $conf) * $boost_factor;
     $conf = 1 if $conf > 1;  
   }
@@ -2073,14 +2130,9 @@ sub get_confidence ($) {
   return $conf;
 } # get_confidence
 
-sub got_min_data ($) {
-  return $_[0]->distrib_got_min_data ||
-      $_[0]->{signature_count} || $_[0]->{cs3_count};
-} # got_min_data
-
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, e=%s, d: %s %s, x: %s, sig=%d, cs3=%d, %s)\n",
+  printf "%s [%s] (%s, e=%s, d: %s %s, x: %s, sig=%d, +%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
@@ -2089,7 +2141,7 @@ sub dump_status ($) {
       $self->_distrib_dump_status,
       $self->context_get_confidence,
       $self->{signature_count},
-      $self->{cs3_count},
+      $self->{boost_count},
       $self->got_min_data ? 'min' : '_';
 } # dump_status
 
@@ -2103,7 +2155,7 @@ sub dump_status_for_json ($) {
     distribution_analyser => $self->distrib_dump_status_for_json,
     context_confidence => $self->context_get_confidence,
     signature_count => $self->{signature_count},
-    cs3_count => $self->{cs3_count},
+    boost_count => $self->{boostcount},
     got_min_data => !! $self->got_min_data,
   };
 } # dump_status_for_json
@@ -2379,8 +2431,10 @@ sub get_confidence ($) {
 } # get_confidence
 
 sub got_min_data ($) {
-  return $_[0]->distrib_got_min_data ||
-         $_[0]->{probers}->[0]->{seq_counters}->[3] => 4; # POSITIVE_CAT
+  return (
+    not ($_[0]->{freq_chars} <= $_[0]->{data_threshold}) or
+    $_[0]->{probers}->[0]->{seq_counters}->[3] >= 4 # POSITIVE_CAT
+  );
 } # got_min_data
 
 sub dump_status ($) {
