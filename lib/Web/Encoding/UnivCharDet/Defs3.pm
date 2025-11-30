@@ -324,6 +324,7 @@ our $Ibm865DanishModel = {
   precedence_matrix => $DanishLangModel,
   freq_char_count => 31,
   typical_positive_ratio => 0.999001690419047,
+  class_table => our $ibm865CharClassTable,
   keep_english_letter => 1,
   charset_name => "ibm865",
 };
@@ -978,6 +979,7 @@ our $Ibm862HebrewModel = {
   precedence_matrix => $HebrewLangModel,
   freq_char_count => 64,
   typical_positive_ratio => 0.9990038363231255,
+  class_table => our $ibm862CharClassTable,
   keep_english_letter => 0,
   charset_name => "ibm862",
 };

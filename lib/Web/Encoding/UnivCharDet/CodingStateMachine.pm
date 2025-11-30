@@ -42,6 +42,17 @@ sub next_state ($$) {
   ## is not part of a well-formed multibyte character.
 } # next_state
 
+sub handle_eof ($) {
+  my $self = $_[0];
+  if ($self->{current_state} == Web::Encoding::UnivCharDet::Defs::eStart or
+      $self->{current_state} == Web::Encoding::UnivCharDet::Defs::eError or
+      $self->{current_state} == Web::Encoding::UnivCharDet::Defs::eItsMe) {
+    #
+  } else {
+    $self->{error_count}++;
+  }
+} # handle_eof
+
 sub get_current_char_len ($) {
   return $_[0]->{current_char_len};
 } # get_current_char_len

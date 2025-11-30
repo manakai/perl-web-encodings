@@ -473,6 +473,9 @@ sub NEGATIVE_CAT () { 0 }
 sub SYM_CAT () { 4 }
 sub CPY_CAT () { 5 }
 sub CPY2_CAT () { 6 }
+sub DRAWING1_CAT () { 7 }
+sub DRAWING2_CAT () { 8 }
+sub NEG_CAT () { 9 }
 
 sub ILL () { 255 }
 sub CTR () { 254 }
@@ -497,7 +500,7 @@ sub reset ($;%) {
   my ($self, %args) = @_;
   $self->{state} = 'detecting';
   $self->{last_order} = 255;
-  $self->{seq_counters} = [0, 0, 0, 0, 0, 0, 0];
+  $self->{seq_counters} = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   $self->{total_seqs} = 0;
   $self->{total_char} = 0;
   $self->{ctrl_char} = 0;
@@ -640,15 +643,30 @@ sub handle_data ($$) {
     $self->{symbol_state} = 0;
     } # $cc
 
-    if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DELIMITER) {
-      if ($self->{class_state} == 3 and $cc <= 0x7F) {
+    if ($self->{class_state} == 12) {
+      if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DRAWING) {
+        $self->{seq_counters}->[DRAWING2_CAT]++;
+        $self->{class_state} = 13;
+      } else {
+        $self->{seq_counters}->[DRAWING1_CAT]++;
+      }
+    }
+    if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DELIMITER or
+        $char_class == Web::Encoding::UnivCharDet::Defs::CC_DOT) {
+      if (($self->{class_state} == 3 or
+           $self->{class_state} == 17) and $cc <= 0x7F) {
         $self->{seq_counters}->[CPY_CAT]++;
-      } elsif (($self->{class_state} == 4 and $cc <= 0x7F) or
+      } elsif ($self->{class_state} == 10) {
+        $self->{seq_counters}->[CPY_CAT]++;
+      } elsif ((($self->{class_state} == 4 or
+                 $self->{class_state} == 21) and $cc <= 0x7F) or
                $self->{class_state} == 3 or
                $self->{class_state} == 7) {
         $self->{seq_counters}->[CPY2_CAT]++;
       }
-      if ($cc <= 0x7F) {
+      if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DOT) {
+        $self->{class_state} = 18;
+      } elsif ($cc <= 0x7F) {
         $self->{class_state} = 2;
       } else {
         $self->{class_state} = 6;
@@ -681,12 +699,66 @@ sub handle_data ($$) {
     } elsif ($self->{class_state} == 6 and
              $char_class == Web::Encoding::UnivCharDet::Defs::CC_COPYRIGHT) {
       $self->{class_state} = 7;
+    } elsif ($self->{class_state} == 9 and
+             $char_class_all & Web::Encoding::UnivCharDet::Defs::CCB_AFTER_APOS2) {
+      $self->{seq_counters}->[CPY2_CAT]++;
+      $self->{class_state} = 5; # if CAPITAL | SMALL and is ASCII
+    } elsif ($self->{class_state} == 9 and
+             $char_class_all & Web::Encoding::UnivCharDet::Defs::CCB_AFTER_APOS1) {
+      $self->{class_state} = 10;
     } elsif ($cc <= 0x7F and
-             ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DIGIT or
-              $char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL))) {
+             $char_class == Web::Encoding::UnivCharDet::Defs::CC_DIGIT) {
+      if ($self->{class_state} == 11) {
+        $self->{seq_counters}->[CPY2_CAT]++;
+      } elsif ($self->{class_state} == 3 and
+               ($cc == 0x31 or $cc == 0x32)) { # copyright 199x or 200x
+        $self->{seq_counters}->[CPY_CAT]++;
+      } elsif ($self->{class_state} == 17) { # No
+        $self->{seq_counters}->[CPY_CAT]++;
+      }
       $self->{class_state} = 5;
-    } elsif ($self->{class_state} == 5 and
-             $char_class == Web::Encoding::UnivCharDet::Defs::CC_TM) {
+    } elsif ($cc <= 0x7F and
+             ($char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL))) {
+      if ($self->{class_state} == 15) {
+        unless ($cc == 0x43 or $cc == 0x46) { # C F
+          $self->{seq_counters}->[NEG_CAT]++;
+          ## When a ANSI code page text is misinterpreted as OEM code
+          ## page, there might be a degree sign within a single latin
+          ## word.
+        }
+      } elsif ($self->{class_state} == 23) {
+        ## delimiter left-quote alpha alpha
+        $self->{seq_counters}->[CPY_CAT]++;
+      }
+      if ($char_class == Web::Encoding::UnivCharDet::Defs::CC_B_ORDINAL) {
+        $self->{class_state} = 16
+      } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_ROMAN) {
+        if ($self->{class_state} == 20 ||
+            $self->{class_state} == 19 ||
+            $self->{class_state} == 2 ||
+            $self->{class_state} == 0) {
+          $self->{class_state} = 20;
+        } else {
+          $self->{class_state} = 19;
+        }
+      } elsif ($self->{class_state} == 22) {
+        $self->{class_state} = 23;
+      } else {
+        $self->{class_state} = 5;
+      }
+    } elsif ($char_class_all & (Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL | Web::Encoding::UnivCharDet::Defs::CCB_SMALL)) {
+      if ($char_class_all & Web::Encoding::UnivCharDet::Defs::CCB_CAPITAL and
+          $char_class_all & Web::Encoding::UnivCharDet::Defs::CCB_SMALL and
+          $cc == 0xDF) {
+        $self->{class_state} = 14; # windows-1252 : 0xDF ss 
+      } else {
+        $self->{class_state} = 8;
+      }
+    } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_TM and
+             ($self->{class_state} == 5 or $self->{class_state} == 22 or
+              $self->{class_state} == 23 or $self->{class_state} == 8 or
+              $self->{class_state} == 2 or $self->{class_state} == 16 or
+              $self->{class_state} == 19 or $self->{class_state} == 20)) {
       $self->{class_state} = 4;
       ## ASCII alphanumeric followed by a trademark or a registered
       ## trademark followed by delimiter is counted as an implication
@@ -705,16 +777,85 @@ sub handle_data ($$) {
       ## character.  However, if it is preceded by an ASCII
       ## alphanumerical byte and followed by an ASCII delimiter byte,
       ## it cannot be a port of a well-formed multibyte character.
+    } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_RAPOS) {
+      if ($self->{class_state} == 14) {
+        # 0xDF 0x92 in windows-1252
+        $self->{seq_counters}->[CPY2_CAT]++;
+      }
+      
+      $self->{class_state} = 9;
+      ## 0x92 right single quotation mark in many ANSI code pages
+      ##
+      ## It is used as apostorophe of e.g. |don't|, |we're|, |I've|,
+      ## and |I'm|.  If it is followed by one of commonly seen
+      ## patterns, it is counted as am implication for the encoding.
+      ##
+      ## 0x92 is the first byte of a multibyte character in many MBCS
+      ## encodings.
+    } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_LQUOTE) {
+      if ($self->{class_state} == 14) {
+        # 0xDF 0x93 in windows-1252
+        $self->{seq_counters}->[CPY2_CAT]++;
+      }
+      if ($self->{class_state} == 2 or $self->{class_state} == 0) {
+        $self->{class_state} = 22;
+      } else {
+        $self->{class_state} = 1;
+      }
+    } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_CURRENCY) {
+      $self->{class_state} = 11;
+      ## 0x80 euro sign in many ANSI code pages and gb18030
+      ## 0xA? currency signs in some ANSI code pages
+      ##
+      ## 0x80 is NOT the first byte of any multibyte character in most
+      ## popular MBCS encodings.  It can be the second byte of many
+      ## MBCS encodings.
+      ##
+      ## 0xA? are halfwidth Katakana and are the first and the second
+      ## byte of many MBCS encodigns.
+    } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_ORDINAL) {
+      if ($self->{class_state} == 16 or
+          $self->{class_state} == 18 or
+          $self->{class_state} == 20 or
+          $self->{class_state} == 5 or
+          $self->{class_state} == 22 or
+          $self->{class_state} == 23 or
+          $self->{class_state} == 0 or
+          $self->{class_state} == 2) {
+        $self->{class_state} = 17;
+      } elsif ($self->{class_state} == 19) {
+        $self->{class_state} = 21;
+      } else {
+        $self->{class_state} = 15;
+      }
+    } elsif ($char_class == Web::Encoding::UnivCharDet::Defs::CC_DRAWING) {
+      $self->{class_state} = 12 unless $self->{class_state} == 13;
     } else {
       $self->{class_state} = 1;
       ## 0: initial
       ## 1: normal
       ## 2: after ASCII delimiter
       ## 3: after copyright
-      ## 4: after trademark
+      ## 4: after ASCII followed by trademark
       ## 5: after ASCII alphanumeric
       ## 6: after non-ASCII delimiter
       ## 7: after non-ASCII delimiter followed by copyright
+      ## 8: after non-ASCII alphabet
+      ## 9: after right single quotation
+      ## 10: after right single quotation and after-apos1
+      ## 11: after currency symbol
+      ## 12: after first box-drawing
+      ## 13: after second box-drawing
+      ## 14: after ss
+      ## 15: after ordinal
+      ## 16: after N
+      ## 17: after N followed by ordinal
+      ## 18: after dot
+      ## 19: after roman
+      ## 20: after roman or delimiter followed by roman
+      ## 21: after 20 followed by ordinal
+      ## 22: after delimiter followed by left quotation
+      ## 23: after 22 followed by ASCII alpha
     }
 
     $i++;
@@ -738,24 +879,21 @@ sub handle_data ($$) {
 
 sub handle_eof ($) {
   my $self = $_[0];
-  if ($self->{class_state} == 3) {
-    $self->{seq_counters}->[CPY_CAT]++;
-  } elsif ($self->{class_state} == 4) {
-    $self->{seq_counters}->[CPY2_CAT]++;
+  if ($self->{state} eq 'detecting') {
+    if ($self->{class_state} == 3 or $self->{class_state} == 10) {
+      $self->{seq_counters}->[CPY_CAT]++;
+    } elsif ($self->{class_state} == 4 or $self->{class_state} == 7) {
+      $self->{seq_counters}->[CPY2_CAT]++;
+    } elsif ($self->{class_state} == 12) {
+      $self->{seq_counters}->[DRAWING1_CAT]++;
+    }
   }
 } # handle_eof
 
 sub get_confidence ($) {
   my $self = $_[0];
-  if (0 and 'negative approach') {
-    if ($self->{total_seqs} > 0) {
-      if ($self->{total_seqs} > $self->{seq_counters}->[NEGATIVE_CAT] * 10) {
-        return (($self->{total_seqs} - $self->{seq_counters}->[NEGATIVE_CAT] * 10) / $self->{total_seqs} * $self->{freq_char} / $self->{total_char});
-      }
-    }
-    return 0.01;
-  } else {
-    my $r = 0.01;
+
+  my $r = 0.01;
     if ($self->{total_seqs} > 0) {
       my $positive_seqs = $self->{seq_counters}->[POSITIVE_CAT];
       my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
@@ -768,38 +906,32 @@ sub get_confidence ($) {
       $r = $r * ($self->{total_char} - $self->{out_char} - $self->{ctrl_char}) / $self->{total_char};
       $r = $r * $self->{freq_char} / $self->{total_char};
       $r = 0.99 if $r >= 1.00;
-
-      if (0) {
-        my $sym_ratio = $self->{seq_counters}->[SYM_CAT] / $self->{total_char};
-        my $k = 40;
-        my $len_factor = 1 - exp(- $self->{total_char} / $k);
-
-        my $gamma = 0.52;
-        my $pen_short = (1 - $sym_ratio) ** $gamma;
-        $pen_short = 0.4 if $sym_ratio >= 0.999;
-
-        my $sym_penalty = 1 - (1 - $pen_short) * $len_factor;
-
-        $r *= $sym_penalty;
-      }
     }
 
-    {
-      my $n = $self->{seq_counters}->[CPY_CAT] + 0.3 * $self->{seq_counters}->[CPY2_CAT];
-      if ($n and $self->{seq_counters}->[NEGATIVE_CAT] < 10) {
-        my $A = 1.0;
-        my $k = 2.0;
-        my $boost = (1 - $r) * $A * (1 - exp(-$k * $n));
+  {
+    my $n = $self->{seq_counters}->[CPY_CAT] + 0.3 * $self->{seq_counters}->[CPY2_CAT];
+    if ($n and $self->{seq_counters}->[NEGATIVE_CAT] < 10) {
+      my $A = 1.0;
+      my $k = 2.0;
+      my $boost = (1 - $r) * $A * (1 - exp(-$k * $n));
 
-        $r += $boost;
-        $r = 0.99 if $r > 0.99;
-      }
+      $r += $boost;
+      $r = 0.99 if $r > 0.99;
     }
-      
-    $r *= 0.01 if $self->{model}->{debug_only};
-    
-    return $r;
   }
+  {
+    my $n = $self->{seq_counters}->[DRAWING1_CAT];
+    $n = 0 if $self->{seq_counters}->[DRAWING2_CAT];
+    $n += $self->{seq_counters}->[NEG_CAT];
+    if ($n) {
+      my $penalty = $r * (1 - exp(-0.7 * $n));
+      $r -= $penalty;
+      $r = 0.01 if $r < 0.01;
+    }
+  }
+      
+  $r *= 0.01 if $self->{model}->{debug_only};
+  return $r;
 } # get_confidence
 
 sub get_charset_name ($) {
@@ -817,7 +949,7 @@ sub dump_status ($) {
   my $probable_seqs = $self->{seq_counters}->[PROBABLE_CAT];
   my $neutral_seqs = $self->{seq_counters}->[NEUTRAL_CAT];
   my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
-  printf "  %1.4f [%s] (%s, %d %d %d %d s=%d c=%d,%d / %s)\n",
+  printf "  %.4f [%s] (%s, %d %d %d %d s=%d c=%d,%d x=%d,%d -%d / %s)\n",
       $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
       $self->{model}->{debug_name} // $self->get_charset_name,
       $self->{state},
@@ -825,6 +957,9 @@ sub dump_status ($) {
       $self->{seq_counters}->[SYM_CAT],
       $self->{seq_counters}->[CPY_CAT],
       $self->{seq_counters}->[CPY2_CAT],
+      $self->{seq_counters}->[DRAWING1_CAT],
+      $self->{seq_counters}->[DRAWING2_CAT],
+      $self->{seq_counters}->[NEG_CAT],
       $self->{total_char};
 } # dump_status
 
@@ -1150,8 +1285,10 @@ sub handle_data ($$) {
 
 sub handle_eof ($) {
   my $self = $_[0];
-  for (@{$self->{probers}}) {
-    $_->handle_eof if defined $_;
+  if ($self->{state} eq 'detecting') {
+    for (@{$self->{probers}}) {
+      $_->handle_eof if defined $_;
+    }
   }
 } # handle_eof
 
@@ -1291,11 +1428,12 @@ sub got_min_data ($) { $_[0]->{num_of_mb_char} > 6 }
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, e=%s)\n",
+  printf "%s [%s] (%s, e=%s, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
-      $self->{coding_sm}->{error_count};
+      $self->{coding_sm}->{error_count},
+      $self->got_min_data ? 'min' : '_';
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1306,6 +1444,7 @@ sub dump_status_for_json ($) {
     # htmlrefs => !! resolve_latin1_refs
     confidence => $self->get_confidence,
     error_count => $self->{coding_sm}->{error_count},
+    got_min_data => $self->got_min_data,
   };
 } # dump_status_for_json
 
@@ -1402,6 +1541,11 @@ sub handle_data ($$$;$) {
   }
   return $self->{state};
 } # handle_data
+
+sub handle_eof ($) {
+  my $self = $_[0];
+  $self->{coding_sm}->handle_eof if $self->{state} eq 'detecting';
+} # handle_eof
 
 sub get_confidence ($) {
   my $self = $_[0];
@@ -1503,14 +1647,15 @@ sub context_got_enough_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%.4f [%s] (%s, e=%s, %s, l=%d, cs3=%d)\n",
+  printf "%.4f [%s] (%s, e=%s, %s, l=%d, cs3=%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
       $self->{coding_sm}->{error_count},
       $self->_distrib_dump_status,
       $self->{avg_word_length},
-      $self->{cs3_count};
+      $self->{cs3_count},
+      $self->got_min_data ? 'min' : '_';
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1523,6 +1668,7 @@ sub dump_status_for_json ($) {
     distribution_analyser => $self->distrib_dump_status_for_json,
     avg_word_length => $self->{avg_word_length},
     cs3_count => $self->{cs3_count},
+    got_min_data => $self->got_min_data,
   };
 } # dump_status_for_json
 
@@ -1819,14 +1965,10 @@ sub _handle_one_char ($$$$) {
           ($f == 0xA2 or $f == 0xA6 or $f == 0xA7 or $f == 0xA9 or
            $f == 0xAA or $f == 0xAB)) {
         $self->{context_state} = 3;
-        ## If a 3-byte sequence of
-        ## 0x8E GR GR, where GR GR
-        ## is an alphabetical
-        ## character of JIS X 0212,
-        ## is sorounded by ASCII
-        ## characters, it is likely
-        ## an EUC-JP file that
-        ## contains European texts.
+        ## If a 3-byte sequence of 0x8E GR GR, where GR GR is an
+        ## alphabetical character of JIS X 0212, is sorounded by ASCII
+        ## characters, it is likely an EUC-JP file that contains
+        ## European texts.
       } else {
         $self->{context_state} = 2;
       }
@@ -1938,7 +2080,7 @@ sub got_min_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, e=%s, d: %s %s, x: %s, sig=%d, cs3=%d)\n",
+  printf "%s [%s] (%s, e=%s, d: %s %s, x: %s, sig=%d, cs3=%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
@@ -1947,7 +2089,8 @@ sub dump_status ($) {
       $self->_distrib_dump_status,
       $self->context_get_confidence,
       $self->{signature_count},
-      $self->{cs3_count};
+      $self->{cs3_count},
+      $self->got_min_data ? 'min' : '_';
 } # dump_status
 
 sub dump_status_for_json ($) {
@@ -1961,6 +2104,7 @@ sub dump_status_for_json ($) {
     context_confidence => $self->context_get_confidence,
     signature_count => $self->{signature_count},
     cs3_count => $self->{cs3_count},
+    got_min_data => !! $self->got_min_data,
   };
 } # dump_status_for_json
 
@@ -1996,14 +2140,14 @@ my $Latin1Type = [
   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 1, 0, 0,
   0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
   4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0, 1, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
   0, 7, 0, 7, 7, 0, 6, 5, 5, 2, 5, 5, 5, 5, 5, 5,
-  6, 6, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6, 6, 6, 6, 6,
+  6, 6, 6, 6, 6, 6, 6, 9, 6, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+  8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0,
 ];
 
 sub handle_data ($$$;$) {
@@ -2070,12 +2214,15 @@ sub handle_data ($$$;$) {
               $Latin1Type->[$cc] == 3 or
               $Latin1Type->[$cc] == 4)) {
       $self->{latin1_count}++;
-      $self->{latin1_state} = 0;
+      $self->{latin1_state} = 5;
     } elsif ($Latin1Type->[$cc] == 1) {
+      if ($self->{latin1_state} == 8) {
+        $self->{latin1_count}++;
+      }
       $self->{latin1_state} = 1;
     } elsif ($Latin1Type->[$cc] == 6) {
       $self->{latin1_state} = 3;
-    } elsif ($Latin1Type->[$cc] == 8) {
+    } elsif ($Latin1Type->[$cc] == 9) {
       if ($self->{latin1_state} == 1) {
         $self->{latin1_state} = 4;
       } else {
@@ -2088,12 +2235,36 @@ sub handle_data ($$$;$) {
         $self->{latin1_count}++;
       }
       $self->{latin1_state} = 3;
+    } elsif ($Latin1Type->[$cc] == 4 or $Latin1Type->[$cc] == 3) {
+      if ($self->{latin1_state} == 7) {
+        $self->{latin1_state} = 8;
+      } elsif ($self->{latin1_state} == 8) {
+        $self->{latin1_count}++;
+        $self->{latin1_state} = 6;
+      } else {
+        $self->{latin1_state} = ($self->{latin1_state} == 4 or
+                                 $self->{latin1_state} == 1) ? 6 : 5;
+      }
+    } elsif (($self->{latin1_state} == 6 or
+              $self->{latin1_state} == 1) and $Latin1Type->[$cc] == 8) {
+      $self->{latin1_state} = 7;
+      # delimiter initial alphabet ascii
+      # delimiter alphabet initial alphabet ascii
+      # alphabet alphabet initial alphabet ascii
+      # 7bit-only initial alphabet ascii
+    } elsif ($Latin1Type->[$cc] == 8) {
+      $self->{latin1_state} = 8;
+    } else {
+      $self->{latin1_state} = 8;
     }
-    ## 0: Initial
-    ## 1: After delimiter
+    ## 0: Normal
+    ## 1: After delimiter (and initial)
     ## 2: After copyright
     ## 3: After halfwidth katakana
     ## 4: After 1 followed by latin1 middle dot
+    ## 5: After an ASCII alphanumeric
+    ## 6: After two ASCII alphanumerics
+    ## 7: After 6 followed by a leading byte
   } # $i
 
   substr ($self->{last_char}, 0, 1) = substr $_[1], $limit_pos - 1, 1;
@@ -2113,12 +2284,14 @@ sub handle_data ($$$;$) {
 
 sub handle_eof ($) {
   my $self = $_[0];
+  return unless $self->{state} eq 'detecting';
   if (defined $self->{hwword}) {
     if ($self->{hwword} =~ /[^\x00-\x7F]/) {
       $self->{hwword} .= ' ';
       $self->{probers}->[0]->handle_data (delete $self->{hwword});
     }
   }
+  $self->{coding_sm}->handle_eof;
 } # handle_eof
 
 sub _handle_one_char ($$$$) {
@@ -2212,7 +2385,7 @@ sub got_min_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%s [%s] (%s, e=%s, %s %s, l=%d, %s)\n",
+  printf "%.3f [%s] (%s, e=%s, %s %s, l=%d, %s, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
@@ -2220,7 +2393,8 @@ sub dump_status ($) {
       $self->distrib_get_confidence,
       $self->_distrib_dump_status,
       $self->{latin1_count},
-      $self->context_get_confidence;
+      $self->context_get_confidence,
+      $self->got_min_data ? 'min' : '_';
   for (@{$self->{probers}}) {
     print "  ";
     $_->dump_status;
@@ -2237,6 +2411,7 @@ sub dump_status_for_json ($) {
     distribution_analyser => $self->distrib_dump_status_for_json,
     context_confidence => $self->context_get_confidence,
     latin1_count => $self->{latin1_count},
+    got_min_data => !! $self->got_min_data,
     probers => [
       map { $_->dump_status_for_json } @{$self->{probers}},
     ],
@@ -2416,6 +2591,8 @@ sub handle_data ($$) {
         if (Web::Encoding::UnivCharDet::Defs::IS_VIET_NOTME ($os, $ns)) {
           $self->{notme}->[$charset] = 1;
           next TBL;
+        } else {
+          $self->{any_nonascii}->[$charset]++;
         }
 
         if ($self->{resolve_latin1_refs}) {
@@ -2484,10 +2661,9 @@ sub get_confidence ($;$) {
     my ($A1, $A2, $A3, $A4) = @{$self->{words}->[$charset]};
     if ($A2 == 0 and $A4 == 0) { # ASCII only
       if ($A1 > 0 and not $self->{resolve_latin1_refs}) {
-        my $conf = $self->{probers}->[$charset]->get_confidence;
-        if ($conf > 0.9) {
+        if ($self->{any_nonascii}->[$charset]) {
           ## Words are ASCII-only but there are non-ASCII punctuations
-          push @answer, [$charset, $A1>$A3*2 ? 0.5 : 0.3, $A4];
+          push @answer, [$charset, $A1>$A3*2 ? 0.5 : 0.15, $A4];
         }
       }
       next;
@@ -2499,16 +2675,20 @@ sub get_confidence ($;$) {
     my $score;
     {
       if ($T < 10) {
-        if ($A4 > 0) {
-          $score = 0.1;
-        } elsif ($A2 >= 1) {
+        if ($A4) {
+          $score = 0.10;
+          last;
+        } elsif ($A2 and $A1) {
           $score = 0.95;
-        } elsif ($A1 >= 3) {
-          $score = 0.8;
+        } elsif ($A2) {
+          $score = 0.6;
+        } elsif ($A1) {
+          $score = 0.20;
         } else {
-          $score = 0.5;
+          $score = 0.10;
+          last;
         }
-      
+        
         my $sc = $self->{probers}->[$charset]->{seq_counters};
         my $negative = $sc->[Web::Encoding::UnivCharDet::CharsetProber::SBCS::NEGATIVE_CAT];
         if ($negative) {
