@@ -209,6 +209,20 @@ sub _prescan_byte_stream ($) {
   } # LOOP
 } # _prescan_byte_stream
 
+# XXX
+my $IsCJKDomain = {
+  map { $_ => 1 }
+  qw(jp fam.cx myhome.cx moe.hm orz.hm ad.np co.np ed.np my.np pv.np jpn.ph
+     kp kr xn--3e0b707e
+     sg xn--clchc0ea0b2g2a9gcd xn--yfro4i67o
+     my xn--mgbx4cd0ab
+     cn xn--fiqs8S xn--fiqz9S
+     hk mo xn--j6w193g xn--mix891f
+     tw xn--kprw13d xn--kpry57d)
+};
+
+
+
 ## override  - override encoding label (valid or invalid) or undef
 ## transport - transport encoding label (valid or invalid) or undef
 ## reference - reference's encoding label (valid or invalid) or undef
@@ -246,139 +260,179 @@ sub detect ($$;%) {
       return;
     }
   } else {
+    DETECT: {
 
-    ## HTTP charset
-    if (defined $args{transport}) {
-      my $name = encoding_label_to_name $args{transport};
-      if (defined $name) {
-        $self->{encoding} = $name;
-        $self->{confident} = 1;
-        $self->{source} = 'transport';
-        return;
-      }
-    }
-
-    ## Prescan xml
-    if ($self->{context} eq 'html' or
-        $self->{context} eq 'responsehtml' or
-        $self->{context} eq 'xml' or
-        $self->{context} eq 'any') {
-      my $name = _prescan_xml $_[1];
-      if (defined $name) {
-        $self->{encoding} = $name;
-        if ($self->{context} eq 'responsehtml') {
-          $self->{confident} = 1;
-        } else {
-          delete $self->{confident};
-        }
-        $self->{source} = 'xml';
-        return;
-      }
-    }
-
-    ## Prescan html
-    if ($self->{context} eq 'html' or
-        $self->{context} eq 'responsehtml' or
-        $self->{context} eq 'any') {
-      my $name = _prescan_byte_stream $_[1];
-      if (defined $name) {
-        $self->{encoding} = $name;
-        if ($self->{context} eq 'responsehtml') {
-          $self->{confident} = 1;
-        } else {
-          delete $self->{confident};
-        }
-        $self->{source} = 'html';
-        return;
-      }
-    }
-
-    if ($self->{context} eq 'css' or
-        $self->{context} eq 'any') {
-      ## <https://drafts.csswg.org/css-syntax/#determine-the-fallback-encoding>
-      if ($_[1] =~ /\A\x40\x63\x68\x61\x72\x73\x65\x74\x20\x22([\x00-\x21\x23-\x7F]*)\x22\x3B/) {
-        my $name = encoding_label_to_name $1;
+      ## HTTP charset
+      if (defined $args{transport}) {
+        my $name = encoding_label_to_name $args{transport};
         if (defined $name) {
-          $name = 'utf-8' if is_utf16_encoding_key $name;
+          $self->{encoding} = $name;
+          $self->{confident} = 1;
+          $self->{source} = 'transport';
+          last DETECT;
+        }
+      }
+
+      ## Prescan xml
+      if ($self->{context} eq 'html' or
+          $self->{context} eq 'responsehtml' or
+          $self->{context} eq 'xml' or
+          $self->{context} eq 'any') {
+        my $name = _prescan_xml $_[1];
+        if (defined $name) {
+          $self->{encoding} = $name;
+          if ($self->{context} eq 'responsehtml') {
+            $self->{confident} = 1;
+          } else {
+            delete $self->{confident};
+          }
+          $self->{source} = 'xml';
+          last DETECT;
+        }
+      }
+
+      ## Prescan html
+      if ($self->{context} eq 'html' or
+          $self->{context} eq 'responsehtml' or
+          $self->{context} eq 'any') {
+        my $name = _prescan_byte_stream $_[1];
+        if (defined $name) {
+          $self->{encoding} = $name;
+          if ($self->{context} eq 'responsehtml') {
+            $self->{confident} = 1;
+          } else {
+            delete $self->{confident};
+          }
+          $self->{source} = 'html';
+          last DETECT;
+        }
+      }
+
+      if ($self->{context} eq 'css' or
+          $self->{context} eq 'any') {
+        ## <https://drafts.csswg.org/css-syntax/#determine-the-fallback-encoding>
+        if ($_[1] =~ /\A\x40\x63\x68\x61\x72\x73\x65\x74\x20\x22([\x00-\x21\x23-\x7F]*)\x22\x3B/) {
+          my $name = encoding_label_to_name $1;
+          if (defined $name) {
+            $name = 'utf-8' if is_utf16_encoding_key $name;
+            $self->{encoding} = $name;
+            delete $self->{confident}; # in fact, irrelevant
+            $self->{source} = 'css';
+            last DETECT;
+          }
+        }
+      }
+
+      ## Environment - explicit
+      if (defined $args{reference}) {
+        my $name = encoding_label_to_name $args{reference};
+        if (defined $name) {
           $self->{encoding} = $name;
           delete $self->{confident}; # in fact, irrelevant
-          $self->{source} = 'css';
-          return;
+          $self->{source} = 'reference';
+          last DETECT;
         }
       }
-    }
 
-    ## Environment - explicit
-    if (defined $args{reference}) {
-      my $name = encoding_label_to_name $args{reference};
-      if (defined $name) {
-        $self->{encoding} = $name;
-        delete $self->{confident}; # in fact, irrelevant
-        $self->{source} = 'reference';
-        return;
+      ## Environment - implicit
+      if (defined $args{embed}) {
+        $self->{encoding} = $args{embed};
+        delete $self->{confident};
+        $self->{source} = 'embed';
+        return; # not last
       }
-    }
 
-    ## Environment - implicit
-    if (defined $args{embed}) {
-      $self->{encoding} = $args{embed};
-      delete $self->{confident};
-      $self->{source} = 'embed';
-      return;
-    }
+      if ($self->{context} eq 'html' or
+          $self->{context} eq 'text' or
+          $self->{context} eq 'any') {
+        ## Implementation-dependent detections
+        {
+          my $font_def;
+          if ($self->{context} eq 'html' or $self->{context} eq 'any') {
+            $font_def = $self->_detect_font ($_[1]); # or undef
+          }
 
-    if ($self->{context} eq 'html' or
-        $self->{context} eq 'text' or
-        $self->{context} eq 'any') {
-      ## Implementation-dependent detections
-      {
-        my $font_def;
-        if ($self->{context} eq 'html' or $self->{context} eq 'any') {
-          $font_def = $self->_detect_font ($_[1]); # or undef
-        }
+          my $cjk = 0;
+          if (defined $args{context_url}) {
+            my $url = $args{context_url};
+            if ($url->scheme eq 'gopher' or $url->scheme eq 'ftp') {
+              my $u = $url->stringify;
+              $u =~ s/^(?:gopher|ftp):/http:/g;
+              $url = (ref $url)->parse_string ($u);
+            }
+            if (defined $url and $url->is_http_s) {
+              my $domain = $url->origin->to_ascii;
+              if (($domain =~ /\.([^.]+)\.\z/ and $IsCJKDomain->{$1}) or
+                  ($domain =~ /\.([^.]+\.[^.]+)\.\z/ and $IsCJKDomain->{$1})) {
+                $cjk = 1;
+              }
+            }
+          }
       
-        ## UNIVCHARDET
-        require Web::Encoding::UnivCharDet;
-        my $det = Web::Encoding::UnivCharDet->new;
-        # XXX locale-dependent configuration
-        my $got = $det->detect_byte_string ($_[1]);
-        my $name = encoding_label_to_name $got;
-        if (defined $font_def) {
-          if (not defined $name or not $name eq 'utf-8') {
-            $self->{encoding} = 'windows-1252';
+          ## UNIVCHARDET
+          require Web::Encoding::UnivCharDet;
+          my $mode = $self->{context} eq 'html' ? 'web' : 'all';
+          my $det = Web::Encoding::UnivCharDet->new
+              ($mode, prefer_cjk => $cjk);
+          my $got = $det->detect_byte_string ($_[1]);
+          my $name = encoding_label_to_name $got;
+          if (defined $font_def) {
+            if (not defined $name or not $name eq 'utf-8') {
+              $self->{encoding} = 'windows-1252';
+              delete $self->{confident};
+              $self->{source} = 'font';
+              $self->{font_encoding} = $font_def->{charset};
+              return;
+            }
+          }
+          if (defined $name and not $got eq 'ascii') {
+            $self->{encoding} = $name;
             delete $self->{confident};
-            $self->{source} = 'font';
-            $self->{font_encoding} = $font_def->{charset};
+            $self->{source} = 'univchardet';
             return;
           }
         }
-        if (defined $name and not $got eq 'ascii') {
+
+        ## Locale
+        if (defined $args{locale}) {
+          my $name = encoding_label_to_name (
+            locale_default_encoding_name $args{locale} ||
+            locale_default_encoding_name [split /-/, $args{locale}, 2]->[0]
+          );
+          $name = 'windows-1252' if not defined $name;
+
           $self->{encoding} = $name;
           delete $self->{confident};
-          $self->{source} = 'univchardet';
+          $self->{source} = 'locale';
+          return;
+        } else {
+          $self->{encoding} = 'windows-1252';
+          delete $self->{confident};
+          $self->{source} = 'locale';
           return;
         }
-      }
+      } # context = html | text
+    } # DETECT
 
-      ## Locale
-      if (defined $args{locale}) {
-        my $name = encoding_label_to_name (
-          locale_default_encoding_name $args{locale} ||
-          locale_default_encoding_name [split /-/, $args{locale}, 2]->[0]
-        );
-        $name = 'windows-1252' if not defined $name;
-
-        $self->{encoding} = $name;
-        delete $self->{confident};
-        $self->{source} = 'locale';
-        return;
-      } else {
-        $self->{encoding} = 'windows-1252';
-        delete $self->{confident};
-        $self->{source} = 'locale';
-        return;
+    if (defined $self->{encoding}) {
+      if ($self->{encoding} eq 'windows-1251' and
+          defined $args{context_url}) {
+        my $url = $args{context_url};
+        if ($url->scheme eq 'gopher' or $url->scheme eq 'ftp') {
+          my $u = $url->stringify;
+          $u =~ s/^(?:gopher|ftp):/http:/g;
+          $url = (ref $url)->parse_string ($u);
+        }
+        if (defined $url and $url->is_http_s) {
+          my $domain = $url->origin->to_ascii;
+          if ($domain =~ /\.(?:mn|xn--l1acc)\.?\z/) {
+            #XXX
+            #$self->{encoding} = 'x-mns4330';
+          }
+        }
       }
-    } # context = html | text
+      return;
+    }
   }
 
   ## The encoding

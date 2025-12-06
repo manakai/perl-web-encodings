@@ -5,19 +5,6 @@ our $VERSION = '1.0';
 
 # ------
 
-sub FILTER_CHINESE_SIMPLIFIED () { 0x01 }
-sub FILTER_CHINESE_TRADITIONAL () { 0x02 }
-sub FILTER_JAPANESE () { 0x04 }
-sub FILTER_KOREAN () { 0x08 }
-sub FILTER_NON_CJK () { 0x10 }
-sub FILTER_ALL () { 0x1F }
-sub FILTER_CHINESE () {
-  FILTER_CHINESE_SIMPLIFIED | FILTER_CHINESE_TRADITIONAL;
-}
-sub FILTER_CJK () {
-  FILTER_CHINESE | FILTER_JAPANESE | FILTER_KOREAN
-}
-
 sub SHORTCUT_THRESHOLD () { 0.95 }
 sub MINIMUM_THRESHOLD () { 0.20 }
 
@@ -5359,21 +5346,21 @@ PCK4BITS( 0, 0, 0, 0, 0, 0, 0, 0)   # f8 - ff
 ];
 
 my $UTF8_st = [
-PCK4BITS(eError,eStart,eError,eError,eError,     3,     4,     5),  # 00 - 07
-PCK4BITS(     6,     7,     8,     9,eError,eError,eError,eError),  # 08 - 0f
-PCK4BITS(eError,eError,eError,eError,eError,eError,eError,eError),  # 10 - 17
-PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe),  # 18 - 1f
-PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eError,eError,eStart,eStart),  # 20 - 27
-PCK4BITS(eStart,eError,eError,eError,eError,eError,eError,eError),  # 28 - 2f
-PCK4BITS(eError,eError,eError,eError,     3,eError,eError,eError),  # 30 - 37
-PCK4BITS(eError,eError,eError,eError,eError,eError,     3,     3),  # 38 - 3f
-PCK4BITS(     3,eError,eError,eError,eError,eError,eError,eError),  # 40 - 47
-PCK4BITS(eError,eError,     3,     3,eError,eError,eError,eError),  # 48 - 4f
-PCK4BITS(eError,eError,eError,eError,eError,eError,     5,     5),  # 50 - 57
-PCK4BITS(eError,eError,eError,eError,eError,eError,eError,eError),  # 58 - 5f
-PCK4BITS(eError,eError,     5,     5,     5,eError,eError,eError),  # 60 - 67
-PCK4BITS(eError,eError,eError,eError,eError,eError,     5,eError),  # 68 - 6f
-PCK4BITS(eError,eError,eError,eError,eError,eError,eError,eError)   # 70 - 77
+PCK4BITS(eError,eStart,eError,eError,eError,     3,     4,     5),  # 0
+PCK4BITS(     6,     7,     8,     9, eError,eError,eError,eError),  # 1
+PCK4BITS(eError,eError,eError,eError,eError,eError,eError,eError),  #
+PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe,eItsMe),  # 2
+PCK4BITS(eItsMe,eItsMe,eItsMe,eItsMe, eError,eError,eStart,eStart),  # 3
+PCK4BITS(eStart,eError,eError,eError,eError,eError,eError,eError),  # 
+PCK4BITS(eError,eError,eError,eError,     3,eError,eError,eError),  # 4
+PCK4BITS(eError,eError,eError,eError, eError,eError,     3,     3),  # 5
+PCK4BITS(     3,eError,eError,eError,eError,eError,eError,eError),  # 
+PCK4BITS(eError,eError,     3,     3,eError,eError,eError,eError),  # 6
+PCK4BITS(eError,eError,eError,eError, eError,eError,eError,     5),  # 7
+PCK4BITS(     5,eError,eError,eError,eError,eError,eError,eError),  # 
+PCK4BITS(eError,eError,     5,     5,     5,eError,eError,eError),  # 8
+PCK4BITS(eError,eError,eError,eError, eError,eError,     5,eError),  # 9
+PCK4BITS(eError,eError,eError,eError,eError,eError,eError,eError)   # 
 ];
 
 my $UTF8CharLenTable = [0, 1, 0, 0, 0, 2, 3, 3, 3, 4, 4, 4];
@@ -7551,137 +7538,6 @@ our $Latin1Entities = {
 "#382" => 0x9E,
 "#376" => 0x9F,
 
-};
-
-our $Windows1250Refs = {
-8364 => 128,
-129 => 129,
-8218 => 130,
-131 => 131,
-8222 => 132,
-8230 => 133,
-8224 => 134,
-8225 => 135,
-136 => 136,
-8240 => 137,
-352 => 138,
-8249 => 139,
-346 => 140,
-356 => 141,
-381 => 142,
-377 => 143,
-144 => 144,
-8216 => 145,
-8217 => 146,
-8220 => 147,
-8221 => 148,
-8226 => 149,
-8211 => 150,
-8212 => 151,
-152 => 152,
-8482 => 153,
-353 => 154,
-8250 => 155,
-347 => 156,
-357 => 157,
-382 => 158,
-378 => 159,
-160 => 160,
-711 => 161,
-728 => 162,
-321 => 163,
-164 => 164,
-260 => 165,
-166 => 166,
-167 => 167,
-168 => 168,
-169 => 169,
-350 => 170,
-171 => 171,
-172 => 172,
-173 => 173,
-174 => 174,
-379 => 175,
-176 => 176,
-177 => 177,
-731 => 178,
-322 => 179,
-180 => 180,
-181 => 181,
-182 => 182,
-183 => 183,
-184 => 184,
-261 => 185,
-351 => 186,
-187 => 187,
-317 => 188,
-733 => 189,
-318 => 190,
-380 => 191,
-340 => 192,
-193 => 193,
-194 => 194,
-258 => 195,
-196 => 196,
-313 => 197,
-262 => 198,
-199 => 199,
-268 => 200,
-201 => 201,
-280 => 202,
-203 => 203,
-282 => 204,
-205 => 205,
-206 => 206,
-270 => 207,
-272 => 208,
-323 => 209,
-327 => 210,
-211 => 211,
-212 => 212,
-336 => 213,
-214 => 214,
-215 => 215,
-344 => 216,
-366 => 217,
-218 => 218,
-368 => 219,
-220 => 220,
-221 => 221,
-354 => 222,
-223 => 223,
-341 => 224,
-225 => 225,
-226 => 226,
-259 => 227,
-228 => 228,
-314 => 229,
-263 => 230,
-231 => 231,
-269 => 232,
-233 => 233,
-281 => 234,
-235 => 235,
-283 => 236,
-237 => 237,
-238 => 238,
-271 => 239,
-273 => 240,
-324 => 241,
-328 => 242,
-243 => 243,
-244 => 244,
-337 => 245,
-246 => 246,
-247 => 247,
-345 => 248,
-367 => 249,
-250 => 250,
-369 => 251,
-252 => 252,
-253 => 253,
-355 => 254,
-729 => 255,
 };
 
 1;

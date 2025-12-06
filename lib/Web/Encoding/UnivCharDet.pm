@@ -4,26 +4,73 @@ use warnings;
 our $VERSION = '1.0';
 use Web::Encoding::UnivCharDet::Defs;
 
-sub new ($) {
+sub new ($;$%) {
   my $self = bless {}, shift;
-  
-  $self->{filter} = {ja => 1, zh_hant => 1, zh_hans => 1, ko => 1, non_cjk => 1};
-  
+  my $mode = shift // '';
+  my %args = @_;
+
+  ## Detailed options of the detector.
+  ##
+  ## Though this can be modified via the $detector->filter hashref for
+  ## backward compatibility, it's not clear whether this is a useful
+  ## feature or not and therefore this not described in the formal
+  ## documentation of the module.  This interface of options might be
+  ## incompatibly changed in future.  USE OF THIS FEATURE IS
+  ## DISCOURAGED.
+  $self->{filter} = {
+    ja => 1, zh_hant => 1, zh_hans => 1, ko => 1, non_cjk => 1,
+    ## In the original UnivCharDet, the filter is the bit vector of
+    ## these options.  Some of MBCS detectors are boosted when only
+    ## one of them is enabled.  In this implementation, specifying 1
+    ## is equivalent to setting a bit and setting 2 is equivalent to
+    ## setting the bit only.
+
+    bom => 1,
+    asian_web => 1, asian_nonweb => 1,
+    koi8_web => 1,
+    iso8859_web => 1, iso8859_nonweb => 1,
+    esc_web => 1, esc_nonweb => 1,
+    mac_web => 1, mac_nonweb => 1,
+    oem_nonweb => 1,
+    mbcs_nonweb => 1,
+    utf => 1, refs => 1,
+
+    prefer_cjk => $args{prefer_cjk},
+  };
+
+  if ($mode eq 'zip') {
+    delete $self->{filter}->{esc_web};
+    delete $self->{filter}->{esc_nonweb};
+    delete $self->{filter}->{bom};
+    delete $self->{filter}->{asian_web};
+    delete $self->{filter}->{asian_nonweb};
+    delete $self->{filter}->{iso8859_web};
+    delete $self->{filter}->{iso8859_nonweb};
+    delete $self->{filter}->{koi8_web};
+    delete $self->{filter}->{mac_web};
+    delete $self->{filter}->{mac_nonweb};
+    delete $self->{filter}->{mbcs_nonweb};
+    delete $self->{filter}->{refs};
+    delete $self->{filter}->{utf};
+  } elsif ($mode eq 'all') {
+    #
+  } else { # web
+    delete $self->{filter}->{esc_nonweb};
+    delete $self->{filter}->{asian_nonweb};
+    delete $self->{filter}->{iso8859_nonweb};
+    delete $self->{filter}->{oem_nonweb};
+    delete $self->{filter}->{mac_nonweb};
+    delete $self->{filter}->{mbcs_nonweb};
+    delete $self->{filter}->{refs};
+    delete $self->{filter}->{utf};
+  }
+
   return $self;
 } # new
 
 sub _detector ($) {
-  return $_[0]->{detector} ||= do {
-    my $filter = 0;
-    $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE () if $_[0]->{filter}->{ja};
-    $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL () if $_[0]->{filter}->{zh_hant};
-    $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED () if $_[0]->{filter}->{zh_hans};
-    $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN () if $_[0]->{filter}->{ko};
-    $filter |= Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK () if $_[0]->{filter}->{non_cjk};
-    my $x = Web::Encoding::UnivCharDet::UniversalDetector->new ($filter);
-    $x->{utf} = 1 if $_[0]->{filter}->{utf};
-    $x;
-  };
+  return $_[0]->{detector}
+      ||= Web::Encoding::UnivCharDet::UniversalDetector->new ($_[0]->filter);
 } # _detector
 
 sub filter ($) {
@@ -77,7 +124,6 @@ sub reset ($) {
   delete $self->{nbsp_found};
   delete $self->{esc_found};
   delete $self->{binary_found};
-  $self->{win1250_refs} = 0;
   $self->{win1252_refs} = 0;
   $self->{unicode_refs} = 0;
   delete $self->{resolve_latin1_refs};
@@ -89,7 +135,7 @@ sub handle_data ($$) {
   return 1 if $self->{done};
   $self->{got_data} = 1 if length $_[1];
 
-  if ($self->{start}) {
+  if ($self->{start} and $self->{lang_filter}->{bom}) {
     $self->{start} = 0;
 
     if ($_[1] =~ /^\xEF\xBB\xBF/) {
@@ -100,7 +146,7 @@ sub handle_data ($$) {
       $self->{detected_charset} = 'utf-16le';
     }
 
-    if ($self->{utf}) {
+    if ($self->{lang_filter}->{utf}) {
       ## <https://github.com/mozilla/gecko-dev/commit/68332f717f14e8f2467ca4f2c521ed8fe6eff71d>
       if ($_[1] =~ /^\xFE\xFF\x00\x00/) {
         $self->{detected_charset} = 'x-iso-10646-ucs-4-3412';
@@ -156,22 +202,11 @@ sub handle_data ($$) {
         if ($c == 0x3B) {
           if (defined $Web::Encoding::UnivCharDet::Defs::Latin1Entities->{$self->{amp}}) {
             $self->{win1252_refs}++;
-            if ($self->{amp} =~ /^#([0-9]+)$/ and
-                $Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$1}) {
-              $self->{win1250_refs}++;
-            }
           } elsif ($self->{amp} =~ /^#([0-9]+)$/) {
             my $cc = $1;
             if ($cc > 0xFF) {
-              if ($Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$cc}) {
-                $self->{win1250_refs}++;
-              } else {
-                $self->{unicode_refs}++;
-              }
+              $self->{unicode_refs}++;
             } elsif (0x80 <= $cc) {
-              if ($Web::Encoding::UnivCharDet::Defs::Windows1250Refs->{$cc}) {
-                $self->{win1250_refs}++;
-              }
               $self->{win1252_refs}++;
             }
           }
@@ -193,9 +228,10 @@ sub handle_data ($$) {
     }
   } # $i
 
-  if ($self->{input_state} eq 'pure ascii' and
+  if ($self->{lang_filter}->{refs} and
+      $self->{input_state} eq 'pure ascii' and
       $self->{unicode_refs} < 10 and
-      $self->{win1250_refs} + $self->{win1252_refs} > 10) {
+      $self->{win1252_refs} > 10) {
     $self->{input_state} = 'high byte';
     $high = 1;
   }
@@ -209,25 +245,27 @@ sub handle_data ($$) {
             ($self->{lang_filter});
     $self->{charset_probers}->[1]
         ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
-        if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+            ($self->{lang_filter})
+        if $self->{lang_filter}->{non_cjk};
     $self->{charset_probers}->[2]
         ||= Web::Encoding::UnivCharDet::CharsetProber::Latin1->new
-        unless $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+        unless $self->{lang_filter}->{non_cjk};
     $self->{charset_probers}->[3]
         ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
-        if $self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK;
+        if $self->{lang_filter}->{asian_web};
   } # $high
 
-  if ($self->{win1252_refs} > 10 and $self->{unicode_refs} < 10) {
+  if ($self->{lang_filter}->{refs} and
+      $self->{win1252_refs} > 10 and $self->{unicode_refs} < 10) {
     $self->{charset_probers}->[4]
         ||= Web::Encoding::UnivCharDet::CharsetProber::MBCSGroup->new
                 ($self->{lang_filter}, resolve_latin1_refs => 1);
-    if ($self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK) {
+    if ($self->{lang_filter}->{non_cjk}) {
       $self->{charset_probers}->[5]
           ||= Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup->new
-                  (resolve_latin1_refs => 1);
+                  ($self->{lang_filter}, resolve_latin1_refs => 1);
     }
-    if ($self->{lang_filter} & Web::Encoding::UnivCharDet::Defs::FILTER_NON_CJK) {
+    if ($self->{lang_filter}->{asian_web}) {
       $self->{charset_probers}->[6]
           ||= Web::Encoding::UnivCharDet::CharsetProber::Vietnamese->new
                   (resolve_latin1_refs => 1);
@@ -240,7 +278,7 @@ sub handle_data ($$) {
     delete $self->{charset_probers}->[6];
   }
   
-  if ($self->{utf} and $zero) {
+  if ($self->{lang_filter}->{utf} and $zero) {
     if ($zero / ($length || 1) > 0.1) { # random threshold
       $self->{charset_probers} = [];
     }
@@ -257,7 +295,9 @@ sub handle_data ($$) {
     }
   }
 
-  if ($self->{input_state} eq 'esc ascii') {
+  if (($self->{lang_filter}->{esc_web} or
+       $self->{lang_filter}->{esc_nonweb}) and
+      $self->{input_state} eq 'esc ascii') {
     $self->{esc_charset_prober}
         ||= Web::Encoding::UnivCharDet::CharsetProber::ESC->new
                 ($self->{lang_filter});
@@ -381,10 +421,10 @@ sub get_reported_font_charset ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "[%s] %s (%d %d %d) %s\n",
+  printf "[%s] %s (%d %d) %s\n",
       $self->{reported} // '',
       defined $self->{font_charset} ? 'html:'.$self->{font_charset} : '',
-      $self->{win1250_refs}, $self->{win1250_refs}, $self->{unicode_refs},
+      $self->{win1252_refs}, $self->{unicode_refs},
       $self->{input_state};
   $_->dump_status for grep { defined $_ }
       @{$self->{charset_probers}},

@@ -193,57 +193,62 @@ package Web::Encoding::UnivCharDet::CharsetProber::SBCSGroup;
 push our @ISA, qw(Web::Encoding::UnivCharDet::CharsetProber);
 our $VERSION = '1.0';
 
-sub new ($;%) {
+sub new ($$;%) {
   my $self = bless {}, shift;
-  my %args = @_;
-  $self->reset (%args);
+  $self->reset (@_);
   return $self;
 } # new
 
-sub reset ($;%) {
-  my ($self, %args) = @_;
+sub reset ($$;%) {
+  my ($self, $filter, %args) = @_;
+  $self->{filter} = $filter;
   $self->{probers} = $args{resolve_latin1_refs} ? [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
     undef, # [1]
     undef, # [2]
-    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) }
-    $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
-    $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
-    $Web::Encoding::UnivCharDet::Defs::TsciiModel,
-    $Web::Encoding::UnivCharDet::Defs::TabModel,
-    $Web::Encoding::UnivCharDet::Defs::TamModel,
+    ($filter->{asian_web} ? (
+      map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) }
+      $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
+      $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
+      $Web::Encoding::UnivCharDet::Defs::TsciiModel,
+      $Web::Encoding::UnivCharDet::Defs::TabModel,
+    ) : ()),
+    ($filter->{asian_nonweb} ? (
+      map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) }
+      $Web::Encoding::UnivCharDet::Defs::TamModel,
+    ) : ()),
   ] : [
     Web::Encoding::UnivCharDet::CharsetProber::Latin1->new, # [0]
-    map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
-    $Web::Encoding::UnivCharDet::Defs::Windows_1250CentralModel, # [1]
-    $Web::Encoding::UnivCharDet::Defs::MacintoshWesternModel, # [2]
+    Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($Web::Encoding::UnivCharDet::Defs::Windows_1250CentralModel), # [1]
+    ($filter->{mac_web} ? Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($Web::Encoding::UnivCharDet::Defs::MacintoshWesternModel) : undef), # [2]
     
+    map { defined $_ ? Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) : () }
     $Web::Encoding::UnivCharDet::Defs::Win1251Model,
-    $Web::Encoding::UnivCharDet::Defs::Koi8rModel,
+    ($filter->{koi8_web} ? $Web::Encoding::UnivCharDet::Defs::Koi8rModel : undef),
     $Web::Encoding::UnivCharDet::Defs::Windows_1253GreekModel,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_7GreekModel,
-    #$Web::Encoding::UnivCharDet::Defs::Iso_8859_7Model,
-    #$Web::Encoding::UnivCharDet::Defs::Win1253Model,
+    ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_7GreekModel : undef),
     $Web::Encoding::UnivCharDet::Defs::Win1251BulgarianModel,
     $Web::Encoding::UnivCharDet::Defs::TIS620ThaiModel,
     $Web::Encoding::UnivCharDet::Defs::Windows_1256ArabicModel,
-    $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel,
-    $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel,
-    $Web::Encoding::UnivCharDet::Defs::Armscii_8ArmenianModel,
-    $Web::Encoding::UnivCharDet::Defs::TsciiModel,
-    $Web::Encoding::UnivCharDet::Defs::TabModel,
-    $Web::Encoding::UnivCharDet::Defs::TamModel,
+    ($filter->{asian_web} ? $Web::Encoding::UnivCharDet::Defs::Georgian_AcademyGeorgianModel : undef),
+    ($filter->{asian_web} ? $Web::Encoding::UnivCharDet::Defs::Georgian_PsGeorgianModel : undef),
+    ($filter->{asian_web} ? $Web::Encoding::UnivCharDet::Defs::Armscii_8ArmenianModel : undef),
+    ($filter->{asian_web} ? $Web::Encoding::UnivCharDet::Defs::TsciiModel : undef),
+    ($filter->{asian_web} ? $Web::Encoding::UnivCharDet::Defs::TabModel : undef),
+    ($filter->{asian_nonweb} ? $Web::Encoding::UnivCharDet::Defs::TamModel : undef),
+      ## tam had been used on the Web but is always encoded with <font
+      ## face> or font-family.
     
-    $Web::Encoding::UnivCharDet::Defs::Ibm866Model,
-    $Web::Encoding::UnivCharDet::Defs::Ibm855Model,
-    $Web::Encoding::UnivCharDet::Defs::Cp737GreekModel,
-    $Web::Encoding::UnivCharDet::Defs::Ibm862HebrewModel,
+    ($filter->{oem_web} ? $Web::Encoding::UnivCharDet::Defs::Ibm866Model : undef),
+    ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm855Model : undef),
+    ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Cp737GreekModel : undef),
+    ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm862HebrewModel : undef),
     
-    $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel,
+    ($filter->{mac_web} ? $Web::Encoding::UnivCharDet::Defs::MacCyrillicModel : undef),
     
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5Model,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel,
-    $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel,
+    ($filter->{iso8859_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_5Model : undef),
+    ($filter->{iso8859_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_5BulgarianModel : undef),
+    ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_6ArabicModel : undef),
   ];
   if ($args{resolve_latin1_refs}) {
     $self->{resolve_latin1_refs} = 1;
@@ -291,53 +296,57 @@ sub handle_data ($$) {
     }
   } # $i
 
+  my $filter = $self->{filter};
   if (not $self->{latin} and
         ((defined $self->{probers}->[0] and
           $self->{probers}->[0]->get_confidence > 0.3) or
          (defined $self->{probers}->[1] and
           $self->{probers}->[1]->get_confidence > 0.3) or
          (defined $self->{probers}->[2] and
-          $self->{probers}->[2]->get_confidence > 0.2))) {
+          $self->{probers}->[2]->get_confidence > 0.2) or
+         (not defined $self->{probers}->[2] and $filter->{oem_nonweb}))) {
     $self->{latin} = 1;
     push @{$self->{inactive_probers}}, delete $self->{probers}->[0]
         if defined $self->{probers}->[0]; # Latin1
 
-      my $old_prober_count = @{$self->{probers}};
-      my @new_prober = $self->{resolve_latin1_refs} ? (
-        map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) }
+    my $old_prober_count = @{$self->{probers}};
+    my @new_prober = $self->{resolve_latin1_refs} ? (
+        map { defined $_ ? Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_, resolve_latin1_refs => 1) : () }
         $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
-        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
+        #($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel : undef),
+        ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel : undef),
       ) : (
-        map { Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) }
+        map { defined $_ ? Web::Encoding::UnivCharDet::CharsetProber::SBCS->new ($_) : () }
         $Web::Encoding::UnivCharDet::Defs::Windows_1252WesternModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252ScandinavianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CentralModel,
+        ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_2CentralModel : undef),
         $Web::Encoding::UnivCharDet::Defs::Windows_1257BalticModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1254TurkishModel,
         $Web::Encoding::UnivCharDet::Defs::Windows_1252IcelandicFaroeseModel,
         
-        $Web::Encoding::UnivCharDet::Defs::Ibm437WesternModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm850WesternModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm850ScandinavianModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm852CentralModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm775BalticModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm857TurkishModel,
-        $Web::Encoding::UnivCharDet::Defs::Ibm865DanishModel,
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm437WesternModel : undef),
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm850WesternModel : undef),
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm850ScandinavianModel : undef),
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm852CentralModel : undef),
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm775BalticModel : undef),
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm857TurkishModel : undef),
+        ($filter->{oem_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Ibm865DanishModel : undef),
         
-        $Web::Encoding::UnivCharDet::Defs::MacintoshScandinavianModel,
-        $Web::Encoding::UnivCharDet::Defs::X_Mac_CeCentralModel,
+        ($filter->{mac_web} ? $Web::Encoding::UnivCharDet::Defs::MacintoshScandinavianModel : undef),
+        ($filter->{mac_nonweb} ? $Web::Encoding::UnivCharDet::Defs::X_Mac_CeCentralModel : undef),
 
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_13BalticModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel,
+        ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_13BalticModel : undef),
+        ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_3EsperantoModel : undef),
+        ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_4BalticModel : undef),
 
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15EstonianModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_15FrenchModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_10BalticModel,
-        #$Web::Encoding::UnivCharDet::Defs::Iso_8859_16CentralModel,
-        $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel,
+        ($filter->{iso8859_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_15EstonianModel : undef),
+        ($filter->{iso8859_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_15FrenchModel : undef),
+          ## Though iso-8859-15 with charset="" had been used on the
+          ## Web, iso-8859-15 without charset="" is not confirmed yet.
+        ($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_10BalticModel : undef),
+        #($filter->{iso8859_web} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_16CentralModel : undef),
+        ($filter->{iso8859_nonweb} ? $Web::Encoding::UnivCharDet::Defs::Iso_8859_16RomanianModel : undef),
         #$Web::Encoding::UnivCharDet::Defs::Windows_1258VietnameseModel,
       );
       my $p = delete $self->{probers}->[2]; # or undef
@@ -1158,17 +1167,17 @@ sub new ($$;%) {
       undef,
       undef,
       undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
+      $filter->{zh_hans}
         ? Web::Encoding::UnivCharDet::CharsetProber::GB18030->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED)
+              ($filter->{zh_hans} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+      $filter->{ko}
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCKR->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
+              ($filter->{ko} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
+      $filter->{zh_hant}
         ? Web::Encoding::UnivCharDet::CharsetProber::Big5->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
+              ($filter->{zh_hant} > 1)
         : undef,
       undef,
       undef,
@@ -1176,37 +1185,38 @@ sub new ($$;%) {
   } else {
     $self->{probers} = [
       Web::Encoding::UnivCharDet::CharsetProber::UTF8->new,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
+      $filter->{ja}
         ? Web::Encoding::UnivCharDet::CharsetProber::SJIS->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE)
+              ($filter->{ja} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
+      $filter->{ja}
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCJP->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE)
+              ($filter->{ja} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
+      $filter->{zh_hans}
         ? Web::Encoding::UnivCharDet::CharsetProber::GB18030->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED)
+              ($filter->{zh_hans} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+      $filter->{ko}
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCKR->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
+              ($filter->{ko} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
+      $filter->{zh_hant}
         ? Web::Encoding::UnivCharDet::CharsetProber::Big5->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
+              ($filter->{zh_hant} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL
+      ($filter->{zh_hant} and $filter->{mbcs_nonweb})
         ? Web::Encoding::UnivCharDet::CharsetProber::EUCTW->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_TRADITIONAL)
+              ($filter->{zh_hant} > 1)
         : undef,
-      $filter & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+      ($filter->{ko} and $filter->{mbcs_nonweb})
         ? Web::Encoding::UnivCharDet::CharsetProber::Johab->new
-              ($filter == Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN)
+              ($filter->{ko} > 1)
         : undef,
     ];
   }
-
+  $self->{prefer_cjk} = 1 if $filter->{prefer_cjk};
+  
   $self->reset (%args);
   return $self;
 } # new
@@ -1327,26 +1337,28 @@ sub get_confidence ($) {
     } # $i
     if ($best_conf == 0.0 and $second_conf) {
       $self->{best_guess} = $second_i;
-      $best_conf = $second_conf * 0.6;
+      if ($self->{probers}->[$second_i]->get_charset_name eq 'utf-8') {
+        $best_conf = $second_conf;
+      } else {
+        $best_conf = $second_conf * ($self->{prefer_cjk} ? 0.8 : 0.6);
+      }
     } 
     return $best_conf;
   }
 } # get_confidence
 
-my @ProberName = qw(UTF8 SJIS EUCJP GB18030 EUCKR Big5 EUCTW Johab);
 sub dump_status ($) {
   my $self = $_[0];
   $self->get_confidence;
-  printf " MBCS [%s] %s [%s] (%s)\n",
+  printf " MBCS: %.4f [%s] %s (%s) %s\n",
+      $self->get_confidence,
       $self->get_charset_name // '',
       $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
-      $self->get_confidence,
-      $self->{state};
+      $self->{state},
+      $self->{prefer_cjk} ? 'cjk+' : '';
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
-    unless (defined $_) {
-      printf "  MBCS inactive: [%s] (confidence is too low).\n", $ProberName[$i];
-    } else {
+    if (defined $_) {
       print "  ";
       $_->dump_status;
     }
@@ -1487,6 +1499,7 @@ sub reset ($;%) {
   $self->{non_kana_count} = 0;
   $self->{cs1_count} = 0;
   $self->{boost_count} = 0;
+  $self->{penalty_count} = 0;
   
   $self->{data_threshold} = $self->{is_preferred_lang} ? 0 : MINIMUM_DATA_THRESHOLD;
   
@@ -1511,6 +1524,7 @@ sub handle_data ($$$;$$) {
       # 0: Not a start of 8-bit chunk
       # 1: Start of 8-bit chunk
       # 2: After delimiter
+      # 3: After start followed by a multibyte char
   
   for my $i ($start_pos..($limit_pos - 1)) {
     my $c = substr $_[1], $i, 1;
@@ -1566,6 +1580,13 @@ sub get_confidence ($) {
     $conf = 0.5;
   }
 
+  if ($self->{penalty_count}) {
+    my $k = 1.2;
+    my $penalty_factor = 1 - exp(-$k * $self->{penalty_count});
+    $conf -= $conf * $penalty_factor;
+    $conf = 0 if $conf < 0;
+  }
+  
   if ($self->{boost_count}) {
     my $k = 1.2;
     my $boost_factor = 1 - exp(-$k * $self->{boost_count});
@@ -1589,6 +1610,9 @@ sub _handle_one_char ($$$$) {
   # $self, $str, $offset, $len
 
   my $order = $_[3] == 2 ? $self->distrib_get_order ($_[1], $_[2]) : -1;
+  ## >=0   order
+  ## -1    no data
+  ## -2    delimiter
   if ($order >= 0) {
     $self->{total_chars}++;
     if ($order < @{$self->{char_to_freq_order}}) {
@@ -1596,12 +1620,23 @@ sub _handle_one_char ($$$$) {
         $self->{freq_chars}++;
       }
     }
-    $self->{context_state} = 0;
+    if ($self->{context_state} == 1) {
+      $self->{context_state} = 3;
+    } else {
+      $self->{context_state} = 0;
+    }
   } elsif ($order == -2 and $self->{context_state} == 1) {
     $self->{context_state} = 2;
   } elsif ($self->{context_state} == 2 and "\x20" eq substr $_[1], $_[2], 1) {
     $self->{boost_count}++;
     $self->{context_state} = 0;
+  } elsif ($self->{context_state} == 3) {
+    my $cc = ord substr $_[1], $_[2], 1;
+    if ((0x41 <= $cc and $cc <= 0x5A) or
+        (0x61 <= $cc and $cc <= 0x7A)) {
+      $self->{penalty_count}++;
+    }
+    $self->{context_state} = 1;
   } else {
     $self->{context_state} = 0;
   }
@@ -1663,7 +1698,7 @@ sub context_got_enough_data ($) {
 
 sub dump_status ($) {
   my $self = $_[0];
-  printf "%.4f [%s] (%s, e=%s, %s, l=%d, +%d, %s)\n",
+  printf "%.4f [%s] (%s, e=%s, %s, l=%d, +%d, cs1=%d, -%d, %s)\n",
       $self->get_confidence,
       $self->get_charset_name,
       $self->{state},
@@ -1671,6 +1706,8 @@ sub dump_status ($) {
       $self->_distrib_dump_status,
       $self->{avg_word_length},
       $self->{boost_count},
+      $self->{cs1_count},
+      $self->{penalty_count},
       $self->got_min_data ? 'min' : '_';
 } # dump_status
 
@@ -1681,9 +1718,11 @@ sub dump_status_for_json ($) {
     charset => $self->get_charset_name,
     confidence => $self->get_confidence,
     error_count => $self->{coding_sm}->{error_count},
+    cs1_count => $self->{cs1_count},
     distribution_analyser => $self->distrib_dump_status_for_json,
     avg_word_length => $self->{avg_word_length},
     boost_count => $self->{boost_count},
+    penalty_count => $self->{penalty_count},
     got_min_data => $self->got_min_data,
   };
 } # dump_status_for_json
@@ -1769,7 +1808,7 @@ sub distrib_get_order ($$$) {
     }
   } else {
     if ($c1 == 0xA1 and $c2 == 0x56) {
-      return -2; # separator
+      return -2; # delimiter
 
       ## Big5 0xA156 is a dash and is sometimes used to separate
       ## components of file names.  0xA1 is a reversed exclamation
@@ -1823,7 +1862,7 @@ sub distrib_get_order ($$$) {
   if ($c1 >= 0xB0) {
     my $c2 = ord substr $_[1], $_[2] + 1, 1;
     if ($c2 >= 0xA1) {
-      $_[0]->{cs1_count}++;
+      $_[0]->{cs1_count}++ if $c1 <= 0xC8; # [0xB0, 0xC8] hangul
       return 94 * ($c1 - 0xB0) + ($c2 - 0xA1);
     } else {
       return -1;
@@ -1848,6 +1887,13 @@ sub get_confidence ($) {
   ## No KS X 1001 hangul syllables
   unless ($self->{cs1_count}) {
     $conf *= 0.7;
+  }
+  
+  if ($self->{cs1_count} < 20 and $self->{penalty_count}) {
+    my $k = 1.2;
+    my $penalty_factor = 1 - exp(-$k * $self->{penalty_count});
+    $conf -= $conf * $penalty_factor;
+    $conf = 0 if $conf < 0;
   }
 
   return $conf;
@@ -2479,16 +2525,16 @@ our $VERSION = '1.0';
 sub new ($$) {
   my $self = bless {}, $_[0];
   $self->{coding_sm} = [
-    $_[1] & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
+    ($_[1]->{zh_hans} and $_[1]->{esc_nonweb})
         ? Web::Encoding::UnivCharDet::CodingStateMachine->new
               (Web::Encoding::UnivCharDet::Defs::HZSMModel) : undef,
-    $_[1] & Web::Encoding::UnivCharDet::Defs::FILTER_CHINESE_SIMPLIFIED
+    ($_[1]->{zh_hans} and $_[1]->{esc_nonweb})
         ? Web::Encoding::UnivCharDet::CodingStateMachine->new
               (Web::Encoding::UnivCharDet::Defs::ISO2022CNSMModel) : undef,
-    $_[1] & Web::Encoding::UnivCharDet::Defs::FILTER_JAPANESE
+    ($_[1]->{ja} and $_[1]->{esc_web})
         ? Web::Encoding::UnivCharDet::CodingStateMachine->new
               (Web::Encoding::UnivCharDet::Defs::ISO2022JPSMModel) : undef,
-    $_[1] & Web::Encoding::UnivCharDet::Defs::FILTER_KOREAN
+    ($_[1]->{ko} and $_[1]->{esc_nonweb})
         ? Web::Encoding::UnivCharDet::CodingStateMachine->new
               (Web::Encoding::UnivCharDet::Defs::ISO2022KRSMModel) : undef,
   ];
