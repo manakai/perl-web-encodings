@@ -60,7 +60,7 @@ of the detector specified when the instance is created.
 
     big5 euc-jp euc-kr gb18030 ibm866 iso-8859-7 shift_jis utf-8
     windows-874 windows-1250 windows-1251 windows-1252 windows-1253
-    windows-1255
+    windows-1254 windows-1255 windows-1256 windows-1257
 
   Encodings not specified by the Encoding Standard :
 
@@ -78,8 +78,8 @@ returned when no encoding seems better than any other known encoding.
   Encodings specified by the Encoding Standard :
 
     iso-2022-jp iso-8859-2 iso-8859-3 iso-8859-4 iso-8859-6 iso-8859-8
-    iso-8859-10 iso-8859-13 koi8-r utf-16be utf-16le macintosh
-    x-mac-cyrillic
+    iso-8859-10 iso-8859-13 iso-8859-14 koi8-r utf-16be utf-16le
+    macintosh x-mac-cyrillic
 
 In C<web> mode, utf-16be and utf-16le are only detectable by BOM.  In
 C<all> mode, UTF-16 without BOM are also detectable where possible.
@@ -111,6 +111,22 @@ Though the Encoding Standard defines encoding labels C<iso-2022-cn>,
 C<hz-gb-2312>, and C<iso-2022-kr>, they are associated with the
 replacement encoding such that they cannot be effectively used in the
 environments where the Encoding Standard is applied.
+
+5. Not supported
+
+  Encodings specified by the Encoding Standard :
+
+    iso-8859-8-i windows-1257 koi8-u gbk replacement x-user-defined
+
+Encodings iso-8859-8-i and windows-1258 have no evidence that have
+been used on the Web.
+
+Encoding gbk is a subset of gb18030 and is detected as gb18030.
+
+Encpdings replacement and x-user-defined is not detectable by
+definition.
+
+Encoding koi8-u might be supported in future version of this module.
 
 =head1 DEPENDENCY
 
