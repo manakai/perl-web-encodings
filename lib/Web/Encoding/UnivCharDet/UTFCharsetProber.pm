@@ -101,12 +101,14 @@ sub _validate_utf32_characters ($$) {
   my ($self, $quad) = @_;
   if ($quad->[0] != 0 or
       $quad->[1] > 0x10 or
-      ($quad->[0] == 0 and $quad->[1] == 0 and 0xD8 <= $quad->[2] <= 0xDF)) {
+      ($quad->[0] == 0 and $quad->[1] == 0 and
+       0xD8 <= $quad->[2] and $quad->[2] <= 0xDF)) {
     $self->{invalid_utf32be} = 1;
   }
   if ($quad->[3] != 0 or
       $quad->[2] > 0x10 or
-      ($quad->[3] == 0 and $quad->[2] == 0 and 0xD8 <= $quad->[1] <= 0xDF)) {
+      ($quad->[3] == 0 and $quad->[2] == 0 and
+       0xD8 <= $quad->[1] and $quad->[1] <= 0xDF)) {
     $self->{invalid_utf32le} = 1;
   }
 } # _validate_utf32_characters
@@ -114,26 +116,26 @@ sub _validate_utf32_characters ($$) {
 sub _validate_utf16_characters ($$) {
   my ($self, $pair) = @_;
   if (not $self->{first_half_surrogate_pair_detected_16be}) {
-    if (0xD8 <= $pair->[0] <= 0xDB) {
+    if (0xD8 <= $pair->[0] and $pair->[0] <= 0xDB) {
       $self->{first_half_surrogate_pair_detected_16be} = 1;
-    } elsif (0xDC <= $pair->[0] <= 0xDF) {
+    } elsif (0xDC <= $pair->[0] and $pair->[0] <= 0xDF) {
       $self->{invalid_utf16be} = 1;
     }
   } else {
-    if (0xDC <= $pair->[0] <= 0xDF) {
+    if (0xDC <= $pair->[0] and $pair->[0] <= 0xDF) {
       $self->{first_half_surrogate_pair_detected_16be} = 0;
     } else {
       $self->{invalid_utf16be} = 1;
     }
   }
   if (not $self->{first_half_surrogate_pair_detected_16le}) {
-    if (0xD8 <= $pair->[1] <= 0xDB) {
+    if (0xD8 <= $pair->[1] and $pair->[1] <= 0xDB) {
       $self->{first_half_surrogate_pair_detected_16le} = 1;
-    } elsif (0xDC <= $pair->[1] <= 0xDF) {
+    } elsif (0xDC <= $pair->[1] and $pair->[1] <= 0xDF) {
       $self->{invalid_utf16le} = 1;
     }
   } else {
-    if (0xDC <= $pair->[1] <= 0xDF) {
+    if (0xDC <= $pair->[1] and $pair->[1] <= 0xDF) {
       $self->{first_half_surrogate_pair_detected_16le} = 0;
     } else {
       $self->{invalid_utf16le} = 1;
