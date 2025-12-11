@@ -58,7 +58,7 @@ test {
   is $det->detect_byte_string ("Sci\x8Encias Pod\x8Ftz"), 'macintosh';
   is $det->detect_byte_string ("\x1B\x24\x40\x21\x21\x1B(B"), 'iso-2022-jp';
   is $det->detect_byte_string ("~{!!~}"), "ascii";
-  is $det->detect_byte_string ("\xF0\xF3\xF1\xF1\xEA\E0\xFF \xE2\xE5\xF0\xF1\xE8\xFF"), 'windows-1251';
+  is $det->detect_byte_string ("\xF0\xF3\xF1\xF1\xEA\xE0\xFF \xE2\xE5\xF0\xF1\xE8\xFF"), 'windows-1251';
 
   done $c;
 } name => 'mode=web', n => 6;
@@ -72,7 +72,7 @@ test {
   is $det->detect_byte_string ("Sci\x8Encias Pod\x8Ftz"), 'ibm850';
   is $det->detect_byte_string ("\x1B\x24\x40\x21\x21\x1B(B"), undef;
   is $det->detect_byte_string ("~{!!~}"), "ascii";
-  is $det->detect_byte_string ("\xF0\xF3\xF1\xF1\xEA\E0\xFF \xE2\xE5\xF0\xF1\xE8\xFF"), 'windows-1251';
+  is $det->detect_byte_string ("\xF0\xF3\xF1\xF1\xEA\xE0\xFF \xE2\xE5\xF0\xF1\xE8\xFF"), 'windows-1251';
 
   done $c;
 } name => 'mode=zip', n => 6;
@@ -87,7 +87,7 @@ test {
   is $det->detect_byte_string ("Sci\x8Encias Pod\x8Ftz"), 'macintosh';
   is $det->detect_byte_string ("\x1B\x24\x40\x21\x21\x1B(B"), "iso-2022-jp";
   is $det->detect_byte_string ("~{!!~}"), "hz-gb-2312";
-  is $det->detect_byte_string ("\xF0\xF3\xF1\xF1\xEA\E0\xFF \xE2\xE5\xF0\xF1\xE8\xFF"), 'windows-1251';
+  is $det->detect_byte_string ("\xF0\xF3\xF1\xF1\xEA\xE0\xFF \xE2\xE5\xF0\xF1\xE8\xFF"), 'windows-1251';
 
   done $c;
 } name => 'mode=all', n => 6;
