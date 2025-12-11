@@ -232,7 +232,7 @@ sub get_confidence ($) {
 sub dump_status ($) {
   my $self = $_[0];
   printf "UTFCharsetProber: %1.3f [%s] (invalid 32: %d/%d)\n",
-      $self->get_confidence, $self->get_charset_name // '',
+      $self->get_confidence, $self->get_charset_name || '',
       $self->{invalid_utf32be} || 0, $self->{invalid_utf32le} || 0;
 
   my $approx_chars16 = $self->_approx_16bit_chars;

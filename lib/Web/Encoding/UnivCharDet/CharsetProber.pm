@@ -439,7 +439,7 @@ sub dump_status ($) {
   my $cf = $self->get_confidence;
   printf " SBCS: %s [%s] %s\n",
       $cf,
-      $self->get_charset_name // '',
+      $self->get_charset_name || '',
       ($self->{resolve_latin1_refs} ? 'htmlrefs' : '');
   for my $i (0..$#{$self->{probers}}) {
     local $_ = $self->{probers}->[$i];
@@ -499,7 +499,7 @@ sub SYMBOL_CAT_ORDER () { 246 }
 
 sub new ($$;%) {
   my $self = bless {}, shift;
-  $self->{model} = shift // die "No model";
+  $self->{model} = shift || die "No model";
   $self->{model}->{class_table} //= $Web::Encoding::UnivCharDet::Defs::defaultCharClassTable;
   $self->reset (@_);
   return $self;
@@ -525,7 +525,7 @@ sub reset ($;%) {
 
 sub handle_data ($$) {
   my $self = $_[0];
-  my $ss = $self->{model}->{freq_char_count} // SAMPLE_SIZE;
+  my $ss = $self->{model}->{freq_char_count} || SAMPLE_SIZE;
 
   my $i = 0;
   my $word_start_i = 0;
@@ -960,7 +960,7 @@ sub dump_status ($) {
   my $negative_seqs = $self->{seq_counters}->[NEGATIVE_CAT];
   printf "  %.4f [%s] (%s, %d %d %d %d s=%d c=%d,%d x=%d,%d -%d / %s)\n",
       $self->get_confidence * ($self->{model}->{debug_only} ? 100 : 1),
-      $self->{model}->{debug_name} // $self->get_charset_name,
+      $self->{model}->{debug_name} || $self->get_charset_name,
       $self->{state},
       $positive_seqs, $probable_seqs, $neutral_seqs, $negative_seqs,
       $self->{seq_counters}->[SYM_CAT],
@@ -975,7 +975,7 @@ sub dump_status ($) {
 sub dump_status_for_json ($) {
   my $self = $_[0];
   return {
-    type => $self->{model}->{debug_name} // $self->get_charset_name,
+    type => $self->{model}->{debug_name} || $self->get_charset_name,
     charset => $self->get_charset_name,
     #htmlrefs => !! resolve_latin1_refs
     state => $self->{state},
@@ -1352,7 +1352,7 @@ sub dump_status ($) {
   $self->get_confidence;
   printf " MBCS: %.4f [%s] %s (%s) %s\n",
       $self->get_confidence,
-      $self->get_charset_name // '',
+      $self->get_charset_name || '',
       $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
       $self->{state},
       $self->{prefer_cjk} ? 'cjk+' : '';
@@ -2580,7 +2580,7 @@ sub dump_status ($) {
   my $self = $_[0];
   printf "  ESC: %s [%s] (%s)\n",
       $self->get_confidence,
-      $self->get_charset_name // '',
+      $self->get_charset_name || '',
       $self->{state};
 } # dump_status
 
@@ -2882,7 +2882,7 @@ sub dump_status ($) {
   my $self = $_[0];
   printf " Viet: %s [%s] %s (%s)\n",
       $self->get_confidence,
-      $self->get_charset_name // '',
+      $self->get_charset_name || '',
       $self->{resolve_latin1_refs} ? 'htmlrefs' : '',
       $self->{state};
   for my $charset (0..3) {
@@ -2900,7 +2900,7 @@ sub dump_status ($) {
 sub dump_status_for_json ($) {
   my $self = $_[0];
   return {type => ref $self,
-          charset => $self->get_charset_name // '',
+          charset => $self->get_charset_name || '',
           confidence => $self->get_confidence,
           htmlrefs => !!$self->{resolve_latin1_refs},
           probers => [
