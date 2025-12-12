@@ -85,9 +85,9 @@ sub _get_attr ($) {
 } # _get_attr
 
 ## <https://github.com/whatwg/html/pull/1752/files> as of Oct 2016
-sub _prescan_xml ($) {
-  if ($_[0] =~ m{^\x3C\x3F\x78\x6D}) { # <?xm
-    if ($_[0] =~ m{^
+sub _prescan_xml ($$) {
+  if ($_[1] =~ m{^\x3C\x3F\x78\x6D}) { # <?xm
+    if ($_[1] =~ m{^
       \x3C\x3F\x78\x6D\x6C             # <?xml
       (?>[^\x3E]*?                     #    more restrictive than the spec
       \x65\x6E\x63\x6F\x64\x69\x6E\x67 # encoding
@@ -106,7 +106,7 @@ sub _prescan_xml ($) {
       [^\x3E]*                         #    more restrictive than the spec
       \x3E                             # >
     }x) {
-      my $name = encoding_label_to_name ($1 || $2);
+      my $name = $_[0]->($1 || $2);
       if (defined $name) {
         $name = 'utf-8' if is_utf16_encoding_key $name;
       }
@@ -114,9 +114,9 @@ sub _prescan_xml ($) {
     } else {
       return undef;
     }
-  } elsif ($_[0] =~ m{^\x3C\x00\x3F\x00\x78\x00}) {
+  } elsif ($_[1] =~ m{^\x3C\x00\x3F\x00\x78\x00}) {
     return 'utf-16le';
-  } elsif ($_[0] =~ m{^\x00\x3C\x00\x3F\x00\x78}) {
+  } elsif ($_[1] =~ m{^\x00\x3C\x00\x3F\x00\x78}) {
     return 'utf-16be';
   } else {
     return undef;
@@ -125,18 +125,18 @@ sub _prescan_xml ($) {
 
 ## prescan a byte stream to determine its encoding
 ## <https://www.whatwg.org/specs/web-apps/current-work/#prescan-a-byte-stream-to-determine-its-encoding>.
-sub _prescan_byte_stream ($) {
-  my $xml_result = _prescan_xml $_[0];
+sub _prescan_byte_stream ($$) {
+  my $xml_result = _prescan_xml $_[0], $_[1];
   return $xml_result if defined $xml_result;
 
   # 1.
-  (pos $_[0]) = 0;
+  (pos $_[1]) = 0;
 
   # 2.
   LOOP: {
-    $_[0] =~ /\G<!--+>/gc;
-    $_[0] =~ /\G<!--.*?-->/gcs;
-    if ($_[0] =~ /\G<[Mm][Ee][Tt][Aa](?=[\x09\x0A\x0C\x0D\x20\x2F])/gc) {
+    $_[1] =~ /\G<!--+>/gc;
+    $_[1] =~ /\G<!--.*?-->/gcs;
+    if ($_[1] =~ /\G<[Mm][Ee][Tt][Aa](?=[\x09\x0A\x0C\x0D\x20\x2F])/gc) {
       # 1.
       #
 
@@ -148,7 +148,7 @@ sub _prescan_byte_stream ($) {
 
       # 6.
       ATTRS: {
-        my $attr = _get_attr ($_[0]) or last ATTRS;
+        my $attr = _get_attr ($_[1]) or last ATTRS;
 
         # 7.
         redo ATTRS if $attr_list->{$attr->{name}};
@@ -169,17 +169,16 @@ sub _prescan_byte_stream ($) {
                                  [\x09\x0A\x0C\x0D\x20]*(?>"([^"]*)"|'([^']*)'|
                                  ([^"'\x09\x0A\x0C\x0D\x20]
                                   [^\x09\x0A\x0C\x0D\x20\x3B]*))/x) {
-            $charset = encoding_label_to_name
-                (defined $1 ? $1 : defined $2 ? $2 : $3);
+            $charset = $_[0]->(defined $1 ? $1 : defined $2 ? $2 : $3);
             $need_pragma = 1;
           }
         } elsif ($attr->{name} eq 'charset') {
-          $charset = encoding_label_to_name $attr->{value};
+          $charset = $_[0]->($attr->{value});
           $need_pragma = 0;
         }
 
         # 10.
-        return undef if pos $_[0] >= length $_[0];
+        return undef if pos $_[1] >= length $_[1];
         redo ATTRS;
       } # ATTRS
 
@@ -194,17 +193,17 @@ sub _prescan_byte_stream ($) {
         # 15.-16.
         return $charset if defined $charset;
       }
-    } elsif ($_[0] =~ m{\G</?[A-Za-z][^\x09\x0A\x0C\x0D\x20>]*}gc) {
+    } elsif ($_[1] =~ m{\G</?[A-Za-z][^\x09\x0A\x0C\x0D\x20>]*}gc) {
       {
-        _get_attr ($_[0]) and redo;
+        _get_attr ($_[1]) and redo;
       }
-    } elsif ($_[0] =~ m{\G<[!/?][^>]*}gc) {
+    } elsif ($_[1] =~ m{\G<[!/?][^>]*}gc) {
       #
     }
 
     # 3. Next byte
-    $_[0] =~ /\G[^<]+/gc || $_[0] =~ /\G</gc;
-    return undef if pos $_[0] >= length $_[0];
+    $_[1] =~ /\G[^<]+/gc || $_[1] =~ /\G</gc;
+    return undef if pos $_[1] >= length $_[1];
     redo LOOP;
   } # LOOP
 } # _prescan_byte_stream
@@ -232,6 +231,12 @@ sub detect ($$;%) {
   my ($self, undef, %args) = @_;
   delete $self->{font_encoding};
 
+  my $label_to_name = sub {
+    my $name = encoding_label_to_name $_[0];
+    return undef unless is_web_encoding_label $name;
+    return $name;
+  };
+
   ## BOM
   if ($_[1] =~ /^\xFE\xFF/) {
     $self->{encoding} = 'utf-16be';
@@ -252,7 +257,7 @@ sub detect ($$;%) {
 
   ## Override
   if (defined $args{override}) {
-    my $name = encoding_label_to_name $args{override};
+    my $name = $label_to_name->($args{override});
     if (defined $name) {
       $self->{encoding} = $name;
       $self->{confident} = 1;
@@ -264,7 +269,7 @@ sub detect ($$;%) {
 
       ## HTTP charset
       if (defined $args{transport}) {
-        my $name = encoding_label_to_name $args{transport};
+        my $name = $label_to_name->($args{transport});
         if (defined $name) {
           $self->{encoding} = $name;
           $self->{confident} = 1;
@@ -278,7 +283,7 @@ sub detect ($$;%) {
           $self->{context} eq 'responsehtml' or
           $self->{context} eq 'xml' or
           $self->{context} eq 'any') {
-        my $name = _prescan_xml $_[1];
+        my $name = _prescan_xml $label_to_name, $_[1];
         if (defined $name) {
           $self->{encoding} = $name;
           if ($self->{context} eq 'responsehtml') {
@@ -295,7 +300,7 @@ sub detect ($$;%) {
       if ($self->{context} eq 'html' or
           $self->{context} eq 'responsehtml' or
           $self->{context} eq 'any') {
-        my $name = _prescan_byte_stream $_[1];
+        my $name = _prescan_byte_stream $label_to_name, $_[1];
         if (defined $name) {
           $self->{encoding} = $name;
           if ($self->{context} eq 'responsehtml') {
@@ -312,7 +317,7 @@ sub detect ($$;%) {
           $self->{context} eq 'any') {
         ## <https://drafts.csswg.org/css-syntax/#determine-the-fallback-encoding>
         if ($_[1] =~ /\A\x40\x63\x68\x61\x72\x73\x65\x74\x20\x22([\x00-\x21\x23-\x7F]*)\x22\x3B/) {
-          my $name = encoding_label_to_name $1;
+          my $name = $label_to_name->($1);
           if (defined $name) {
             $name = 'utf-8' if is_utf16_encoding_key $name;
             $self->{encoding} = $name;
@@ -325,7 +330,7 @@ sub detect ($$;%) {
 
       ## Environment - explicit
       if (defined $args{reference}) {
-        my $name = encoding_label_to_name $args{reference};
+        my $name = $label_to_name->($args{reference});
         if (defined $name) {
           $self->{encoding} = $name;
           delete $self->{confident}; # in fact, irrelevant
@@ -336,7 +341,7 @@ sub detect ($$;%) {
 
       ## Environment - implicit
       if (defined $args{embed}) {
-        $self->{encoding} = $args{embed};
+        $self->{encoding} = $label_to_name->($args{embed});
         delete $self->{confident};
         $self->{source} = 'embed';
         return; # not last
@@ -375,13 +380,13 @@ sub detect ($$;%) {
           my $det = Web::Encoding::UnivCharDet->new
               ($mode, prefer_cjk => $cjk);
           my $got = $det->detect_byte_string ($_[1]);
-          my $name = encoding_label_to_name $got;
+          my $name = $label_to_name->($got);
           if (defined $font_def) {
             if (not defined $name or not $name eq 'utf-8') {
               $self->{encoding} = 'windows-1252';
               delete $self->{confident};
               $self->{source} = 'font';
-              $self->{font_encoding} = $font_def->{charset};
+              $self->{font_encoding} = $font_def->{charset}; # no $label_to_name
               return;
             }
           }
@@ -395,7 +400,7 @@ sub detect ($$;%) {
 
         ## Locale
         if (defined $args{locale}) {
-          my $name = encoding_label_to_name (
+          my $name = $label_to_name->(
             locale_default_encoding_name $args{locale} ||
             locale_default_encoding_name [split /-/, $args{locale}, 2]->[0]
           );

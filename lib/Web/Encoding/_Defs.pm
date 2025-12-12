@@ -1,5 +1,19 @@
 $Web::Encoding::_Defs = {
           "encodings" => {
+                           "armscii-8" => {
+                                            "ascii_compat" => 1,
+                                            "compat_name" => "armscii-8",
+                                            "html_conformance" => "avoid",
+                                            "html_decl_mapped" => "armscii-8",
+                                            "key" => "armscii-8",
+                                            "labels" => {
+                                                          "armscii-8" => {}
+                                                        },
+                                            "name" => "armscii-8",
+                                            "output" => "armscii-8",
+                                            "single_byte" => 1,
+                                            "web" => 1
+                                          },
                            "big5" => {
                                        "ascii_compat" => 1,
                                        "compat_name" => "Big5",
@@ -14,7 +28,9 @@ $Web::Encoding::_Defs = {
                                                      "x-x-big5" => {}
                                                    },
                                        "name" => "Big5",
-                                       "output" => "big5"
+                                       "output" => "big5",
+                                       "web" => 1,
+                                       "zip" => 1
                                      },
                            "euc-jp" => {
                                          "ascii_compat" => 1,
@@ -28,7 +44,9 @@ $Web::Encoding::_Defs = {
                                                        "x-euc-jp" => {}
                                                      },
                                          "name" => "EUC-JP",
-                                         "output" => "euc-jp"
+                                         "output" => "euc-jp",
+                                         "web" => 1,
+                                         "zip" => 1
                                        },
                            "euc-kr" => {
                                          "ascii_compat" => 1,
@@ -49,7 +67,9 @@ $Web::Encoding::_Defs = {
                                                        "windows-949" => {}
                                                      },
                                          "name" => "EUC-KR",
-                                         "output" => "euc-kr"
+                                         "output" => "euc-kr",
+                                         "web" => 1,
+                                         "zip" => 1
                                        },
                            "gb18030" => {
                                           "ascii_compat" => 1,
@@ -61,7 +81,9 @@ $Web::Encoding::_Defs = {
                                                         "gb18030" => {}
                                                       },
                                           "name" => "gb18030",
-                                          "output" => "gb18030"
+                                          "output" => "gb18030",
+                                          "web" => 1,
+                                          "zip" => 1
                                         },
                            "gbk" => {
                                       "ascii_compat" => 1,
@@ -81,8 +103,215 @@ $Web::Encoding::_Defs = {
                                                     "x-gbk" => {}
                                                   },
                                       "name" => "GBK",
-                                      "output" => "gbk"
+                                      "output" => "gbk",
+                                      "web" => 1
                                     },
+                           "georgian-academy" => {
+                                                   "ascii_compat" => 1,
+                                                   "compat_name" => "georgian-academy",
+                                                   "html_conformance" => "avoid",
+                                                   "html_decl_mapped" => "georgian-academy",
+                                                   "key" => "georgian-academy",
+                                                   "labels" => {
+                                                                 "georgian-academy" => {}
+                                                               },
+                                                   "name" => "georgian-academy",
+                                                   "output" => "georgian-academy",
+                                                   "single_byte" => 1,
+                                                   "web" => 1
+                                                 },
+                           "georgian-ps" => {
+                                              "ascii_compat" => 1,
+                                              "compat_name" => "georgian-ps",
+                                              "html_conformance" => "avoid",
+                                              "html_decl_mapped" => "georgian-ps",
+                                              "key" => "georgian-ps",
+                                              "labels" => {
+                                                            "geo8-gov" => {},
+                                                            "georgian-ps" => {},
+                                                            "geostd8" => {}
+                                                          },
+                                              "name" => "georgian-ps",
+                                              "output" => "georgian-ps",
+                                              "single_byte" => 1,
+                                              "web" => 1
+                                            },
+                           "ibm437" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm437",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm437",
+                                         "key" => "ibm437",
+                                         "labels" => {
+                                                       "437" => {},
+                                                       "cp437" => {},
+                                                       "cspc8codepage437" => {},
+                                                       "ibm-437" => {},
+                                                       "ibm-437_p100-1995" => {},
+                                                       "ibm437" => {},
+                                                       "windows-437" => {}
+                                                     },
+                                         "name" => "ibm437",
+                                         "output" => "ibm437",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm737" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm737",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm737",
+                                         "key" => "ibm737",
+                                         "labels" => {
+                                                       "cp737" => {},
+                                                       "ibm737" => {}
+                                                     },
+                                         "name" => "ibm737",
+                                         "output" => "ibm737",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm775" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm775",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm775",
+                                         "key" => "ibm775",
+                                         "labels" => {
+                                                       "775" => {},
+                                                       "cp775" => {},
+                                                       "cspc775baltic" => {},
+                                                       "ibm-775" => {},
+                                                       "ibm-775_p100-1996" => {},
+                                                       "ibm775" => {},
+                                                       "windows-775" => {}
+                                                     },
+                                         "name" => "ibm775",
+                                         "output" => "ibm775",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm850" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm850",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm850",
+                                         "key" => "ibm850",
+                                         "labels" => {
+                                                       "850" => {},
+                                                       "cp850" => {},
+                                                       "cspc850multilingual" => {},
+                                                       "ibm-850" => {},
+                                                       "ibm-850_p100-1995" => {},
+                                                       "ibm850" => {},
+                                                       "windows-850" => {}
+                                                     },
+                                         "name" => "ibm850",
+                                         "output" => "ibm850",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm852" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm852",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm852",
+                                         "key" => "ibm852",
+                                         "labels" => {
+                                                       "852" => {},
+                                                       "cp852" => {},
+                                                       "cspcp852" => {},
+                                                       "ibm-852" => {},
+                                                       "ibm-852_p100-1995" => {},
+                                                       "ibm852" => {},
+                                                       "windows-852" => {}
+                                                     },
+                                         "name" => "ibm852",
+                                         "output" => "ibm852",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm855" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm855",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm855",
+                                         "key" => "ibm855",
+                                         "labels" => {
+                                                       "855" => {},
+                                                       "cp855" => {},
+                                                       "csibm855" => {},
+                                                       "cspcp855" => {},
+                                                       "ibm-855" => {},
+                                                       "ibm-855_p100-1995" => {},
+                                                       "ibm855" => {},
+                                                       "windows-855" => {}
+                                                     },
+                                         "name" => "ibm855",
+                                         "output" => "ibm855",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm857" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm857",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm857",
+                                         "key" => "ibm857",
+                                         "labels" => {
+                                                       "857" => {},
+                                                       "cp857" => {},
+                                                       "csibm857" => {},
+                                                       "ibm-857" => {},
+                                                       "ibm-857_p100-1995" => {},
+                                                       "ibm857" => {},
+                                                       "windows-857" => {}
+                                                     },
+                                         "name" => "ibm857",
+                                         "output" => "ibm857",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm862" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm862",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm862",
+                                         "key" => "ibm862",
+                                         "labels" => {
+                                                       "862" => {},
+                                                       "cp862" => {},
+                                                       "cspc862latinhebrew" => {},
+                                                       "dos-862" => {},
+                                                       "ibm-862" => {},
+                                                       "ibm-862_p100-1995" => {},
+                                                       "ibm862" => {},
+                                                       "windows-862" => {}
+                                                     },
+                                         "name" => "ibm862",
+                                         "output" => "ibm862",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
+                           "ibm865" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "ibm865",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "ibm865",
+                                         "key" => "ibm865",
+                                         "labels" => {
+                                                       "865" => {},
+                                                       "cp865" => {},
+                                                       "csibm865" => {},
+                                                       "ibm-865" => {},
+                                                       "ibm-865_p100-1995" => {},
+                                                       "ibm865" => {}
+                                                     },
+                                         "name" => "ibm865",
+                                         "output" => "ibm865",
+                                         "single_byte" => 1,
+                                         "zip" => 1
+                                       },
                            "ibm866" => {
                                          "ascii_compat" => 1,
                                          "compat_name" => "IBM866",
@@ -97,7 +326,9 @@ $Web::Encoding::_Defs = {
                                                      },
                                          "name" => "IBM866",
                                          "output" => "ibm866",
-                                         "single_byte" => 1
+                                         "single_byte" => 1,
+                                         "web" => 1,
+                                         "zip" => 1
                                        },
                            "iso-2022-jp" => {
                                               "ascii_compat" => 1,
@@ -110,7 +341,8 @@ $Web::Encoding::_Defs = {
                                                             "iso-2022-jp" => {}
                                                           },
                                               "name" => "ISO-2022-JP",
-                                              "output" => "iso-2022-jp"
+                                              "output" => "iso-2022-jp",
+                                              "web" => 1
                                             },
                            "iso-8859-10" => {
                                               "ascii_compat" => 1,
@@ -129,7 +361,8 @@ $Web::Encoding::_Defs = {
                                                           },
                                               "name" => "ISO-8859-10",
                                               "output" => "iso-8859-10",
-                                              "single_byte" => 1
+                                              "single_byte" => 1,
+                                              "web" => 1
                                             },
                            "iso-8859-13" => {
                                               "ascii_compat" => 1,
@@ -144,7 +377,8 @@ $Web::Encoding::_Defs = {
                                                           },
                                               "name" => "ISO-8859-13",
                                               "output" => "iso-8859-13",
-                                              "single_byte" => 1
+                                              "single_byte" => 1,
+                                              "web" => 1
                                             },
                            "iso-8859-14" => {
                                               "ascii_compat" => 1,
@@ -159,7 +393,8 @@ $Web::Encoding::_Defs = {
                                                           },
                                               "name" => "ISO-8859-14",
                                               "output" => "iso-8859-14",
-                                              "single_byte" => 1
+                                              "single_byte" => 1,
+                                              "web" => 1
                                             },
                            "iso-8859-15" => {
                                               "ascii_compat" => 1,
@@ -177,7 +412,8 @@ $Web::Encoding::_Defs = {
                                                           },
                                               "name" => "ISO-8859-15",
                                               "output" => "iso-8859-15",
-                                              "single_byte" => 1
+                                              "single_byte" => 1,
+                                              "web" => 1
                                             },
                            "iso-8859-16" => {
                                               "ascii_compat" => 1,
@@ -190,7 +426,8 @@ $Web::Encoding::_Defs = {
                                                           },
                                               "name" => "ISO-8859-16",
                                               "output" => "iso-8859-16",
-                                              "single_byte" => 1
+                                              "single_byte" => 1,
+                                              "web" => 1
                                             },
                            "iso-8859-2" => {
                                              "ascii_compat" => 1,
@@ -211,7 +448,8 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-2",
                                              "output" => "iso-8859-2",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1
                                            },
                            "iso-8859-3" => {
                                              "ascii_compat" => 1,
@@ -232,7 +470,8 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-3",
                                              "output" => "iso-8859-3",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1
                                            },
                            "iso-8859-4" => {
                                              "ascii_compat" => 1,
@@ -253,7 +492,8 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-4",
                                              "output" => "iso-8859-4",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1
                                            },
                            "iso-8859-5" => {
                                              "ascii_compat" => 1,
@@ -273,7 +513,8 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-5",
                                              "output" => "iso-8859-5",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1
                                            },
                            "iso-8859-6" => {
                                              "ascii_compat" => 1,
@@ -299,7 +540,8 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-6",
                                              "output" => "iso-8859-6",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1
                                            },
                            "iso-8859-7" => {
                                              "ascii_compat" => 1,
@@ -323,7 +565,9 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-7",
                                              "output" => "iso-8859-7",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1,
+                                             "zip" => 1
                                            },
                            "iso-8859-8" => {
                                              "ascii_compat" => 1,
@@ -346,7 +590,8 @@ $Web::Encoding::_Defs = {
                                                          },
                                              "name" => "ISO-8859-8",
                                              "output" => "iso-8859-8",
-                                             "single_byte" => 1
+                                             "single_byte" => 1,
+                                             "web" => 1
                                            },
                            "iso-8859-8-i" => {
                                                "ascii_compat" => 1,
@@ -361,7 +606,8 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "ISO-8859-8-I",
                                                "output" => "iso-8859-8-i",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1
                                              },
                            "koi8-r" => {
                                          "ascii_compat" => 1,
@@ -378,7 +624,8 @@ $Web::Encoding::_Defs = {
                                                      },
                                          "name" => "KOI8-R",
                                          "output" => "koi8-r",
-                                         "single_byte" => 1
+                                         "single_byte" => 1,
+                                         "web" => 1
                                        },
                            "koi8-u" => {
                                          "ascii_compat" => 1,
@@ -392,7 +639,8 @@ $Web::Encoding::_Defs = {
                                                      },
                                          "name" => "KOI8-U",
                                          "output" => "koi8-u",
-                                         "single_byte" => 1
+                                         "single_byte" => 1,
+                                         "web" => 1
                                        },
                            "macintosh" => {
                                             "ascii_compat" => 1,
@@ -408,12 +656,13 @@ $Web::Encoding::_Defs = {
                                                         },
                                             "name" => "macintosh",
                                             "output" => "macintosh",
-                                            "single_byte" => 1
+                                            "single_byte" => 1,
+                                            "web" => 1
                                           },
                            "replacement" => {
                                               "ascii_compat" => 1,
                                               "compat_name" => "replacement",
-                                              "html_conformance" => "broken",
+                                              "html_conformance" => "bad",
                                               "html_decl_mapped" => "replacement",
                                               "key" => "replacement",
                                               "labels" => {
@@ -425,7 +674,8 @@ $Web::Encoding::_Defs = {
                                                             "replacement" => {}
                                                           },
                                               "name" => "replacement",
-                                              "output" => "utf-8"
+                                              "output" => "utf-8",
+                                              "web" => 1
                                             },
                            "shift_jis" => {
                                             "ascii_compat" => 1,
@@ -444,8 +694,32 @@ $Web::Encoding::_Defs = {
                                                           "x-sjis" => {}
                                                         },
                                             "name" => "Shift_JIS",
-                                            "output" => "shift_jis"
+                                            "output" => "shift_jis",
+                                            "web" => 1,
+                                            "zip" => 1
                                           },
+                           "tab" => {
+                                      "ascii_compat" => 1,
+                                      "compat_name" => "tab",
+                                      "html_conformance" => "avoid",
+                                      "html_decl_mapped" => "tab",
+                                      "key" => "tab",
+                                      "labels" => {},
+                                      "name" => "tab",
+                                      "output" => "tab",
+                                      "web" => 1
+                                    },
+                           "tscii" => {
+                                        "ascii_compat" => 1,
+                                        "compat_name" => "tscii",
+                                        "html_conformance" => "avoid",
+                                        "html_decl_mapped" => "tscii",
+                                        "key" => "tscii",
+                                        "labels" => {},
+                                        "name" => "tscii",
+                                        "output" => "tscii",
+                                        "web" => 1
+                                      },
                            "utf-16be" => {
                                            "ascii_compat" => 0,
                                            "compat_name" => "UTF-16BE",
@@ -458,7 +732,8 @@ $Web::Encoding::_Defs = {
                                                        },
                                            "name" => "UTF-16BE",
                                            "output" => "utf-8",
-                                           "utf16" => 1
+                                           "utf16" => 1,
+                                           "web" => 1
                                          },
                            "utf-16le" => {
                                            "ascii_compat" => 0,
@@ -477,7 +752,8 @@ $Web::Encoding::_Defs = {
                                                        },
                                            "name" => "UTF-16LE",
                                            "output" => "utf-8",
-                                           "utf16" => 1
+                                           "utf16" => 1,
+                                           "web" => 1
                                          },
                            "utf-8" => {
                                         "ascii_compat" => 1,
@@ -497,8 +773,26 @@ $Web::Encoding::_Defs = {
                                                       "x-unicode20utf8" => {}
                                                     },
                                         "name" => "UTF-8",
-                                        "output" => "utf-8"
+                                        "output" => "utf-8",
+                                        "web" => 1,
+                                        "zip" => 1
                                       },
+                           "viscii" => {
+                                         "ascii_compat" => 1,
+                                         "compat_name" => "viscii",
+                                         "html_conformance" => "avoid",
+                                         "html_decl_mapped" => "viscii",
+                                         "key" => "viscii",
+                                         "labels" => {
+                                                       "csviscii" => {},
+                                                       "viscii" => {}
+                                                     },
+                                         "name" => "viscii",
+                                         "output" => "viscii",
+                                         "single_byte_decode" => "viscii",
+                                         "single_byte_encode" => "viscii",
+                                         "web" => 1
+                                       },
                            "windows-1250" => {
                                                "ascii_compat" => 1,
                                                "compat_name" => "windows-1250",
@@ -512,7 +806,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1250",
                                                "output" => "windows-1250",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1251" => {
                                                "ascii_compat" => 1,
@@ -527,7 +823,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1251",
                                                "output" => "windows-1251",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1252" => {
                                                "ascii_compat" => 1,
@@ -556,7 +854,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1252",
                                                "output" => "windows-1252",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1253" => {
                                                "ascii_compat" => 1,
@@ -571,7 +871,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1253",
                                                "output" => "windows-1253",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1254" => {
                                                "ascii_compat" => 1,
@@ -595,7 +897,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1254",
                                                "output" => "windows-1254",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1255" => {
                                                "ascii_compat" => 1,
@@ -610,7 +914,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1255",
                                                "output" => "windows-1255",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1256" => {
                                                "ascii_compat" => 1,
@@ -625,7 +931,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1256",
                                                "output" => "windows-1256",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1257" => {
                                                "ascii_compat" => 1,
@@ -640,7 +948,9 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1257",
                                                "output" => "windows-1257",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1,
+                                               "zip" => 1
                                              },
                            "windows-1258" => {
                                                "ascii_compat" => 1,
@@ -655,7 +965,8 @@ $Web::Encoding::_Defs = {
                                                            },
                                                "name" => "windows-1258",
                                                "output" => "windows-1258",
-                                               "single_byte" => 1
+                                               "single_byte" => 1,
+                                               "web" => 1
                                              },
                            "windows-874" => {
                                               "ascii_compat" => 1,
@@ -673,7 +984,9 @@ $Web::Encoding::_Defs = {
                                                           },
                                               "name" => "windows-874",
                                               "output" => "windows-874",
-                                              "single_byte" => 1
+                                              "single_byte" => 1,
+                                              "web" => 1,
+                                              "zip" => 1
                                             },
                            "x-mac-cyrillic" => {
                                                  "ascii_compat" => 1,
@@ -687,8 +1000,23 @@ $Web::Encoding::_Defs = {
                                                              },
                                                  "name" => "x-mac-cyrillic",
                                                  "output" => "x-mac-cyrillic",
-                                                 "single_byte" => 1
+                                                 "single_byte" => 1,
+                                                 "web" => 1
                                                },
+                           "x-mns4330" => {
+                                            "ascii_compat" => 1,
+                                            "compat_name" => "x-mns4330",
+                                            "html_conformance" => "avoid",
+                                            "html_decl_mapped" => "x-mns4330",
+                                            "key" => "x-mns4330",
+                                            "labels" => {
+                                                          "x-mns4330" => {}
+                                                        },
+                                            "name" => "x-mns4330",
+                                            "output" => "x-mns4330",
+                                            "single_byte" => 1,
+                                            "web" => 1
+                                          },
                            "x-user-defined" => {
                                                  "ascii_compat" => 1,
                                                  "compat_name" => "x-user-defined",
@@ -696,12 +1024,63 @@ $Web::Encoding::_Defs = {
                                                  "html_decl_mapped" => "windows-1252",
                                                  "key" => "x-user-defined",
                                                  "labels" => {
+                                                               "user-defined" => {},
                                                                "x-user-defined" => {}
                                                              },
                                                  "name" => "x-user-defined",
                                                  "output" => "x-user-defined",
-                                                 "single_byte" => 1
-                                               }
+                                                 "single_byte" => 1,
+                                                 "web" => 1
+                                               },
+                           "x-viet-tcvn" => {
+                                              "ascii_compat" => 1,
+                                              "compat_name" => "x-viet-tcvn",
+                                              "html_conformance" => "avoid",
+                                              "html_decl_mapped" => "x-viet-tcvn",
+                                              "key" => "x-viet-tcvn",
+                                              "labels" => {
+                                                            "tcvn" => {},
+                                                            "tcvn-5712" => {},
+                                                            "tcvn-5712:1993" => {},
+                                                            "x-viet-tcvn" => {},
+                                                            "x-viet-tcvn5712" => {}
+                                                          },
+                                              "name" => "x-viet-tcvn",
+                                              "output" => "x-viet-tcvn",
+                                              "single_byte_decode" => "tcvn-decode",
+                                              "web" => 1
+                                            },
+                           "x-viet-vni" => {
+                                             "ascii_compat" => 1,
+                                             "compat_name" => "x-viet-vni",
+                                             "html_conformance" => "avoid",
+                                             "html_decl_mapped" => "x-viet-vni",
+                                             "key" => "x-viet-vni",
+                                             "labels" => {
+                                                           "x-viet-vni" => {}
+                                                         },
+                                             "name" => "x-viet-vni",
+                                             "output" => "x-viet-vni",
+                                             "single_byte" => 1,
+                                             "web" => 1
+                                           },
+                           "x-viet-vps" => {
+                                             "ascii_compat" => 1,
+                                             "compat_name" => "x-viet-vps",
+                                             "html_conformance" => "avoid",
+                                             "html_decl_mapped" => "x-viet-vps",
+                                             "key" => "x-viet-vps",
+                                             "labels" => {
+                                                           "vps" => {},
+                                                           "x-viet-vps" => {},
+                                                           "x-vps" => {}
+                                                         },
+                                             "name" => "x-viet-vps",
+                                             "output" => "x-viet-vps",
+                                             "single_byte_decode" => "x-viet-vps",
+                                             "single_byte_encode" => "x-viet-vps",
+                                             "web" => 1
+                                           }
                          },
           "html_decl_map" => {
                                "utf-16be" => "utf-8",
@@ -711,6 +1090,7 @@ $Web::Encoding::_Defs = {
           "locale_default" => {
                                 "*" => "windows-1252",
                                 "ar" => "windows-1256",
+                                "az" => "windows-1251",
                                 "ba" => "windows-1251",
                                 "be" => "windows-1251",
                                 "bg" => "windows-1251",
@@ -721,7 +1101,9 @@ $Web::Encoding::_Defs = {
                                 "he" => "windows-1255",
                                 "hr" => "windows-1250",
                                 "hu" => "iso-8859-2",
+                                "hy" => "armscii-8",
                                 "ja" => "shift_jis",
+                                "ka" => "georgian-ps",
                                 "kk" => "windows-1251",
                                 "ko" => "euc-kr",
                                 "ku" => "windows-1254",
@@ -729,7 +1111,10 @@ $Web::Encoding::_Defs = {
                                 "lt" => "windows-1257",
                                 "lv" => "windows-1257",
                                 "mk" => "windows-1251",
+                                "mn" => "x-mns4330",
                                 "pl" => "iso-8859-2",
+                                "ro" => "windows-1250",
+                                "rs" => "windows-1250",
                                 "ru" => "windows-1251",
                                 "sah" => "windows-1251",
                                 "sk" => "windows-1250",
@@ -737,20 +1122,38 @@ $Web::Encoding::_Defs = {
                                 "sr" => "windows-1251",
                                 "tg" => "windows-1251",
                                 "th" => "windows-874",
+                                "tk" => "windows-1251",
                                 "tr" => "windows-1254",
                                 "tt" => "windows-1251",
                                 "uk" => "windows-1251",
-                                "vi" => "windows-1258",
+                                "vi" => "windows-1252",
                                 "zh-cn" => "gb18030",
+                                "zh-hans" => "gb18030",
+                                "zh-hant" => "big5",
+                                "zh-hk" => "big5",
+                                "zh-mo" => "big5",
+                                "zh-sg" => "gb18030",
                                 "zh-tw" => "big5"
                               },
           "names" => [
                        "utf-8",
+                       "armscii-8",
                        "big5",
                        "euc-jp",
                        "euc-kr",
                        "gb18030",
                        "gbk",
+                       "georgian-academy",
+                       "georgian-ps",
+                       "ibm437",
+                       "ibm737",
+                       "ibm775",
+                       "ibm850",
+                       "ibm852",
+                       "ibm855",
+                       "ibm857",
+                       "ibm862",
+                       "ibm865",
                        "ibm866",
                        "iso-2022-jp",
                        "iso-8859-10",
@@ -770,8 +1173,11 @@ $Web::Encoding::_Defs = {
                        "koi8-u",
                        "macintosh",
                        "shift_jis",
+                       "tab",
+                       "tscii",
                        "utf-16be",
                        "utf-16le",
+                       "viscii",
                        "windows-1250",
                        "windows-1251",
                        "windows-1252",
@@ -783,13 +1189,26 @@ $Web::Encoding::_Defs = {
                        "windows-1258",
                        "windows-874",
                        "x-mac-cyrillic",
+                       "x-mns4330",
                        "x-user-defined",
+                       "x-viet-tcvn",
+                       "x-viet-vni",
+                       "x-viet-vps",
                        "replacement"
                      ],
           "supported_labels" => {
+                                  "437" => "ibm437",
+                                  "775" => "ibm775",
+                                  "850" => "ibm850",
+                                  "852" => "ibm852",
+                                  "855" => "ibm855",
+                                  "857" => "ibm857",
+                                  "862" => "ibm862",
+                                  "865" => "ibm865",
                                   "866" => "ibm866",
                                   "ansi_x3.4-1968" => "windows-1252",
                                   "arabic" => "iso-8859-6",
+                                  "armscii-8" => "armscii-8",
                                   "ascii" => "windows-1252",
                                   "asmo-708" => "iso-8859-6",
                                   "big5" => "big5",
@@ -805,12 +1224,24 @@ $Web::Encoding::_Defs = {
                                   "cp1256" => "windows-1256",
                                   "cp1257" => "windows-1257",
                                   "cp1258" => "windows-1258",
+                                  "cp437" => "ibm437",
+                                  "cp737" => "ibm737",
+                                  "cp775" => "ibm775",
                                   "cp819" => "windows-1252",
+                                  "cp850" => "ibm850",
+                                  "cp852" => "ibm852",
+                                  "cp855" => "ibm855",
+                                  "cp857" => "ibm857",
+                                  "cp862" => "ibm862",
+                                  "cp865" => "ibm865",
                                   "cp866" => "ibm866",
                                   "csbig5" => "big5",
                                   "cseuckr" => "euc-kr",
                                   "cseucpkdfmtjapanese" => "euc-jp",
                                   "csgb2312" => "gbk",
+                                  "csibm855" => "ibm855",
+                                  "csibm857" => "ibm857",
+                                  "csibm865" => "ibm865",
                                   "csibm866" => "ibm866",
                                   "csiso2022jp" => "iso-2022-jp",
                                   "csiso2022kr" => "replacement",
@@ -833,9 +1264,17 @@ $Web::Encoding::_Defs = {
                                   "cskoi8r" => "koi8-r",
                                   "csksc56011987" => "euc-kr",
                                   "csmacintosh" => "macintosh",
+                                  "cspc775baltic" => "ibm775",
+                                  "cspc850multilingual" => "ibm850",
+                                  "cspc862latinhebrew" => "ibm862",
+                                  "cspc8codepage437" => "ibm437",
+                                  "cspcp852" => "ibm852",
+                                  "cspcp855" => "ibm855",
                                   "csshiftjis" => "shift_jis",
                                   "csunicode" => "utf-16le",
+                                  "csviscii" => "viscii",
                                   "cyrillic" => "iso-8859-5",
+                                  "dos-862" => "ibm862",
                                   "dos-874" => "windows-874",
                                   "ecma-114" => "iso-8859-6",
                                   "ecma-118" => "iso-8859-7",
@@ -847,11 +1286,40 @@ $Web::Encoding::_Defs = {
                                   "gb_2312" => "gbk",
                                   "gb_2312-80" => "gbk",
                                   "gbk" => "gbk",
+                                  "geo8-gov" => "georgian-ps",
+                                  "georgian-academy" => "georgian-academy",
+                                  "georgian-ps" => "georgian-ps",
+                                  "geostd8" => "georgian-ps",
                                   "greek" => "iso-8859-7",
                                   "greek8" => "iso-8859-7",
                                   "hebrew" => "iso-8859-8",
                                   "hz-gb-2312" => "replacement",
+                                  "ibm-437" => "ibm437",
+                                  "ibm-437_p100-1995" => "ibm437",
+                                  "ibm-775" => "ibm775",
+                                  "ibm-775_p100-1996" => "ibm775",
+                                  "ibm-850" => "ibm850",
+                                  "ibm-850_p100-1995" => "ibm850",
+                                  "ibm-852" => "ibm852",
+                                  "ibm-852_p100-1995" => "ibm852",
+                                  "ibm-855" => "ibm855",
+                                  "ibm-855_p100-1995" => "ibm855",
+                                  "ibm-857" => "ibm857",
+                                  "ibm-857_p100-1995" => "ibm857",
+                                  "ibm-862" => "ibm862",
+                                  "ibm-862_p100-1995" => "ibm862",
+                                  "ibm-865" => "ibm865",
+                                  "ibm-865_p100-1995" => "ibm865",
+                                  "ibm437" => "ibm437",
+                                  "ibm737" => "ibm737",
+                                  "ibm775" => "ibm775",
                                   "ibm819" => "windows-1252",
+                                  "ibm850" => "ibm850",
+                                  "ibm852" => "ibm852",
+                                  "ibm855" => "ibm855",
+                                  "ibm857" => "ibm857",
+                                  "ibm862" => "ibm862",
+                                  "ibm865" => "ibm865",
                                   "ibm866" => "ibm866",
                                   "iso-10646-ucs-2" => "utf-16le",
                                   "iso-2022-cn" => "replacement",
@@ -970,6 +1438,9 @@ $Web::Encoding::_Defs = {
                                   "shift_jis" => "shift_jis",
                                   "sjis" => "shift_jis",
                                   "sun_eu_greek" => "iso-8859-7",
+                                  "tcvn" => "x-viet-tcvn",
+                                  "tcvn-5712" => "x-viet-tcvn",
+                                  "tcvn-5712:1993" => "x-viet-tcvn",
                                   "tis-620" => "windows-874",
                                   "ucs-2" => "utf-16le",
                                   "unicode" => "utf-16le",
@@ -979,12 +1450,15 @@ $Web::Encoding::_Defs = {
                                   "unicodefeff" => "utf-16le",
                                   "unicodefffe" => "utf-16be",
                                   "us-ascii" => "windows-1252",
+                                  "user-defined" => "x-user-defined",
                                   "utf-16" => "utf-16le",
                                   "utf-16be" => "utf-16be",
                                   "utf-16le" => "utf-16le",
                                   "utf-8" => "utf-8",
                                   "utf8" => "utf-8",
+                                  "viscii" => "viscii",
                                   "visual" => "iso-8859-8",
+                                  "vps" => "x-viet-vps",
                                   "windows-1250" => "windows-1250",
                                   "windows-1251" => "windows-1251",
                                   "windows-1252" => "windows-1252",
@@ -995,6 +1469,13 @@ $Web::Encoding::_Defs = {
                                   "windows-1257" => "windows-1257",
                                   "windows-1258" => "windows-1258",
                                   "windows-31j" => "shift_jis",
+                                  "windows-437" => "ibm437",
+                                  "windows-775" => "ibm775",
+                                  "windows-850" => "ibm850",
+                                  "windows-852" => "ibm852",
+                                  "windows-855" => "ibm855",
+                                  "windows-857" => "ibm857",
+                                  "windows-862" => "ibm862",
                                   "windows-874" => "windows-874",
                                   "windows-949" => "euc-kr",
                                   "x-cp1250" => "windows-1250",
@@ -1011,9 +1492,15 @@ $Web::Encoding::_Defs = {
                                   "x-mac-cyrillic" => "x-mac-cyrillic",
                                   "x-mac-roman" => "macintosh",
                                   "x-mac-ukrainian" => "x-mac-cyrillic",
+                                  "x-mns4330" => "x-mns4330",
                                   "x-sjis" => "shift_jis",
                                   "x-unicode20utf8" => "utf-8",
                                   "x-user-defined" => "x-user-defined",
+                                  "x-viet-tcvn" => "x-viet-tcvn",
+                                  "x-viet-tcvn5712" => "x-viet-tcvn",
+                                  "x-viet-vni" => "x-viet-vni",
+                                  "x-viet-vps" => "x-viet-vps",
+                                  "x-vps" => "x-viet-vps",
                                   "x-x-big5" => "big5"
                                 }
         };

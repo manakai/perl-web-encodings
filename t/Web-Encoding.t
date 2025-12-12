@@ -175,8 +175,22 @@ for my $input (
   } n => 1, name => 'encode_web_charset replacement';
 }
 
-for my $key (undef, '', "ac", "iso-2022-kr", "EUC", "unicode",
-             "SHIFT_JIS", "\x{4563}") {
+for my $key (
+  ## broken or unknown
+  undef, '', "ac", "EUC", "\x{4563}", "unknown-8bit",
+
+  ## labels
+  "unicode", "Shift_JIS", "ascii", "us-ascii",
+
+  ## not supported
+  "junet",
+  "tscii", "tab", "tam",
+  "utf-7", "hz-gb-2312", "iso-2022-kr",
+
+  ## index names
+  "iso-2022-jp-katakana", "jisx0208",
+  "tcvn-decode", "tcvn-encode",
+) {
   test {
     my $c = shift;
     eval {
@@ -230,6 +244,30 @@ for my $test (
     is !!is_encoding_label $test->[0], (defined $test->[1] && $test->[0] !~ /\s/);
     done $c;
   } n => 2, name => [encoding_label_to_name => $test->[0]];
+}
+
+for (
+  ["utf-8" => 1, 1, 1],
+  ["ibm437" => 1, 0, 1],
+  ["iso-8859-5" => 1, 1, 0],
+  ["x-mns4330" => 1, 1, 0],
+  ["viscii", 1, 1, 0],
+  ["ibm855", 1, 0, 1],
+  #["tscii", 1, 1, 0],
+  ["abc" => 0, 0, 0],
+  ["" => 0, 0, 0],
+  [0 => 0, 0, 0],
+  [undef, 0, 0, 0],
+) {
+  my ($name, $all, $web, $zip) = @$_;
+  test {
+    my $c = shift;
+    is !! is_all_encoding_label ($name), !!$all;
+    is !! is_encoding_label ($name), !!$web;
+    is !! is_web_encoding_label ($name), !!$web;
+    is !! is_zip_encoding_label ($name), !!$zip;
+    done $c;
+  } n => 4, name => $name;
 }
 
 for my $name (qw(utf-8 iso-2022-jp windows-1252 koi8-r x-user-defined

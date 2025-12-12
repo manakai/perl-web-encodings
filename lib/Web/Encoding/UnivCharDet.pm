@@ -6,7 +6,7 @@ use Web::Encoding::UnivCharDet::Defs;
 
 sub new ($;$%) {
   my $self = bless {}, shift;
-  my $mode = shift // '';
+  my $mode = shift || '';
   my %args = @_;
 
   ## Detailed options of the detector.
@@ -422,7 +422,7 @@ sub get_reported_font_charset ($) {
 sub dump_status ($) {
   my $self = $_[0];
   printf "[%s] %s (%d %d) %s\n",
-      $self->{reported} // '',
+      $self->{reported} || '',
       defined $self->{font_charset} ? 'html:'.$self->{font_charset} : '',
       $self->{win1252_refs}, $self->{unicode_refs},
       $self->{input_state};
@@ -430,7 +430,7 @@ sub dump_status ($) {
       @{$self->{charset_probers}},
       $self->{esc_charset_prober},
       $self->{utf1632_prober};
-  print "Reported: @{[$self->{reported} // '']} @{[defined $self->{font_charset} ? 'html:'.$self->{font_charset} : '']}\n";
+  print "Reported: @{[$self->{reported} || '']} @{[defined $self->{font_charset} ? 'html:'.$self->{font_charset} : '']}\n";
 } # dump_status
 
 sub dump_status_for_json ($) {

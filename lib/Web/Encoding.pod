@@ -45,12 +45,44 @@ properties of encodings:
 
 =over 4
 
+=item $boolean = is_web_encoding_label $label
+
+Return whether the specified label identifies an encoding for the Web
+or not.  It compares labels ASCII case-insensitively.
+
+Unlike the C<encoding_label_to_name> function, however, this function
+does not ignore spaces.
+
+For backward compatibility, there is also the C<is_encoding_label>
+function which is equivalent to this function.
+
+=item $boolean = is_zip_encoding_label $label
+
+Return whether the specified label identifies an encoding for the ZIP
+file names or not.  It compares labels ASCII case-insensitively.
+
+Unlike the C<encoding_label_to_name> function, however, this function
+does not ignore spaces.
+
+=item $boolean = is_all_encoding_label $label
+
+Return whether the specified label identifies an encoding for any
+context supported by this module, including but not limited to Web and
+ZIP, or not.  It compares labels ASCII case-insensitively.
+
+Unlike the C<encoding_label_to_name> function, however, this function
+does not ignore spaces.
+
 =item $key = encoding_label_to_name $label
 
-Find the encoding identified by the specified label.  As does the "get
-an encoding" steps [ENCODING], this function ignores leading and
-trailing spaces, and compares labels ASCII case-insensitively.  The
-function returns the encoding key (not a name), if found, or C<undef>.
+Find the encoding identified by the specified label.
+
+The function returns the encoding key (not a name), if found, or
+C<undef>.
+
+As does the "get an encoding" steps of the Encoding Standard, this
+function ignores leading and trailing spaces of labels and compares
+labels ASCII case-insensitively.
 
 =item $key = fixup_html_meta_encoding_name $key
 
@@ -79,13 +111,6 @@ Return whether the specified encoding is an ASCII-compatible character
 encoding [ENCODING] or not.  The argument must be an encoding key (not
 a name or label).
 
-=item $boolean = is_encoding_label $label
-
-Return whether the specified label identifies an encoding [ENCODING]
-or not.  It compares labels ASCII case-insensitively.  Unlike the
-C<encoding_label_to_name> function, however, this function does not
-ignore spaces.
-
 =item $key = locale_default_encoding_name $tag
 
 Return the encoding key (not a name or label) of the default character
@@ -103,7 +128,7 @@ locale is not known or the locale has no default is returned.
 
 For the purpose of this module, the B<key> of the encoding is a short
 string uniquly identifying the encoding.  It is a lowercased variant
-of the encoding name [ENCODING].
+of the encoding name.
 
 Note that the encoding names in the Encoding Standard are not
 compatible with Perl L<Encode> module's encoding names.
@@ -118,16 +143,16 @@ There are following functions for encoding and decoding:
 
 Encode the character string in UTF-8 and return the encoded bytes.
 
-This function can be used to implement the "UTF-8 encode" operation
-[ENCODING].
+This function can be used to implement the "UTF-8 encode" operation of
+the Encoding Standard.
 
 =item $chars = decode_web_utf8 $bytes
 
 Decode the bytes as UTF-8 and return the decoded character string.
 Any bad byte is replaced by U+FFFD characters without failure.
 
-This function can be used to implement the "UTF-8 decode" operation
-[ENCODING].
+This function can be used to implement the "UTF-8 decode" operation of
+the Encoding Standard.
 
 =item $chars = decode_web_utf8_no_bom $bytes
 
@@ -136,7 +161,7 @@ decoded character string.  Any bad byte is replaced by U+FFFD
 characters without failure.
 
 This function can be used to implement the "UTF-8 decode without BOM"
-operation [ENCODING].
+operation of the Encoding Standard.
 
 =item $bytes = encode_web_charset $key, $chars
 
@@ -149,7 +174,8 @@ Any character not representable in the encoding is converted to an
 HTML decimal character reference for the character.
 
 This function can be used to implement the "encode" operation with
-error mode C<html> [ENCODING] [ENCODING16].
+error mode C<html> of the Encoding Standard and its obsolete UTF-16
+encoder [ENCODING16].
 
 =item $chars = decode_web_charset $key, $bytes
 
@@ -174,7 +200,10 @@ the encoding names), as an array reference.
 
 =back
 
-In addition to UTF-8, following legacy encodings are supported:
+=head1 SUPPORTED ENCODINGS
+
+The following encodings from the Encoding Standard are supported:
+UTF-8
 IBM866
 ISO-8859-2
 ISO-8859-3
@@ -215,6 +244,30 @@ UTF-16BE
 UTF-16LE
 replacement
 
+Please note that C<ascii> is a label of the windows-1252 encoding.
+
+In addition, the following encodings required by Web and ZIP
+compatibility are also supported:
+armscii-8 georgian-academy georgian-ps viscii x-viet-vni x-viet-vps
+x-viet-tcvn ibm437 ibm737 ibm775 ibm850 ibm852 ibm855 ibm857 ibm862
+ibm865 x-mns4330
+
+This module also adds labels to encodings defined by the Encoding
+Standard.
+
+These are willful violations to the Encoding Standard and the HTML
+Standard, for compatibility with existing Web contents.  See
+<https://github.com/manakai/data-web-defs> for the augumented list of
+encodings and labels.
+
+Functions C<is_web_encoding_label> and C<is_zip_encoding_label> can be
+used to distinguish Web-only, ZIP-only, and common encodings.
+
+Though supported by L<Web::Encoding::UnivCharDet>, the following
+encodings are not supported by this module at the moment:
+tscii tab iso-2022-cn iso-2022-kr hz-gb-2312 x-euc-tw johab utf-32be
+utf-32le x-iso-10646-ucs-4-3412 x-iso-10646-ucs-4-2143 tam x-mac-ce
+
 =head1 SPECIFICATIONS
 
 =over 4
@@ -253,7 +306,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2011-2018 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2025 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

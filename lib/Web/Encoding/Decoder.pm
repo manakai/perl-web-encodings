@@ -881,11 +881,39 @@ sub bytes ($$) {
       }
     }
     return $decoded;
+  } elsif ($key eq 'x-viet-vni') {
+    require Web::Encoding::_Single;
+    my $s = $_[1]; # string copy!
+    my $Map = $Web::Encoding::_Single::Decoder2->{$_[0]->{key}};
+    $s =~ s{([\x80-\xFF])}{$Map->[-0x80 + ord $1]}ge;
+    while ($s =~ m{\x{FFFD}}g) {
+      $_[0]->_onerror->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                        index => $_[0]->{states}->{index} + $-[0],
+                        value => substr $_[1], $-[0], 1);
+    }
+    $_[0]->{states}->{index} += length $_[1];
+    return [$s];
   } elsif (Web::Encoding::_is_single ($key)) {
     require Web::Encoding::_Single;
     my $s = $_[1]; # string copy!
     my $Map = \($Web::Encoding::_Single::Decoder->{$_[0]->{key}});
     $s =~ s{([\x80-\xFF])}{substr $$Map, -0x80 + ord $1, 1}ge;
+    while ($s =~ m{\x{FFFD}}g) {
+      $_[0]->_onerror->(type => 'encoding:unassigned', level => 'm', fatal => 1,
+                        index => $_[0]->{states}->{index} + $-[0],
+                        value => substr $_[1], $-[0], 1);
+    }
+    $_[0]->{states}->{index} += length $_[1];
+    return [$s];
+  } elsif (defined (
+    ($Web::Encoding::_Defs->{encodings}->{$key} || {})->{single_byte_decode}
+  )) {
+    require Web::Encoding::_Single;
+    my $s = $_[1]; # string copy!
+    my $Map = \($Web::Encoding::_Single::Decoder->{
+      $Web::Encoding::_Defs->{encodings}->{$key}->{single_byte_decode}
+    });
+    $s =~ s{(.)}{substr $$Map, -0x00 + ord $1, 1}ges;
     while ($s =~ m{\x{FFFD}}g) {
       $_[0]->_onerror->(type => 'encoding:unassigned', level => 'm', fatal => 1,
                         index => $_[0]->{states}->{index} + $-[0],
@@ -996,6 +1024,10 @@ sub eof ($) {
     return _decode_iso2022jp $_[0]->{states}, '', 1, $_[0]->_onerror;
   } elsif ($key eq 'replacement' or Web::Encoding::_is_single ($key)) {
     return [];
+  } elsif (defined (
+    ($Web::Encoding::_Defs->{encodings}->{$key} || {})->{single_byte_decode}
+  )) {
+    return [];
   } else {
     croak "Bad encoding key |$key|";
   }
@@ -1005,7 +1037,7 @@ sub eof ($) {
 
 =head1 LICENSE
 
-Copyright 2011-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2025 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

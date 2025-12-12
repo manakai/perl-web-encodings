@@ -15,6 +15,7 @@ sub u ($) {
 
 for my $test (
   ["windows-1252", undef, ''],
+  ["x-viet-vni", "abc\xA0\xA1\xA8\xC0\xFF", "abc\xA0\xA1\x{30A}\x{302}\x{300}\x{1EF5}"],
 ) {
   test {
     my $c = shift;
@@ -44,6 +45,7 @@ for my $test (
   ["x-user-defined", "\x{F780}x\x{F781}", "\x80x\x81"],
   ["iso-8859-8", "\x80\xFE\xDD\xAC421\xA0\xFE", "\x80&#254;&#221;\xAC421\xA0&#254;"],
   ["iso-8859-8-i", "\x80\xFE\xDD\xAC421\xA0\xFE", "\x80&#254;&#221;\xAC421\xA0&#254;"],
+  ["x-viet-vni", "abcd\x80\x{2018}\xA0\xC7\x{0306}\x{0111}", "abcd\x80\x91\xA0\xC7\xCA\xF1"],
 ) {
   test {
     my $c = shift;
@@ -64,7 +66,7 @@ for my $test (
     next unless @$def == 128;
 
     my $decoded = join '', (map { chr $_ } 0..0x7F), (map {
-      defined $_ ? chr $_ : "\x{FFFD}";
+      defined $_ ? ref $_ ? (join "", map { chr $_ } @$_) : chr $_ : "\x{FFFD}";
     } @$def);
     test {
       my $c = shift;
@@ -84,15 +86,65 @@ for my $test (
     } n => 3, name => ['decode', $name];
 
     my $input = join '', (map { chr $_ } 0..0x7F), (map {
-      defined $_ ? chr $_ : '';
+      defined $_ ? ref $_ ? '' : chr $_ : '';
     } @$def);
     my $encoded = join '', map { pack 'C', $_ } 0x00..0x7F, map {
-      defined $def->[$_] ? 0x80 + $_ : ();
+      defined $def->[$_] ? ref $def->[$_] ? () : 0x80 + $_ : ();
     } 0x00..0x7F;
     test {
       my $c = shift;
       my $result = encode_web_charset $name, $input;
       is $result, $encoded;
+      unless ($result eq $encoded) {
+        $result =~ s/([\x80-\xFF])/sprintf " %02X ", ord $1/ge;
+        $encoded =~ s/([\x80-\xFF])/sprintf " %02X ", ord $1/ge;
+        warn "$result\n$encoded\n";
+      }
+      ok ! utf8::is_utf8 $result;
+      done $c;
+    } n => 2, name => ['encode', $name]
+        unless $name eq 'x-viet-vni';
+  }
+  for my $name (keys %{$json}) {
+    my $def = $json->{$name};
+    next unless @$def == 256;
+    next if $name =~ /-encode|-decode/;
+
+    my $decoded = join '', (map {
+      defined $_ ? ref $_ ? (join "", map { chr $_ } @$_) : chr $_ : "\x{FFFD}";
+    } @$def);
+    test {
+      my $c = shift;
+      {
+        my $result = decode_web_charset $name, $input;
+        is $result, $decoded;
+      }
+      {
+        my $result = decode_web_charset $name, '';
+        is $result, '';
+      }
+      {
+        my $result = decode_web_charset $name, '0';
+        is $result, '0';
+      }
+      done $c;
+    } n => 3, name => ['decode', $name];
+
+    my $input = join '', (map {
+      defined $_ ? ref $_ ? '' : chr $_ : '';
+    } @$def);
+    my $encoded = join '', map { pack 'C', $_ } map {
+      defined $def->[$_] ? ref $def->[$_] ? () : $_ : ();
+    } 0x00..0xFF;
+    test {
+      my $c = shift;
+      my $result = encode_web_charset $name, $input;
+      is $result, $encoded;
+      unless ($result eq $encoded) {
+        $result =~ s/([\x00-\xFF])/sprintf " %02X ", ord $1/ge;
+        $encoded =~ s/([\x00-\xFF])/sprintf " %02X ", ord $1/ge;
+        warn "$result\n$encoded\n";
+      }
       ok ! utf8::is_utf8 $result;
       done $c;
     } n => 2, name => ['encode', $name];
@@ -103,7 +155,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2017-2025 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

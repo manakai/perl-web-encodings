@@ -320,6 +320,19 @@ sub encode_web_charset ($$) {
     }ge;
     utf8::downgrade $s if utf8::is_utf8 $s;
     return $s;
+  } elsif (defined (($Web::Encoding::_Defs->{encodings}->{$_[0]} || {})->{single_byte_encode})) {
+    if (not defined $_[1]) {
+      carp "Use of uninitialized value an argument";
+      return '';
+    }
+    require Web::Encoding::_Single;
+    my $s = $_[1]; # string copy!
+    my $Map = $Web::Encoding::_Single::Encoder->{$Web::Encoding::_Defs->{encodings}->{$_[0]}->{single_byte_encode}};
+    $s =~ s{(.)}{
+      defined $Map->{$1} ? $Map->{$1} : sprintf '&#%d;', ord $1;
+    }ges;
+    utf8::downgrade $s if utf8::is_utf8 $s;
+    return $s;
   } elsif ($_[0] eq 'utf-16be') {
     return _encode_16 $_[1], 'n';
   } elsif ($_[0] eq 'utf-16le') {
@@ -378,12 +391,28 @@ sub encoding_label_to_name ($) {
   return $Web::Encoding::_Defs->{supported_labels}->{$label}; # or undef
 } # encoding_label_to_name
 
-push @EXPORT, qw(is_encoding_label);
-sub is_encoding_label ($) {
+push @EXPORT, qw(is_encoding_label is_web_encoding_label is_zip_encoding_label
+                 is_all_encoding_label);
+sub is_all_encoding_label ($) {
   my $label = $_[0] || '';
   $label =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
   return !!$Web::Encoding::_Defs->{supported_labels}->{$label};
-} # is_encoding_label
+} # is_all_encoding_label
+sub is_web_encoding_label ($) {
+  my $label = $_[0] || '';
+  $label =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
+  my $key = $Web::Encoding::_Defs->{supported_labels}->{$label};
+  return 0 unless defined $key;
+  return $Web::Encoding::_Defs->{encodings}->{$key}->{web};
+} # is_web_encoding_label
+*is_encoding_label = \&is_web_encoding_label;
+sub is_zip_encoding_label ($) {
+  my $label = $_[0] || '';
+  $label =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
+  my $key = $Web::Encoding::_Defs->{supported_labels}->{$label};
+  return 0 unless defined $key;
+  return $Web::Encoding::_Defs->{encodings}->{$key}->{zip};
+} # is_zip_encoding_label
 
 push @EXPORT, qw(encoding_name_to_compat_name);
 sub encoding_name_to_compat_name ($) {

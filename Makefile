@@ -68,17 +68,7 @@ local/encoding-indexes.json:
 	$(WGET) -O $@ https://raw.githubusercontent.com/manakai/data-web-defs/master/data/encoding-indexes.json
 
 lib/Web/Encoding/_Defs.pm: local/encodings.json Makefile json-ps
-	$(PERL) -MJSON::PS -MData::Dumper -e ' #\
-	  local $$/ = undef; #\
-	  $$data = json_bytes2perl (scalar <>); #\
-	  $$data->{encodings}->{"x-user-defined"}->{single_byte} = 1; #\
-	  $$data->{names} = ["utf-8", (grep { not $$_ eq "utf-8" and not $$_ eq "replacement" } sort { $$a cmp $$b } keys %{$$data->{encodings}}), "replacement"]; #\
-	  $$Data::Dumper::Sortkeys = 1; #\
-	  $$Data::Dumper::Useqq = 1; #\
-	  $$pm = Dumper $$data; #\
-	  $$pm =~ s/VAR1/Web::Encoding::_Defs/; #\
-	  print "$$pm\n"; #\
-	' < local/encodings.json > $@
+	$(PERL) bin/mkdefs.pl < local/encodings.json > $@
 	perl -c $@
 lib/Web/Encoding/_Single.pm: bin/mksingle.pl local/encoding-indexes.json json-ps
 	$(PERL) $< > $@

@@ -123,10 +123,19 @@ been used on the Web.
 
 Encoding gbk is a subset of gb18030 and is detected as gb18030.
 
-Encpdings replacement and x-user-defined is not detectable by
+Encodings replacement and x-user-defined is not detectable by
 definition.
 
 Encoding koi8-u might be supported in future version of this module.
+
+  Encodings not specified by the Encoding Standard :
+
+    x-mns4330
+
+Encoding x-mns4330 is not detected as such; instead, it is detected as
+windows-1251.  The application that invokes the detector should read
+windows-1251 as x-mns4330 when the input data come from Mongolian
+source (e.g. when its request's URL's origin's TLD is C<.mn>).
 
 =head1 DEPENDENCY
 
