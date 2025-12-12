@@ -231,7 +231,9 @@ sub detect ($$;%) {
   my ($self, undef, %args) = @_;
   delete $self->{font_encoding};
 
-  my $label_to_name = sub {
+  my $label_to_name = $self->{context} eq 'any' ? sub {
+    return encoding_label_to_name $_[0];
+  } : sub {
     my $name = encoding_label_to_name $_[0];
     return undef unless is_web_encoding_label $name;
     return $name;
@@ -366,7 +368,7 @@ sub detect ($$;%) {
               $url = (ref $url)->parse_string ($u);
             }
             if (defined $url and $url->is_http_s) {
-              my $domain = $url->origin->to_ascii;
+              my $domain = $url->get_origin->to_ascii;
               if (($domain =~ /\.([^.]+)\.\z/ and $IsCJKDomain->{$1}) or
                   ($domain =~ /\.([^.]+\.[^.]+)\.\z/ and $IsCJKDomain->{$1})) {
                 $cjk = 1;
@@ -394,7 +396,7 @@ sub detect ($$;%) {
             $self->{encoding} = $name;
             delete $self->{confident};
             $self->{source} = 'univchardet';
-            return;
+            last DETECT;
           }
         }
 
@@ -429,10 +431,9 @@ sub detect ($$;%) {
           $url = (ref $url)->parse_string ($u);
         }
         if (defined $url and $url->is_http_s) {
-          my $domain = $url->origin->to_ascii;
+          my $domain = $url->get_origin->to_ascii;
           if ($domain =~ /\.(?:mn|xn--l1acc)\.?\z/) {
-            #XXX
-            #$self->{encoding} = 'x-mns4330';
+            $self->{encoding} = 'x-mns4330';
           }
         }
       }

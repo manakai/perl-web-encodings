@@ -7,6 +7,7 @@ use Test::More;
 use Test::HTCT::Parser;
 use Web::Encoding;
 use Web::Encoding::Sniffer;
+use Web::URL;
 
 my $tests_path = path (__FILE__)->parent->parent->child
     ('t_deps/tests/charset/sniffing');
@@ -25,6 +26,11 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
       my $bytes = encode_web_utf8 $test->{data}->[0];
       $bytes =~ s/\\x([0-9A-Fa-f]{2})/pack 'C', hex $1/ge;
 
+      my $url;
+      if (length ($test->{url}->[1]->[0] // '')) {
+        $url = Web::URL->parse_string ($test->{url}->[1]->[0]);
+      }
+
       my $sniffer = Web::Encoding::Sniffer->new_from_context ($test->{context}->[1]->[0]);
       $sniffer->detect (
         $bytes,
@@ -33,6 +39,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
         embed => $test->{embed}->[1]->[0],
         reference => $test->{reference}->[1]->[0],
         locale => $test->{locale}->[1]->[0],
+        context_url => $url,
       );
       is $sniffer->encoding, $test->{encoding}->[1]->[0];
       is $sniffer->confident ? 'certain' : 'tentative', $test->{confidence}->[1]->[0];
@@ -48,7 +55,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2017-2025 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
