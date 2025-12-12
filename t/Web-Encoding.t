@@ -250,7 +250,8 @@ for (
   ["utf-8" => 1, 1, 1],
   ["ibm437" => 1, 0, 1],
   ["iso-8859-5" => 1, 1, 0],
-  ["x-mns4330" => 1, 1, 0],
+  ["windows-1251" => 1, 1, 1],
+  ["x-mns4330" => 1, 1, 1],
   ["viscii", 1, 1, 0],
   ["ibm855", 1, 0, 1],
   #["tscii", 1, 1, 0],
@@ -320,25 +321,31 @@ for my $test (
 }
 
 for my $test (
-  [undef, undef],
-  ['' => undef],
-  [en => undef],
-  [EN => undef],
-  [ja => 'shift_jis'],
-  ['ja-JP' => undef],
-  [ru => 'windows-1251'],
-  ['en-gb' => undef],
-  ['zh-tw' => 'big5'],
-  ['zh-CN' => 'gb18030'],
-  [ko => 'euc-kr'],
-  [hoge => undef],
-  ['*' => 'windows-1252'],
+  [undef, undef, undef],
+  ['' => undef, undef],
+  [en => undef, undef],
+  [EN => undef, undef],
+  [ja => 'shift_jis', 'shift_jis'],
+  ['ja-JP' => undef, undef],
+  [ru => 'windows-1251', 'ibm866'],
+  ['en-gb' => undef, undef],
+  ['zh-tw' => 'big5', 'big5'],
+  ['zh-CN' => 'gb18030', 'gb18030'],
+  [ko => 'euc-kr', 'euc-kr'],
+  [hoge => undef, undef],
+  ['*' => 'windows-1252', 'ibm850'],
+  ['sr-cyrl' => 'windows-1251', 'ibm855'],
+  ['sr-latn' => 'windows-1250', 'ibm852'],
+  ['vi' => 'windows-1252', undef],
+  ['mn', 'x-mns4330', undef],
 ) {
   test {
     my $c = shift;
     is locale_default_encoding_name $test->[0], $test->[1];
+    is web_locale_default_encoding_name $test->[0], $test->[1], 'web';
+    is zip_locale_default_encoding_name $test->[0], $test->[2], 'zip';
     done $c;
-  } n => 1, name => ['locale_default_encoding_name', $test->[0]];
+  } n => 3, name => ['locale_default_encoding_name', $test->[0]];
 }
 
 for my $test (
@@ -376,7 +383,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2011-2018 Wakaba <wakaba@suikawiki.org>.
+Copyright 2011-2025 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

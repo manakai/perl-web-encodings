@@ -9,12 +9,14 @@ encoding sniffing alrogithms used within the Web platform.
 
 It implements following variants of sniffing algorithm:
 
+  "any"
   BOM sniffing only (for JavaScript classic scripts and XHR texts)
   plain text (for text documents)
   HTML
   XHR HTML
   XML
   CSS
+  ZIP file name
 
 This module is intended to be invoked from another modules (rather
 than applications), such as L<Web::HTML::Parser>, L<Web::XML::Parser>,
@@ -44,13 +46,16 @@ return failure.
 
 CSS Syntax Module <https://drafts.csswg.org/css-syntax/>.
 
+SuikaWiki:文字コードの決定
+<https://wiki.suikawiki.org/n/%E6%96%87%E5%AD%97%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AE%E6%B1%BA%E5%AE%9A>.
+
 =head1 AUTHOR
 
 Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2007-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2007-2025 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

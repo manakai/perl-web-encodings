@@ -34,6 +34,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
       my $sniffer = Web::Encoding::Sniffer->new_from_context ($test->{context}->[1]->[0]);
       $sniffer->detect (
         $bytes,
+        forced => $test->{forced}->[1]->[0],
         override => $test->{override}->[1]->[0],
         transport => $test->{transport}->[1]->[0],
         embed => $test->{embed}->[1]->[0],

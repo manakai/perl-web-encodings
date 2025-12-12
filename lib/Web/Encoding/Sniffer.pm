@@ -5,7 +5,7 @@ our $VERSION = '1.0';
 use Web::Encoding;
 
 ## context
-##   any          - any content (not implemented by browsers)
+##   any          - any content
 ##   html         - HTML (navigate)
 ##   responsehtml - HTML (responseXML)
 ##   xml          - XML (navigate, responseXML, responseText)
@@ -13,6 +13,7 @@ use Web::Encoding;
 ##   text         - text (navigate)
 ##   responsetext - non-XML text (responseText)
 ##   classicscript - JavaScript (<script src> with type "classic")
+##   zip          - ZIP file name
 sub new_from_context ($$) {
   return bless {
     context => $_[1],
@@ -221,11 +222,11 @@ my $IsCJKDomain = {
 };
 
 
-
+## forced    - forced encoding label (valid or invalid) or undef
 ## override  - override encoding label (valid or invalid) or undef
 ## transport - transport encoding label (valid or invalid) or undef
 ## reference - reference's encoding label (valid or invalid) or undef
-## embed     - embedding context's encoding or undef
+## embed     - embedding context's encoding label (v or inv) or undef
 ## locale    - user's locale's language tag in lowercase or undef
 sub detect ($$;%) {
   my ($self, undef, %args) = @_;
@@ -233,28 +234,64 @@ sub detect ($$;%) {
 
   my $label_to_name = $self->{context} eq 'any' ? sub {
     return encoding_label_to_name $_[0];
+  } : $self->{context} eq 'zip' ? sub {
+    my $name = encoding_label_to_name $_[0];
+    return undef unless is_zip_encoding_label $name;
+    return $name;
   } : sub {
     my $name = encoding_label_to_name $_[0];
     return undef unless is_web_encoding_label $name;
     return $name;
   };
 
-  ## BOM
-  if ($_[1] =~ /^\xFE\xFF/) {
-    $self->{encoding} = 'utf-16be';
-    $self->{confident} = 1;
-    $self->{source} = 'bom';
-    return;
-  } elsif ($_[1] =~ /^\xFF\xFE/) {
-    $self->{encoding} = 'utf-16le';
-    $self->{confident} = 1;
-    $self->{source} = 'bom';
-    return;
-  } elsif ($_[1] =~ /^\xEF\xBB\xBF/) {
-    $self->{encoding} = 'utf-8';
-    $self->{confident} = 1;
-    $self->{source} = 'bom';
-    return;
+  my $get_domain = sub {
+    my $url = $args{context_url};
+    return '' unless defined $url;
+    if ($url->scheme eq 'gopher' or $url->scheme eq 'ftp') {
+      my $u = $url->stringify;
+      $u =~ s/^(?:gopher|ftp):/http:/g;
+      $url = (ref $url)->parse_string ($u);
+    } elsif ($url->is_http_s and
+             $url->host->to_ascii =~ /\Aweb\.archive\.org\.?\z/ and
+             $url->{path} =~ m{^/web/[0-9]+[a-z_]*/https?://([^/]+)}) {
+      $url = (ref $url)->parse_string ("https://$1");
+    }
+    if (defined $url and $url->is_http_s) {
+      return $url->host->to_ascii;
+    }
+    return '';
+  }; # $get_domain
+  my $domain;
+
+  ## Forced
+  if (defined $args{forced}) {
+    my $name = encoding_label_to_name $args{forced}; # not $label_to_name
+    if (defined $name) {
+      $self->{encoding} = $name;
+      $self->{confident} = 1;
+      $self->{source} = 'forced';
+      return;
+    }
+  }
+
+  unless ($self->{context} eq 'zip') {
+    ## BOM
+    if ($_[1] =~ /^\xFE\xFF/) {
+      $self->{encoding} = 'utf-16be';
+      $self->{confident} = 1;
+      $self->{source} = 'bom';
+      return;
+    } elsif ($_[1] =~ /^\xFF\xFE/) {
+      $self->{encoding} = 'utf-16le';
+      $self->{confident} = 1;
+      $self->{source} = 'bom';
+      return;
+    } elsif ($_[1] =~ /^\xEF\xBB\xBF/) {
+      $self->{encoding} = 'utf-8';
+      $self->{confident} = 1;
+      $self->{source} = 'bom';
+      return;
+    }
   }
 
   ## Override
@@ -270,7 +307,7 @@ sub detect ($$;%) {
     DETECT: {
 
       ## HTTP charset
-      if (defined $args{transport}) {
+        if (defined $args{transport}) {
         my $name = $label_to_name->($args{transport});
         if (defined $name) {
           $self->{encoding} = $name;
@@ -343,14 +380,18 @@ sub detect ($$;%) {
 
       ## Environment - implicit
       if (defined $args{embed}) {
-        $self->{encoding} = $label_to_name->($args{embed});
-        delete $self->{confident};
-        $self->{source} = 'embed';
-        return; # not last
+        my $name = $label_to_name->($args{embed});
+        if (defined $name) {
+          $self->{encoding} = $name;
+          delete $self->{confident};
+          $self->{source} = 'embed';
+          return; # not last
+        }
       }
 
       if ($self->{context} eq 'html' or
           $self->{context} eq 'text' or
+          $self->{context} eq 'zip' or
           $self->{context} eq 'any') {
         ## Implementation-dependent detections
         {
@@ -359,26 +400,17 @@ sub detect ($$;%) {
             $font_def = $self->_detect_font ($_[1]); # or undef
           }
 
+          $domain = $get_domain->();
           my $cjk = 0;
-          if (defined $args{context_url}) {
-            my $url = $args{context_url};
-            if ($url->scheme eq 'gopher' or $url->scheme eq 'ftp') {
-              my $u = $url->stringify;
-              $u =~ s/^(?:gopher|ftp):/http:/g;
-              $url = (ref $url)->parse_string ($u);
-            }
-            if (defined $url and $url->is_http_s) {
-              my $domain = $url->get_origin->to_ascii;
-              if (($domain =~ /\.([^.]+)\.\z/ and $IsCJKDomain->{$1}) or
-                  ($domain =~ /\.([^.]+\.[^.]+)\.\z/ and $IsCJKDomain->{$1})) {
-                $cjk = 1;
-              }
-            }
+          if (($domain =~ /\.([^.]+)\.?\z/ and $IsCJKDomain->{$1}) or
+              ($domain =~ /\.([^.]+\.[^.]+)\.?\z/ and $IsCJKDomain->{$1})) {
+            $cjk = 1;
           }
       
           ## UNIVCHARDET
           require Web::Encoding::UnivCharDet;
-          my $mode = $self->{context} eq 'html' ? 'web' : 'all';
+          my $mode = $self->{context} eq 'html' ? 'web' :
+              $self->{context} eq 'zip' ? 'zip' : 'all';
           my $det = Web::Encoding::UnivCharDet->new
               ($mode, prefer_cjk => $cjk);
           my $got = $det->detect_byte_string ($_[1]);
@@ -402,39 +434,48 @@ sub detect ($$;%) {
 
         ## Locale
         if (defined $args{locale}) {
-          my $name = $label_to_name->(
-            locale_default_encoding_name $args{locale} ||
-            locale_default_encoding_name [split /-/, $args{locale}, 2]->[0]
-          );
-          $name = 'windows-1252' if not defined $name;
-
-          $self->{encoding} = $name;
-          delete $self->{confident};
-          $self->{source} = 'locale';
-          return;
+          my @locale = split /-/, $args{locale};
+          my $name;
+          if ($self->{context} eq 'zip') {
+            $name = $label_to_name->(
+              zip_locale_default_encoding_name ($args{locale}) ||
+              zip_locale_default_encoding_name (join "-", $locale[0], $locale[1] || '', $locale[2] || '') ||
+              zip_locale_default_encoding_name (join "-", $locale[0], $locale[1] || '') ||
+              zip_locale_default_encoding_name (join "-", $locale[0]) ||
+              zip_locale_default_encoding_name ("*")
+            );
+          } else {
+            $name = $label_to_name->(
+              web_locale_default_encoding_name ($args{locale}) ||
+              web_locale_default_encoding_name (join "-", $locale[0], $locale[1] || '', $locale[2] || '') ||
+              web_locale_default_encoding_name (join "-", $locale[0], $locale[1] || '') ||
+              web_locale_default_encoding_name (join "-", $locale[0]) ||
+              web_locale_default_encoding_name ("*")
+            );
+          }
+          if (defined $name) {
+            $self->{encoding} = $name;
+            delete $self->{confident};
+            $self->{source} = 'locale';
+            return;
+          }
+        }
+        if ($self->{context} eq 'zip') {
+          $self->{encoding} = 'ibm437';
         } else {
           $self->{encoding} = 'windows-1252';
-          delete $self->{confident};
-          $self->{source} = 'locale';
-          return;
         }
+        delete $self->{confident};
+        $self->{source} = 'locale';
+        return;
       } # context = html | text
     } # DETECT
 
     if (defined $self->{encoding}) {
-      if ($self->{encoding} eq 'windows-1251' and
-          defined $args{context_url}) {
-        my $url = $args{context_url};
-        if ($url->scheme eq 'gopher' or $url->scheme eq 'ftp') {
-          my $u = $url->stringify;
-          $u =~ s/^(?:gopher|ftp):/http:/g;
-          $url = (ref $url)->parse_string ($u);
-        }
-        if (defined $url and $url->is_http_s) {
-          my $domain = $url->get_origin->to_ascii;
-          if ($domain =~ /\.(?:mn|xn--l1acc)\.?\z/) {
-            $self->{encoding} = 'x-mns4330';
-          }
+      if ($self->{encoding} eq 'windows-1251') {
+        $domain = $get_domain->() unless defined $domain;
+        if ($domain =~ /(?:\A|\.)(?:mn|xn--l1acc)\.?\z/) {
+          $self->{encoding} = 'x-mns4330';
         }
       }
       return;

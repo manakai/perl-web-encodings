@@ -458,12 +458,20 @@ sub is_ascii_compat_charset_name ($) {
   }
 } # is_ascii_compat_charset_name
 
-push @EXPORT, qw(locale_default_encoding_name);
-sub locale_default_encoding_name ($) {
+push @EXPORT, qw(locale_default_encoding_name
+                 web_locale_default_encoding_name
+                 zip_locale_default_encoding_name);
+sub web_locale_default_encoding_name ($) {
   my $locale = $_[0] or return undef;
   $locale =~ tr/A-Z/a-z/;
   return $Web::Encoding::_Defs->{locale_default}->{$locale}; # or undef
-} # locale_default_encoding_name
+} # web_locale_default_encoding_name
+*locale_default_encoding_name = \&web_locale_default_encoding_name;
+sub zip_locale_default_encoding_name ($) {
+  my $locale = $_[0] or return undef;
+  $locale =~ tr/A-Z/a-z/;
+  return $Web::Encoding::_Defs->{zip_locale_default}->{$locale}; # or undef
+} # zip_locale_default_encoding_name
 
 sub encoding_names () {
   return $Web::Encoding::_Defs->{names};

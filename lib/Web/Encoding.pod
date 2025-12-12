@@ -111,16 +111,35 @@ Return whether the specified encoding is an ASCII-compatible character
 encoding [ENCODING] or not.  The argument must be an encoding key (not
 a name or label).
 
-=item $key = locale_default_encoding_name $tag
+=item $key = web_locale_default_encoding_name $tag
 
-Return the encoding key (not a name or label) of the default character
-encoding for a locale [HTML].  If no default is known for the
-specified locale, C<undef> is returned.
+Return the encoding key (not a name or label) of the default Web
+character encoding for a locale [HTML].  If no explicit default is
+known for the specified locale, C<undef> is returned.
 
 The argument, which identifies the locale, must be either a BCP 47
-language tag or a string C<*>.  The language tag must be the primary
-language tag only, C<zh-TW>, or C<zh-CN>, otherwise no data is
-available.  The tags are ASCII case-insensitive.  If C<*> is
+language tag or a string C<*>.  The language tag must be either the
+primary language tag only, or C<zh-TW>, C<zh-CN>, C<zh-HK>, C<zh-MO>,
+C<zh-Hant>, C<zh-Hans>, C<sr-Latn>, or C<sr-Cyrl>; otherwise no data
+is available.  The tags are ASCII case-insensitive.  If C<*> is
+specified, the global default encoding that can be used when the
+locale is not known or the locale has no default is returned.
+
+For backward compatibility, there is also the
+C<locale_default_encoding_name> function which is equivalent to this
+function.
+
+=item $key = zip_locale_default_encoding_name $tag
+
+Return the encoding key (not a name or label) of the default ZIP
+character encoding for a locale [HTML].  If no explicit default is
+known for the specified locale, C<undef> is returned.
+
+The argument, which identifies the locale, must be either a BCP 47
+language tag or a string C<*>.  The language tag must be either the
+primary language tag only, or C<zh-TW>, C<zh-CN>, C<zh-HK>, C<zh-MO>,
+C<zh-Hant>, C<zh-Hans>, C<sr-Latn>, or C<sr-Cyrl>; otherwise no data
+is available.  The tags are ASCII case-insensitive.  If C<*> is
 specified, the global default encoding that can be used when the
 locale is not known or the locale has no default is returned.
 
