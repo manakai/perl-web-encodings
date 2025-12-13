@@ -410,7 +410,7 @@ sub get_confidence ($) {
         my $charset = $self->{probers}->[$i]->get_charset_name;
         if (defined $charset) {
           $cc->{$charset}++;
-          $cn->{$charset} //= $i;
+          $cn->{$charset} = $i unless defined $cn->{$charset};
         }
       }
       ## When multiple encodings has equal confidence values, use the
@@ -500,7 +500,7 @@ sub SYMBOL_CAT_ORDER () { 246 }
 sub new ($$;%) {
   my $self = bless {}, shift;
   $self->{model} = shift || die "No model";
-  $self->{model}->{class_table} //= $Web::Encoding::UnivCharDet::Defs::defaultCharClassTable;
+  $self->{model}->{class_table} ||= $Web::Encoding::UnivCharDet::Defs::defaultCharClassTable;
   $self->reset (@_);
   return $self;
 } # new
