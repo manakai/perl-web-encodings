@@ -27,7 +27,7 @@ for my $test_file_path ($tests_path->children (qr/\.dat$/)) {
       $bytes =~ s/\\x([0-9A-Fa-f]{2})/pack 'C', hex $1/ge;
 
       my $url;
-      if (length ($test->{url}->[1]->[0] // '')) {
+      if (length ($test->{url}->[1]->[0] || '')) {
         $url = Web::URL->parse_string ($test->{url}->[1]->[0]);
       }
 
